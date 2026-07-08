@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Absorption coefficients for SPAD materials.
+
+  Each <material> contains space-separated float arrays:
+    <wavelengths>  — wavelength grid (nm, ascending; loader converts to m)
+    <alphas>       — absorption coefficient (cm^-1) at each wavelength
+
+  The loader (src/utils/loaders.py) parses these into numpy arrays
+  (converting nm to m) and MaterialDB uses np.interp() for lookup.
+
+  Data sources:
+    Si:      Green (2008) / Aspnes (1983)
+    InGaAs:  Adachi (1992), Humlicek (1993)
+    InP:     Aspnes & Studna (1983), Adachi (1989)
+    InGaAsP: Adachi (1992), lattice-matched to InP
+-->
+<absorption version="1.0" date="2026-07-08">
+  <meta>
+    <author>SPAD Simulator</author>
+    <description>Wavelength-dependent absorption coefficients for SPAD materials.
+wavelength (nm), alpha (cm^-1).</description>
+  </meta>
+
+  <material name="Si">
+    <wavelengths type="float" unit="nm">300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100</wavelengths>
+    <alphas type="float" unit="cm^-1">1500000.0 1000000.0 500000.0 250000.0 120000.0 65000.0 35000.0 20000.0 10000.0 5000.0 2500.0 1200.0 500.0 200.0 70.0 20.0 5.0</alphas>
+  </material>
+
+  <material name="InGaAs">
+    <wavelengths type="float" unit="nm">900 1000 1100 1200 1300 1400 1500 1550 1600 1620 1640 1660 1680 1700</wavelengths>
+    <alphas type="float" unit="cm^-1">50000.0 30000.0 20000.0 15000.0 10000.0 7000.0 5000.0 4000.0 2500.0 1500.0 600.0 200.0 50.0 10.0</alphas>
+  </material>
+
+  <material name="InP">
+    <wavelengths type="float" unit="nm">300 400 500 600 700 800 850 900 910 920 925 930 940 950 1000 1700</wavelengths>
+    <alphas type="float" unit="cm^-1">1000000.0 800000.0 500000.0 200000.0 80000.0 30000.0 15000.0 5000.0 2500.0 1000.0 500.0 200.0 50.0 10.0 0.0 0.0</alphas>
+  </material>
+
+  <material name="InGaAsP">
+    <wavelengths type="float" unit="nm">900 1000 1100 1150 1200 1240 1260 1280 1300 1400 1700</wavelengths>
+    <alphas type="float" unit="cm^-1">50000.0 35000.0 20000.0 15000.0 8000.0 2000.0 500.0 100.0 20.0 0.0 0.0</alphas>
+  </material>
+</absorption>

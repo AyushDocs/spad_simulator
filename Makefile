@@ -1,0 +1,31 @@
+PYTHON = .venv/bin/python
+# PYTHONPATH points to parent so that 'import spad_simulator' resolves
+# the root __init__.py at spad_simulator/__init__.py
+ROOT = ..
+
+.PHONY: run clean clean-plots clean-pyc check typecheck help
+
+run:   ## Run the full SPAD simulation
+	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator
+
+run-quick:  ## Run with minimal output (WARNING level only)
+	PYTHONPATH=$(ROOT) $(PYTHON) -c "import logging; from spad_simulator.src.utils._logging import set_log_level; set_log_level(logging.WARNING); from spad_simulator.src.main import main; main()"
+
+check:   ## Check for import / syntax errors without running
+	PYTHONPATH=$(ROOT) $(PYTHON) -c "import spad_simulator; print('Package OK')"
+
+clean-plots:  ## Remove all generated plots
+	rm -rf plots/
+
+clean-pyc:  ## Remove Python cache files
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name '*.pyc' -delete
+
+clean: clean-plots clean-pyc  ## Remove plots and cache files
+
+typecheck:  ## Run mypy type checking
+	PYTHONPATH=$(ROOT) $(PYTHON) -m mypy spad_simulator/ --ignore-missing-imports 2>/dev/null || echo "mypy not installed; skipping"
+
+help:  ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
