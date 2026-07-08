@@ -105,9 +105,12 @@ class IonizationCoefficients:
         E_abs = np.abs(E)
         out = np.zeros_like(E_abs)
         if self._x is not None and self._Eg is not None:
-            for i in range(len(E_abs)):
-                if E_abs[i] > 1e-10:
-                    out[i] = self._alpha_at_point(E_abs[i], i)
+            active = E_abs > 1e-10
+            if not np.any(active):
+                return out
+            indices = np.where(active)[0]
+            for i in indices:
+                out[i] = self._alpha_at_point(E_abs[i], i)
         else:
             with np.errstate(divide="ignore", over="ignore"):
                 mat_default = next(iter(self._materials.values()))
@@ -120,9 +123,12 @@ class IonizationCoefficients:
         E_abs = np.abs(E)
         out = np.zeros_like(E_abs)
         if self._x is not None and self._Eg is not None:
-            for i in range(len(E_abs)):
-                if E_abs[i] > 1e-10:
-                    out[i] = self._beta_at_point(E_abs[i], i)
+            active = E_abs > 1e-10
+            if not np.any(active):
+                return out
+            indices = np.where(active)[0]
+            for i in indices:
+                out[i] = self._beta_at_point(E_abs[i], i)
         else:
             with np.errstate(divide="ignore", over="ignore"):
                 mat_default = next(iter(self._materials.values()))

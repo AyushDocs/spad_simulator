@@ -31,32 +31,26 @@ class TriggerSolver:
         dx = self.grid.dx
         N = len(x)
 
-        mu = np.ones(N)
-        for i in range(N - 2, -1, -1):
-            integ = (alpha[i] - beta[i] + alpha[i + 1] - beta[i + 1]) / 2.0
-            mu[i] = mu[i + 1] * np.exp(integ * dx)
+        ab_diff = alpha - beta
+        avg_diff = (ab_diff[:-1] + ab_diff[1:]) / 2.0
+        exponents = avg_diff * dx
+        cum_exponents = np.concatenate([[0.0], np.cumsum(exponents[::-1])[::-1]])
+        mu = np.exp(cum_exponents)
 
-        cum = 0.0
-        ibm = np.zeros(N)
-        for i in range(N - 2, -1, -1):
-            avg = (beta[i] * mu[i] + beta[i + 1] * mu[i + 1]) / 2.0
-            cum += avg * dx
-            ibm[i] = cum
+        avg_bm = (beta[:-1] * mu[:-1] + beta[1:] * mu[1:]) / 2.0
+        ibm = np.concatenate([[0.0], np.cumsum(avg_bm[::-1])[::-1]]) * dx
 
         Mn = mu / np.clip(1.0 - ibm, 1e-300, None)
         Pe = np.clip(1.0 - 1.0 / Mn, 0.0, 1.0)
 
-        mu_h = np.ones(N)
-        for i in range(1, N):
-            integ = (beta[i - 1] - alpha[i - 1] + beta[i] - alpha[i]) / 2.0
-            mu_h[i] = mu_h[i - 1] * np.exp(integ * dx)
+        ba_diff = beta - alpha
+        avg_ba = (ba_diff[:-1] + ba_diff[1:]) / 2.0
+        exponents_h = avg_ba * dx
+        cum_exponents_h = np.concatenate([[0.0], np.cumsum(exponents_h)])
+        mu_h = np.exp(cum_exponents_h)
 
-        cum = 0.0
-        iam = np.zeros(N)
-        for i in range(1, N):
-            avg = (alpha[i - 1] * mu_h[i - 1] + alpha[i] * mu_h[i]) / 2.0
-            cum += avg * dx
-            iam[i] = cum
+        avg_am = (alpha[:-1] * mu_h[:-1] + alpha[1:] * mu_h[1:]) / 2.0
+        iam = np.concatenate([[0.0], np.cumsum(avg_am) * dx])
 
         Mp = mu_h / np.clip(1.0 - iam, 1e-300, None)
         Ph = np.clip(1.0 - 1.0 / Mp, 0.0, 1.0)

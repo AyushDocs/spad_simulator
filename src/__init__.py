@@ -13,3 +13,8 @@ from .core.layer import Layer
 from .core.device import Device
 from .core.doping import DopingProfile
 from .core.constants import q, kB, eps0, hbar, m0, pi, c, h, VT, thermal_energy
+from .core.fermi_dirac import (
+    FermiDiracStatistics, BandgapNarrowing, CaugheyThomasMobility,
+)
+from .avalanche.afterpulsing import AfterpulsingModel
+from .avalanche.excess_noise import ExcessNoiseFactor

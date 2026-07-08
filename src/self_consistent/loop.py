@@ -84,6 +84,7 @@ class SelfConsistentLoop:
                                          Carrier(c.x, "hole", dead_space=ld)])
                     c.reset_dead_space(ld)
             new_carriers.append(c)
+        self.carriers = [c for c in self.carriers if c.alive]
         self.carriers.extend(new_carriers)
 
         rho_ext = self.mesh.deposit_charge(self.carriers)
