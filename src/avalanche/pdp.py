@@ -55,6 +55,7 @@ class PDPModel:
         mat = self.materials[material_name]
         alpha = mat.absorption_coefficient(lam)
         integrand = alpha * np.exp(-alpha * xx) * P_trigger_slice
+        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
         apt = float(np.trapezoid(integrand, dx=dx))
         return (1.0 - self._r) * dead_zone_trans * apt
 

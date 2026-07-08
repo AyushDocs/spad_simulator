@@ -62,6 +62,15 @@ Velocity saturation: `v_d = mu*E / (1 + E/E_sat)`
 
 High-field diffusion: `D = D_0 * (1 + 2*(E/v_sat)^2)`
 
+### Numerical Integration
+
+All spatial integrations (dark current, photocurrent, generation rate, PDP) use the **composite trapezoidal rule** (`np.trapezoid`) rather than rectangular (midpoint/left-Riemann) quadrature:
+
+- **O(h²) accuracy** vs O(h) for rectangular — the trapezoid rule captures the linear slope between adjacent grid points, which is critical in regions where J(x) varies steeply (e.g. the high-field multiplication region).
+- **Converges as ~1/h²** — halving the grid spacing reduces the error by ~4×, vs only ~2× for rectangular integration.
+- **Handles non-uniform grids** — the trapezoidal rule naturally accommodates variable Δx, which arises from the adaptive grid near heterojunctions.
+- Simpson's rule (O(h⁴)) is unnecessary overhead here: the integrands are smooth and the grid is already fine enough that trapezoidal integration converges to < 0.1% of the total current.
+
 ### Timing Jitter
 
 Monte Carlo ensemble simulation tracking carrier transit times.

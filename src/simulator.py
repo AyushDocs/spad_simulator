@@ -198,6 +198,7 @@ class SPADSimulator:
                     self.grid.x, E, self.device.material.ni,
                     self.device.material.Eg,
                     self.device.material.mc, self.device.material.mh)
+                # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
                 I_primary = float(np.trapezoid(J_total, self.grid.x)
                                   * self.detector_area)
                 return I_primary * M
@@ -253,6 +254,7 @@ class SPADSimulator:
 
         J_total = self.dark_current.total_dark_current_density(
             x, E, ni_arr, Eg_arr, mc_arr, mh_arr)
+        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
         I_dark = float(np.trapezoid(J_total, x) * self.detector_area)
         DCR = self.dark_current.compute_dcr(
             x, E, Pe, ni_arr, Eg_arr, mc_arr, mh_arr, self.detector_area)
@@ -304,6 +306,7 @@ class SPADSimulator:
 
         J_photo = self.pdp_model.photocurrent_density(
             x, alpha_grid, phi_photon, absorber_start, absorber_end)
+        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
         I_primary = float(np.trapezoid(J_photo, x) * self.detector_area)
 
         if I_primary <= 0:

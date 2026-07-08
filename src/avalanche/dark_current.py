@@ -63,6 +63,7 @@ class DarkCurrentModel:
     def thermal_current_density(self, x: np.ndarray,
                                 ni_arr: np.ndarray) -> float:
         G = self.thermal_generation(x, ni_arr)
+        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
         if self._x is not None:
             return float(self._q * np.trapezoid(G, self._x))
         return float(self._q * np.trapezoid(G, x))
@@ -96,6 +97,7 @@ class DarkCurrentModel:
                     A_det: float = 1e-6) -> float:
         G = self.generation_rate(x, F, ni_arr, Eg_arr, mc_arr, mh_arr)
         integrand = G * Pe
+        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
         total_gen = float(np.trapezoid(integrand, x))
         return A_det * total_gen
 

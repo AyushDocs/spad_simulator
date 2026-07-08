@@ -218,6 +218,7 @@ def _run_comprehensive_iv(sim: SPADSimulator, Vbr: float) -> None:
 
             J_pp = sim.pdp_model.photocurrent_density(
                 sim.grid.x, alpha_grid, phi_photon, absorber_start, absorber_end)
+            # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
             I_pp = float(np.trapezoid(J_pp, sim.grid.x) * sim.detector_area)
             I_photo_prim.append(I_pp)
             I_total.append(dc["I_dark"] + I_pp * M)
