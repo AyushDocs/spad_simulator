@@ -165,6 +165,18 @@ def test_afterpulsing():
     assert ap.effective_dcr(1e6, 1e-6) >= 1e6
 
 
+def test_afterpulsing_sweep():
+    ap = AfterpulsingModel(N_T=1e6, tau_c=1e-6)
+    holdoffs = np.logspace(-9, -4, 20)
+    P_ap = np.array([ap.afterpulsing_probability(t) for t in holdoffs])
+    # P_ap should be monotonically increasing
+    assert np.all(np.diff(P_ap) >= 0)
+    # At very short holdoff (1 ns), P_ap should be small (N_T*tau_c=0.1 << 1)
+    assert P_ap[0] < 0.01
+    # At long holdoff (100 us), P_ap should approach saturation
+    assert P_ap[-1] > P_ap[0]
+
+
 def test_excess_noise():
     en = ExcessNoiseFactor(k_eff=0.5)
     # At M=1: F = k*1 + (1-k)*(2-1) = k + 1-k = 1
@@ -175,3 +187,15 @@ def test_excess_noise():
 
     en2 = ExcessNoiseFactor.from_ionization(1e4, 5e3)
     assert en2.k_eff == pytest.approx(0.5)
+
+
+def test_excess_noise_sweep():
+    en = ExcessNoiseFactor(k_eff=0.3)
+    M_vals = np.linspace(1, 50, 20)
+    F_vals = en.f(M_vals)
+    # F(M) should be monotonically increasing
+    assert np.all(np.diff(F_vals) >= 0)
+    # F(1) = 1
+    assert F_vals[0] == pytest.approx(1.0)
+    # F should be > 1 for M > 1
+    assert np.all(F_vals[1:] > 1.0)

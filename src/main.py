@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """InGaAs/InP SAGCM SPAD Simulator (1D center-axis)."""
 
+import json
 import logging
 import os
 
@@ -12,6 +13,9 @@ from .core.absorption import InterpolatedAbsorption
 from .core.layer import Layer
 from .core.device import Device
 from .simulator import SPADSimulator
+from .avalanche.afterpulsing import AfterpulsingModel
+from .avalanche.excess_noise import ExcessNoiseFactor
+from .transport.jitter import TimingJitter
 from .utils._logging import get_logger, set_log_level
 from .utils.loaders import load_materials, load_absorption, load_device
 from .utils.plotter import get_plotter
@@ -238,6 +242,224 @@ def _run_comprehensive_iv(sim: SPADSimulator, Vbr: float) -> None:
             gain=M_vals[mask], Vbr=Vbr)
 
 
+def _run_trigger_profiles(sim: SPADSimulator, Vbr: float) -> None:
+    Vex_list = [1, 3, 5]
+    Pe_list, Ph_list, V_list = [], [], []
+    for Vex in Vex_list:
+        try:
+            Pe, Ph, E = sim.solve_trigger(Vbr + Vex)
+            Pe_list.append(Pe)
+            Ph_list.append(Ph)
+            V_list.append(Vbr + Vex)
+            log.info(f"  Trigger Vex={Vex}V  Pe_max={np.max(Pe):.4f}  "
+                     f"Ph_max={np.max(Ph):.4f}")
+        except Exception as e:
+            log.info(f"  Trigger Vex={Vex}V failed: {e}")
+
+    if Pe_list:
+        get_plotter("trigger_probability", plot_dir=_plot_dir).plot(
+            sim.grid.x, np.array(Pe_list), np.array(Ph_list), V_list)
+
+
+def _run_afterpulsing(sim: SPADSimulator, Vbr: float) -> dict:
+    ap = AfterpulsingModel(N_T=1e12, tau_c=1e-6, Vbr=Vbr)
+    holdoff_pts = np.logspace(-9, -4, 100)
+    P_ap = np.array([ap.afterpulsing_probability(t) for t in holdoff_pts])
+
+    get_plotter("afterpulsing", plot_dir=_plot_dir).plot(
+        holdoff_pts, P_ap, N_T=ap.N_T, tau_c=ap.tau_c)
+
+    holdoff_1us = ap.afterpulsing_probability(1e-6)
+    holdoff_opt = ap.holdoff_optimal(0.01)
+    log.info(f"  Afterpulsing: P_ap(1µs)={holdoff_1us*100:.1f}%  "
+             f"holdoff_1%={holdoff_opt*1e6:.1f}µs")
+    return {"N_T": ap.N_T, "tau_c": ap.tau_c,
+            "P_ap_1us": holdoff_1us, "holdoff_optimal_1pct_s": holdoff_opt}
+
+
+def _run_excess_noise(sim: SPADSimulator, Vbr: float) -> dict:
+    Vex_range = np.linspace(0.5, 10, 20)
+    M_vals, F_vals = [], []
+    k_eff = None
+
+    for Vex in Vex_range:
+        try:
+            _, E, Pe, Ph, _, _ = sim.get_fields(Vbr + Vex)
+            Ptr = Pe + Ph - Pe * Ph
+            Ptr_max = float(np.max(Ptr))
+            M = min(1.0 / (1.0 - Ptr_max + 1e-15), 10000.0)
+
+            alpha = sim.ionization.alpha(E)
+            beta = sim.ionization.beta(E)
+            active = np.abs(E) > 1e4
+            if np.any(active):
+                k_eff = float(np.mean(beta[active]) / np.mean(alpha[active]))
+            else:
+                k_eff = 0.5
+
+            en = ExcessNoiseFactor(k_eff=k_eff)
+            F = en.f(M)
+            M_vals.append(M)
+            F_vals.append(F)
+        except Exception:
+            M_vals.append(np.nan)
+            F_vals.append(np.nan)
+
+    M_arr, F_arr = np.array(M_vals), np.array(F_vals)
+    mask = np.isfinite(M_arr) & np.isfinite(F_arr)
+    if np.any(mask):
+        get_plotter("excess_noise", plot_dir=_plot_dir).plot(
+            M_arr[mask], F_arr[mask], k_eff=k_eff)
+
+    M_max = float(np.nanmax(M_arr[mask])) if np.any(mask) else 0.0
+    F_max = float(np.nanmax(F_arr[mask])) if np.any(mask) else 0.0
+    log.info(f"  Excess noise: M_max={M_max:.1f}  F_max={F_max:.2f}  k_eff={k_eff:.3f}")
+    return {"M_max": M_max, "F_max": F_max, "k_eff": k_eff}
+
+
+def _run_pde_vs_bias(sim: SPADSimulator, Vbr: float) -> dict:
+    Vex_range = np.linspace(0, 10, 21)
+    wavelength = 1310e-9
+    PDE_vals = []
+
+    for Vex in Vex_range:
+        try:
+            pdp_spectrum = sim.compute_pdp_spectrum(
+                np.array([wavelength]), float(Vex),
+                material_name="InGaAs")
+            PDE_vals.append(float(pdp_spectrum[0]))
+        except Exception:
+            PDE_vals.append(0.0)
+
+    PDE_arr = np.array(PDE_vals)
+    get_plotter("pde", plot_dir=_plot_dir).plot(Vex_range, PDE_arr)
+
+    pde_max = float(np.max(PDE_arr))
+    log.info(f"  PDE(1310nm): max={pde_max*100:.1f}%")
+    return {"pde_max": pde_max, "wavelength_nm": 1310}
+
+
+def _run_jitter(sim: SPADSimulator, Vbr: float) -> dict:
+    try:
+        ens = sim.run_mc_ensemble(Vbr + 3.0, N_sim=20, N_threshold=30, dt=5e-15)
+        t_detect = TimingJitter.extract_detection_times(ens)
+
+        if len(t_detect) == 0:
+            log.info("  Jitter: no successful avalanches")
+            return {"sigma_s": np.nan, "fwhm_s": np.nan}
+
+        stats = TimingJitter.statistics(t_detect)
+        fwhm_val = TimingJitter.fwhm(t_detect)
+
+        get_plotter("jitter_histogram", plot_dir=_plot_dir).plot(
+            t_detect, bins=30, fwhm=fwhm_val, sigma=stats["std"])
+
+        log.info(f"  Jitter: σ={stats['std']*1e12:.1f}ps  "
+                 f"FWHM={fwhm_val*1e12:.1f}ps  N={stats['N']}")
+        return {"sigma_s": stats["std"], "fwhm_s": fwhm_val,
+                "mean_s": stats["mean"], "N": stats["N"]}
+    except Exception as e:
+        log.info(f"  Jitter simulation failed: {e}")
+        return {"sigma_s": np.nan, "fwhm_s": np.nan}
+
+
+def _build_sim_at_temp(T: float) -> tuple[SPADSimulator, float]:
+    """Build a simulator at temperature T and return (sim, Vbr)."""
+    cfg = load_device(os.path.join(_data_dir, "device_sagcm.xml"))
+    mat_data = load_materials(os.path.join(_data_dir, "materials.xml"))
+    abs_data = load_absorption(os.path.join(_data_dir, "absorption.xml"))
+    materials = {
+        name: Material(data, absorption=InterpolatedAbsorption(abs_data.get(name)), T=T)
+        for name, data in mat_data.items()
+    }
+    layers = [
+        Layer(thickness=lyr["thickness_cm"], doping_type=lyr["doping_type"],
+              doping_A=lyr.get("doping_A", 0.0), doping_m=lyr.get("doping_m", 0.0),
+              material=lyr["material"])
+        for lyr in cfg.layers
+    ]
+    dev = Device(layers, materials, no_of_nodes=cfg.nx)
+    sim_T = SPADSimulator(dev)
+    Vbr_T, _ = sim_T.find_breakdown(V_start=0, V_max=100, V_step=5.0)
+    return sim_T, Vbr_T if Vbr_T else 75.0
+
+
+def _run_dcr_vs_temp(sim: SPADSimulator, Vbr: float) -> dict:
+    temps = np.array([285, 315])
+    Vex = 3.0
+    DCR_vals = []
+
+    for T in temps:
+        try:
+            sim_T, Vbr_T = _build_sim_at_temp(T)
+            dc = sim_T.compute_dark_current(Vbr_T + Vex)
+            DCR_vals.append(dc["DCR"])
+            log.info(f"  T={T}K  Vbr={Vbr_T:.1f}V  DCR={dc['DCR']:.2e} cps")
+        except Exception as e:
+            log.info(f"  T={T}K failed: {e}")
+            DCR_vals.append(np.nan)
+
+    DCR_arr = np.array(DCR_vals)
+    mask = np.isfinite(DCR_arr)
+    if np.any(mask):
+        get_plotter("dcr_vs_temp", plot_dir=_plot_dir).plot(
+            temps[mask], DCR_arr[mask], Vex=Vex)
+
+    return {"temperatures_K": temps.tolist(), "DCR_cps": DCR_arr.tolist(),
+            "Vex": Vex}
+
+
+def _run_pdp_vs_temp(sim: SPADSimulator, Vbr: float) -> dict:
+    temps = np.array([285, 315])
+    Vex = 3.0
+    wavelengths = [1310, 1550]
+    pdp_dict = {wl: [] for wl in wavelengths}
+
+    for T in temps:
+        try:
+            sim_T, Vbr_T = _build_sim_at_temp(T)
+            for wl in wavelengths:
+                pdp_spectrum = sim_T.compute_pdp_spectrum(
+                    np.array([wl * 1e-9]), float(Vex), material_name="InGaAs")
+                pdp_dict[wl].append(float(pdp_spectrum[0]))
+            log.info(f"  T={T}K  Vbr={Vbr_T:.1f}V  "
+                     f"PDP1310={pdp_dict[1310][-1]*100:.1f}%  "
+                     f"PDP1550={pdp_dict[1550][-1]*100:.1f}%")
+        except Exception as e:
+            log.info(f"  T={T}K failed: {e}")
+            for wl in wavelengths:
+                pdp_dict[wl].append(0.0)
+
+    pdp_plot = {wl: np.array(vals) for wl, vals in pdp_dict.items()}
+    get_plotter("pdp_vs_temp", plot_dir=_plot_dir).plot(
+        temps, pdp_plot, wavelengths_nm=np.array(wavelengths))
+
+    return {"temperatures_K": temps.tolist(), "pdp": pdp_dict, "Vex": Vex}
+
+
+def _write_json_output(Vbr: float, sim: SPADSimulator,
+                       afterpulsing: dict, excess_noise: dict,
+                       pde: dict, jitter: dict,
+                       dcr_temp: dict, pdp_temp: dict) -> None:
+    metrics = {
+        "Vbr_V": Vbr,
+        "T_K": sim.T,
+        "detector_area_cm2": sim.detector_area,
+        "grid_N": sim.grid.no_of_nodes,
+        "afterpulsing": afterpulsing,
+        "excess_noise": excess_noise,
+        "pde_1310nm": pde,
+        "jitter": jitter,
+        "dcr_vs_temperature": dcr_temp,
+        "pdp_vs_temperature": pdp_temp,
+    }
+    path = os.path.join(_plot_dir, "sim_results.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(metrics, f, indent=2, default=str)
+    log.info("  JSON metrics saved to %s", path)
+
+
 def main() -> None:
     set_log_level(logging.INFO)
     sim = SPADSimulator(build_sagcm_spad())
@@ -250,6 +472,15 @@ def main() -> None:
     _run_pdp_spectrum(sim, Vbr)
     _run_pdp_vs_vex(sim, Vbr)
     _run_comprehensive_iv(sim, Vbr)
+    _run_trigger_profiles(sim, Vbr)
+    afterpulsing = _run_afterpulsing(sim, Vbr)
+    excess_noise = _run_excess_noise(sim, Vbr)
+    pde = _run_pde_vs_bias(sim, Vbr)
+    jitter = _run_jitter(sim, Vbr)
+    dcr_temp = _run_dcr_vs_temp(sim, Vbr)
+    pdp_temp = _run_pdp_vs_temp(sim, Vbr)
+    _write_json_output(Vbr, sim, afterpulsing, excess_noise,
+                       pde, jitter, dcr_temp, pdp_temp)
 
     log.info("\n  Plots saved to %s/", _plot_dir)
 

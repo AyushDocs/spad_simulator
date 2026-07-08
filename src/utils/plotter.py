@@ -464,6 +464,124 @@ class PDEPlotter(_BasePlotter):
         self._save("pde_vs_bias.png")
 
 
+class AfterpulsingPlotter(_BasePlotter):
+    @property
+    def name(self) -> str:
+        return "afterpulsing"
+
+    def plot(self, holdoff: np.ndarray, P_ap: np.ndarray,
+             N_T: float | None = None, tau_c: float | None = None) -> None:
+        self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.plot(holdoff * 1e6, P_ap * 100, lw=2)
+        ax.set_xlabel("Holdoff Time (µs)")
+        ax.set_ylabel("Afterpulsing Probability (%)")
+        title = "Afterpulsing vs Holdoff"
+        if N_T is not None and tau_c is not None:
+            title += f"\nN_T={N_T:.1e} cm⁻³, τ_c={tau_c*1e6:.1f} µs"
+        ax.set_title(title, fontsize=10)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("afterpulsing_vs_holdoff.png")
+
+
+class ExcessNoisePlotter(_BasePlotter):
+    @property
+    def name(self) -> str:
+        return "excess_noise"
+
+    def plot(self, M: np.ndarray, F: np.ndarray,
+             k_eff: float | None = None) -> None:
+        self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.plot(M, F, lw=2)
+        ax.axhline(y=1.0, color="k", ls="--", alpha=0.3, label="F=1 (shot noise)")
+        if k_eff is not None:
+            ax.plot(M, k_eff * M + (1.0 - k_eff) * (2.0 - 1.0 / np.clip(M, 1, None)),
+                    ":", color="gray", alpha=0.6,
+                    label=f"k_eff={k_eff:.2f}")
+        ax.set_xlabel("Multiplication M")
+        ax.set_ylabel("Excess Noise Factor F(M)")
+        ax.set_title("McIntyre Excess Noise", fontsize=10)
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("excess_noise.png")
+
+
+class DCRvsTempPlotter(_BasePlotter):
+    @property
+    def name(self) -> str:
+        return "dcr_vs_temp"
+
+    def plot(self, temperatures: np.ndarray, DCR: np.ndarray,
+             Vex: float | None = None) -> None:
+        self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.semilogy(temperatures, DCR + 1e-10, "o-", lw=2)
+        ax.set_xlabel("Temperature (K)")
+        ax.set_ylabel("DCR (cps)")
+        title = "Dark Count Rate vs Temperature"
+        if Vex is not None:
+            title += f" (Vex = {Vex:.1f} V)"
+        ax.set_title(title, fontsize=10)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("dcr_vs_temperature.png")
+
+
+class PDPvsTempPlotter(_BasePlotter):
+    @property
+    def name(self) -> str:
+        return "pdp_vs_temp"
+
+    def plot(self, temperatures: np.ndarray, pdp_dict: dict,
+             wavelengths_nm: np.ndarray | None = None) -> None:
+        self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        colors = plt.cm.viridis(np.linspace(0, 1, len(pdp_dict)))
+        for (lam, pdp), c in zip(sorted(pdp_dict.items()), colors):
+            ax.plot(temperatures, pdp * 100, "o-", lw=2, color=c,
+                    label=f"{lam:.0f} nm")
+        ax.set_xlabel("Temperature (K)")
+        ax.set_ylabel("PDP (%)")
+        ax.set_title("PDP vs Temperature", fontsize=10)
+        ax.legend(fontsize=8, title="Wavelength")
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim(0, 100)
+        plt.tight_layout()
+        self._save("pdp_vs_temperature.png")
+
+
+class JitterHistogramPlotter(_BasePlotter):
+    @property
+    def name(self) -> str:
+        return "jitter_histogram"
+
+    def plot(self, detection_times: np.ndarray,
+             bins: int = 50,
+             fwhm: float | None = None,
+             sigma: float | None = None) -> None:
+        self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        t_ps = detection_times * 1e12
+        ax.hist(t_ps, bins=bins, alpha=0.7, edgecolor="k", density=True)
+        label_parts = []
+        if fwhm is not None and np.isfinite(fwhm):
+            label_parts.append(f"FWHM = {fwhm*1e12:.1f} ps")
+        if sigma is not None and np.isfinite(sigma):
+            label_parts.append(f"σ = {sigma*1e12:.1f} ps")
+        if label_parts:
+            ax.set_title("Timing Jitter (SPTR)\n" + "  ".join(label_parts), fontsize=10)
+        else:
+            ax.set_title("Timing Jitter (SPTR)", fontsize=10)
+        ax.set_xlabel("Detection Time (ps)")
+        ax.set_ylabel("Probability Density")
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("timing_jitter_histogram.png")
+
+
 # ----------------------------------------------------------------
 # registry
 # ----------------------------------------------------------------
@@ -485,6 +603,11 @@ _BUILTIN_PLOTTERS: Dict[str, type[Plotter]] = {
     "population": PopulationPlotter,
     "doping": DopingPlotter,
     "pde": PDEPlotter,
+    "afterpulsing": AfterpulsingPlotter,
+    "excess_noise": ExcessNoisePlotter,
+    "dcr_vs_temp": DCRvsTempPlotter,
+    "pdp_vs_temp": PDPvsTempPlotter,
+    "jitter_histogram": JitterHistogramPlotter,
 }
 
 

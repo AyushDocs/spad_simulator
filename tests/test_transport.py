@@ -74,3 +74,29 @@ def test_timing_jitter():
     assert "mean" in stats
     assert "std" in stats
     assert stats["std"] > 0
+
+
+def test_fwhm():
+    # Gaussian-like distribution centered at 10 ps with sigma ~ 1 ps
+    np.random.seed(42)
+    t_detect = np.random.normal(10e-12, 1e-12, 500)
+    fwhm_val = TimingJitter.fwhm(t_detect, bins=50)
+    # FWHM of Gaussian = 2.355 * sigma ≈ 2.355 ps
+    assert np.isfinite(fwhm_val)
+    assert fwhm_val > 0
+    assert fwhm_val < 10e-12  # should be much less than 10 ps
+
+    # Empty array
+    assert np.isnan(TimingJitter.fwhm(np.array([])))
+
+    # Single value
+    assert np.isnan(TimingJitter.fwhm(np.array([1e-12])))
+
+
+def test_fwhm_percentiles():
+    t_detect = np.array([1e-12, 2e-12, 3e-12, 4e-12, 5e-12])
+    pcts = TimingJitter.percentiles(t_detect, (10, 50, 90))
+    assert "t10" in pcts
+    assert "t50" in pcts
+    assert "t90" in pcts
+    assert pcts["t50"] == pytest.approx(3e-12)

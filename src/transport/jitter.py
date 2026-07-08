@@ -35,3 +35,15 @@ class TimingJitter:
             return {f"t{pp}": np.nan for pp in p}
         vals = np.percentile(t_detect, list(p))
         return {f"t{pp}": float(v) for pp, v in zip(p, vals)}
+
+    @staticmethod
+    def fwhm(t_detect: np.ndarray, bins: int = 100) -> float:
+        """Full width at half maximum of detection time histogram."""
+        if len(t_detect) < 2:
+            return np.nan
+        counts, edges = np.histogram(t_detect, bins=bins)
+        half_max = counts.max() / 2.0
+        above = edges[:-1][counts >= half_max]
+        if len(above) < 2:
+            return np.nan
+        return float(above[-1] - above[0])
