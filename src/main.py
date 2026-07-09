@@ -440,18 +440,28 @@ def _run_pdp_vs_temp(sim: SPADSimulator, Vbr: float) -> dict:
 def _write_json_output(Vbr: float, sim: SPADSimulator,
                        afterpulsing: dict, excess_noise: dict,
                        pde: dict, jitter: dict,
-                       dcr_temp: dict, pdp_temp: dict) -> None:
+                       dcr_temp: dict | None = None,
+                       pdp_temp: dict | None = None,
+                       dark_current: dict | None = None,
+                       pdp_max: dict | None = None) -> None:
     metrics = {
-        "Vbr_V": Vbr,
-        "T_K": sim.T,
-        "detector_area_cm2": sim.detector_area,
-        "grid_N": sim.grid.no_of_nodes,
+        "device": {
+            "Vbr_V": Vbr,
+            "T_K": sim.T,
+            "detector_area_cm2": sim.detector_area,
+            "grid_N": sim.grid.no_of_nodes,
+            "grid_dx_cm": sim.grid.dx,
+            "total_thickness_cm": sim.device.L,
+            "n_layers": len(sim.device.layers),
+        },
+        "dark_current": dark_current or {},
+        "pdp_max": pdp_max or {},
         "afterpulsing": afterpulsing,
         "excess_noise": excess_noise,
         "pde_1310nm": pde,
         "jitter": jitter,
-        "dcr_vs_temperature": dcr_temp,
-        "pdp_vs_temperature": pdp_temp,
+        "dcr_vs_temperature": dcr_temp or {},
+        "pdp_vs_temperature": pdp_temp or {},
     }
     path = os.path.join(_plot_dir, "sim_results.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -477,10 +487,46 @@ def main() -> None:
     excess_noise = _run_excess_noise(sim, Vbr)
     pde = _run_pde_vs_bias(sim, Vbr)
     jitter = _run_jitter(sim, Vbr)
+
+    # Collect dark current metrics at Vex = 3 V
+    dark_current_metrics = {}
+    try:
+        dc3 = sim.compute_dark_current(Vbr + 3.0)
+        dark_current_metrics = {
+            "I_dark_A": dc3["I_dark"],
+            "DCR_cps": dc3["DCR"],
+            "Vex_V": 3.0,
+        }
+        log.info(f"  Dark current @ Vex=3V: I={dc3['I_dark']:.2e} A  "
+                 f"DCR={dc3['DCR']:.2e} cps")
+    except Exception as e:
+        log.info(f"  Dark current collection failed: {e}")
+
+    # Collect PDP max at key wavelengths
+    pdp_max_metrics = {}
+    for wl_nm in [905, 1310, 1550]:
+        try:
+            pdp_spectrum = sim.compute_pdp_spectrum(
+                np.array([wl_nm * 1e-9]), 3.0, material_name="InGaAs")
+            pdp_max_metrics[f"{wl_nm}nm"] = float(np.max(pdp_spectrum))
+            log.info(f"  PDP max @ {wl_nm}nm, Vex=3V: {np.max(pdp_spectrum)*100:.1f}%")
+        except Exception:
+            pdp_max_metrics[f"{wl_nm}nm"] = 0.0
+
+    # Write JSON immediately (before slow temp sweeps)
+    _write_json_output(Vbr, sim, afterpulsing, excess_noise,
+                       pde, jitter, dark_current=dark_current_metrics,
+                       pdp_max=pdp_max_metrics)
+
+    # Slow temperature sweeps — results update the JSON when complete
     dcr_temp = _run_dcr_vs_temp(sim, Vbr)
     pdp_temp = _run_pdp_vs_temp(sim, Vbr)
-    _write_json_output(Vbr, sim, afterpulsing, excess_noise,
-                       pde, jitter, dcr_temp, pdp_temp)
+
+    # Update JSON with temperature sweep results
+    if dcr_temp or pdp_temp:
+        _write_json_output(Vbr, sim, afterpulsing, excess_noise,
+                           pde, jitter, dcr_temp, pdp_temp,
+                           dark_current_metrics, pdp_max_metrics)
 
     log.info("\n  Plots saved to %s/", _plot_dir)
 

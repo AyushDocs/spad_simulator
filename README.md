@@ -235,14 +235,30 @@ A structured JSON file (`sim_results.json`) is written to the plots directory co
 
 ```json
 {
-  "Vbr_V": 75.0,
-  "T_K": 300.0,
-  "detector_area_cm2": 1e-06,
+  "device": {
+    "Vbr_V": 75.0,
+    "T_K": 300.0,
+    "detector_area_cm2": 1e-06,
+    "grid_N": 500,
+    "grid_dx_cm": 1.467e-06,
+    "total_thickness_cm": 0.000732,
+    "n_layers": 7
+  },
+  "dark_current": {
+    "I_dark_A": 3.05e-08,
+    "DCR_cps": 1.95e9,
+    "Vex_V": 3.0
+  },
+  "pdp_max": {
+    "905nm": 0.143,
+    "1310nm": 0.679,
+    "1550nm": 0.401
+  },
   "afterpulsing": {
     "N_T": 1e12,
     "tau_c": 1e-06,
     "P_ap_1us": 1.0,
-    "holdoff_optimal_1pct_s": 0.0
+    "holdoff_optimal_1pct_s": 1.01e-14
   },
   "excess_noise": {
     "M_max": 10000.0,
@@ -254,14 +270,11 @@ A structured JSON file (`sim_results.json`) is written to the plots directory co
     "wavelength_nm": 1310
   },
   "jitter": {
-    "sigma_s": 0.0,
-    "fwhm_s": 0.0
+    "sigma_s": null,
+    "fwhm_s": null
   },
-  "dcr_vs_temperature": {
-    "temperatures_K": [285, 315],
-    "DCR_cps": [8.47e8, 4.18e9],
-    "Vex": 3.0
-  }
+  "dcr_vs_temperature": { ... },
+  "pdp_vs_temperature": { ... }
 }
 ```
 
