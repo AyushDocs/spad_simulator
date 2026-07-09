@@ -6,32 +6,12 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..core.constants import h, c
+from ..core.physics_helpers import alpha_to_grid, combined_trigger_probability, dead_zone_thickness
 
 if TYPE_CHECKING:
     from ..core.device import Device
     from ..core.grid import Grid1D
     from ..avalanche.pdp import PDPModel
-
-
-def _alpha_to_grid(
-    grid_x: np.ndarray,
-    layers: list,
-    materials: dict,
-    wavelength: float,
-) -> np.ndarray:
-    """Map per-layer absorption coefficients onto the spatial grid."""
-    alpha_arr = np.array([
-        materials[lyr.material].absorption_coefficient(wavelength)
-        for lyr in layers
-    ])
-    alpha_grid = np.zeros_like(grid_x)
-    xs = 0.0
-    for lyr, alpha_val in zip(layers, alpha_arr):
-        xe = xs + lyr.thickness
-        mask = (grid_x >= xs - 1e-16) & (grid_x <= xe + 1e-16)
-        alpha_grid[mask] = alpha_val
-        xs = xe
-    return alpha_grid
 
 
 def compute_photocurrent(
@@ -75,7 +55,7 @@ def compute_photocurrent(
     Ptr_abs = np.interp(
         np.linspace(absorber_start, absorber_end, 10),
         grid_x,
-        Pe + Ph - Pe * Ph,
+        combined_trigger_probability(Pe, Ph),
     )
     Ptr_avg = float(np.mean(Ptr_abs))
     M_raw = 1.0 / (1.0 - Ptr_avg + 1e-15)
@@ -96,17 +76,17 @@ def compute_pdp_spectrum(
     material_name: str = "InGaAs",
 ) -> np.ndarray:
     """Compute PDP at each wavelength for a given excess voltage."""
-    Ptr = Pe + Ph - Pe * Ph
+    Ptr = combined_trigger_probability(Pe, Ph)
 
     dead_zone_layers, absorber = pdp_model.find_absorber(layers, material_name)
-    dead_zone = sum(l.thickness for l in dead_zone_layers)
-    L_abs = max(min(xr - dead_zone, absorber.thickness), 0.0)
+    dz = dead_zone_thickness(dead_zone_layers)
+    L_abs = max(min(xr - dz, absorber.thickness), 0.0)
 
     if L_abs <= 0:
         return np.zeros(len(wavelengths))
 
-    absorber_start = dead_zone
-    absorber_end = dead_zone + L_abs
+    absorber_start = dz
+    absorber_end = dz + L_abs
     mask = (grid_x >= absorber_start) & (grid_x <= absorber_end)
     xx = grid_x[mask] - absorber_start
 

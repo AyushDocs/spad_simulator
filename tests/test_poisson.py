@@ -14,14 +14,7 @@ from src.utils.loaders import MaterialData, AbsorptionData
 from src.poisson.solver import PoissonSolver
 
 
-def _make_absorption():
-    wl = np.linspace(400e-9, 2000e-9, 50)
-    alpha = np.where(wl < 920e-9, 5000.0,
-                     np.where(wl < 1650e-9, 4000.0 * np.exp(-(wl - 920e-9) / 500e-9), 10.0))
-    return AbsorptionData(material="InP", wavelengths=wl, alphas=alpha)
-
-
-def _make_device():
+def _make_device(absorption_data):
     layers = [
         Layer(2.5e-4, "acceptor", 2e18, 0, material="InP"),
         Layer(0.5e-4, "donor", 0, 0, material="InP"),
@@ -42,14 +35,14 @@ def _make_device():
         ionization_e={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
         ionization_h={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
     )
-    mat = Material(data, absorption=InterpolatedAbsorption(_make_absorption()), T=300.0)
+    mat = Material(data, absorption=InterpolatedAbsorption(absorption_data), T=300.0)
     eps_grid = np.full(grid.no_of_nodes, mat.eps_r * 8.854187817e-14)
     ni_grid = np.full(grid.no_of_nodes, mat.ni())
     return grid, doping, eps_grid, ni_grid
 
 
-def test_poisson_solver_converges():
-    grid, doping, eps_grid, ni_grid = _make_device()
+def test_poisson_solver_converges(absorption_data):
+    grid, doping, eps_grid, ni_grid = _make_device(absorption_data)
     solver = PoissonSolver(grid, T=300.0, doping=doping,
                            eps_grid=eps_grid, ni_grid=ni_grid)
     phi, info = solver.solve(Vbias=0.0)
@@ -58,11 +51,10 @@ def test_poisson_solver_converges():
     assert np.all(np.isfinite(phi))
 
 
-def test_poisson_solver_biased():
-    grid, doping, eps_grid, ni_grid = _make_device()
+def test_poisson_solver_biased(absorption_data):
+    grid, doping, eps_grid, ni_grid = _make_device(absorption_data)
     solver = PoissonSolver(grid, T=300.0, doping=doping,
                            eps_grid=eps_grid, ni_grid=ni_grid)
-    # Ramp from 0V to build good initial guess
     phi = None
     for V in np.linspace(0.0, 20.0, 11):
         phi, info = solver.solve(V, guess=phi)

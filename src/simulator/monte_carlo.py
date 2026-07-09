@@ -1,8 +1,6 @@
 """Monte Carlo ensemble and timing jitter."""
 from __future__ import annotations
 
-from typing import List
-
 from ..transport.drift_diffusion import DriftDiffusion
 from ..transport.monte_carlo import MonteCarloSimulator
 from ..transport.jitter import TimingJitter

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Tuple
 
 import numpy as np
 
@@ -12,18 +11,18 @@ class FieldCache:
 
     def __init__(self, maxlen: int = 200) -> None:
         self._cache: OrderedDict[
-            float, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]
+            float, tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]
         ] = OrderedDict()
         self._maxlen = maxlen
 
-    def get(self, Vbias: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float] | None:
+    def get(self, Vbias: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float] | None:
         Vkey = round(Vbias, 6)
         cached = self._cache.get(Vkey)
         if cached is not None:
             self._cache.move_to_end(Vkey)
         return cached
 
-    def put(self, Vbias: float, value: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]) -> None:
+    def put(self, Vbias: float, value: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]) -> None:
         Vkey = round(Vbias, 6)
         self._cache[Vkey] = value
         if len(self._cache) > self._maxlen:

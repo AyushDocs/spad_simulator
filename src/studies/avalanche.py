@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..core.physics_helpers import combined_trigger_probability, avalanche_gain
 from ..simulator import SPADSimulator
 from ..avalanche.afterpulsing import AfterpulsingModel
 from ..avalanche.excess_noise import ExcessNoiseFactor
@@ -38,9 +39,9 @@ def run_excess_noise(sim: SPADSimulator, Vbr: float) -> dict:
     for Vex in Vex_range:
         try:
             _, E, Pe, Ph, _, _ = sim.get_fields(Vbr + Vex)
-            Ptr = Pe + Ph - Pe * Ph
+            Ptr = combined_trigger_probability(Pe, Ph)
             Ptr_max = float(np.max(Ptr))
-            M = min(1.0 / (1.0 - Ptr_max + 1e-15), 10000.0)
+            M = avalanche_gain(Ptr_max)
 
             alpha = sim.ionization.alpha(E)
             beta = sim.ionization.beta(E)

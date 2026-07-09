@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..core.physics_helpers import combined_trigger_probability, dead_zone_thickness
 from ..simulator import SPADSimulator
 from ..utils.ingestion import DataIngestionService
 from ..utils._logging import get_logger
@@ -18,7 +19,7 @@ def run_pdp_spectrum(sim: SPADSimulator, Vbr: float) -> None:
     for Vex in [1, 3, 5, 8]:
         try:
             _, E, _ = sim.solve_poisson(Vbr + Vex)
-            Pe, Ph = sim._trigger_for_pdp(E)
+            Pe, Ph = sim.trigger_for_pdp(E)
             _, xr, _ = sim.depletion_width(Vbr + Vex)
             pdp = sim.compute_pdp_spectrum(
                 pdp_wavelengths, float(Vex), material_name="InGaAs",
@@ -38,7 +39,7 @@ def run_pdp_spectrum(sim: SPADSimulator, Vbr: float) -> None:
 def run_pdp_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
     dead_zone_layers, absorber = sim.pdp_model.find_absorber(
         sim.device.layers, "InGaAs")
-    dead_zone = sum(l.thickness for l in dead_zone_layers)
+    dz = dead_zone_thickness(dead_zone_layers)
 
     wl_apt = np.array([1100, 1310, 1550, 1610])
     vex_pts = np.linspace(0, 10, 11)
@@ -46,12 +47,12 @@ def run_pdp_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
     for Vex in vex_pts:
         try:
             _, E, _ = sim.solve_poisson(Vbr + Vex)
-            Pe, Ph = sim._trigger_for_pdp(E)
+            Pe, Ph = sim.trigger_for_pdp(E)
             _, xr, _ = sim.depletion_width(Vbr + Vex)
             Ptr = Pe + Ph - Pe * Ph
-            x_end = min(xr, dead_zone + absorber.thickness)
-            mask = (sim.grid.x >= dead_zone) & (sim.grid.x <= x_end)
-            xx = sim.grid.x[mask] - dead_zone
+            x_end = min(xr, dz + absorber.thickness)
+            mask = (sim.grid.x >= dz) & (sim.grid.x <= x_end)
+            xx = sim.grid.x[mask] - dz
             for lam in wl_apt:
                 trans = sim.pdp_model.dead_zone_transmission(lam * 1e-9, dead_zone_layers)
                 pdp = sim.pdp_model.pdp_integral(

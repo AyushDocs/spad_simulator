@@ -1,22 +1,22 @@
 """Breakdown voltage detection."""
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 
-from ..avalanche.breakdown import TriggerCriterion, CurrentCriterion
+from ..core.physics_helpers import combined_trigger_probability, avalanche_gain
+from ..avalanche.breakdown import TriggerCriterion, CurrentCriterion, BreakdownVoltage
 from ..utils._logging import get_logger
+from ..utils._exceptions import PhysicsError
 
 log = get_logger("simulator")
 
 
 def find_breakdown(
-    poisson_service,
+    poisson_solver,
+    grid,
     ionization,
     trigger,
     dark_current,
-    grid,
     device,
     detector_area: float,
     _Vbr: float | None,
@@ -26,7 +26,7 @@ def find_breakdown(
     force: bool = False,
     criterion: str = "current",
     I_threshold: float = 1e-6,
-) -> Tuple[float | None, List[dict]]:
+) -> tuple[float | None, list[dict]]:
     """Run breakdown search. Returns (Vbr, sweep_results)."""
     if _Vbr is not None and not force:
         return _Vbr, []
@@ -36,9 +36,8 @@ def find_breakdown(
             alpha = ionization.alpha(E)
             beta = ionization.beta(E)
             Pe, Ph = trigger.solve(E, alpha, beta, grid.x)
-            Ptr = Pe + Ph - Pe * Ph
-            Ptr_max = float(np.max(Ptr))
-            M = min(1.0 / (1.0 - Ptr_max + 1e-15), 10000.0)
+            Ptr = combined_trigger_probability(Pe, Ph)
+            M = avalanche_gain(float(np.max(Ptr)))
             J_total = dark_current.total_dark_current_density(
                 grid.x, E, device.material.ni, device.material.Eg,
                 device.material.mc, device.material.mh,
@@ -50,8 +49,9 @@ def find_breakdown(
     else:
         crit = TriggerCriterion(ionization, trigger, grid)
 
-    Vbr, results = poisson_service.find_breakdown(V_start, V_max, crit, V_step)
+    bv = BreakdownVoltage(poisson_solver, grid, crit, V_step)
+    Vbr, results = bv.find(V_start, V_max)
     if Vbr is None:
-        raise ValueError("No breakdown detected")
+        raise PhysicsError("No breakdown detected")
     log.info(f"Vbr = {Vbr:.1f} V")
     return Vbr, results

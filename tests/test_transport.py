@@ -4,33 +4,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.core.material import Material
 from src.core.constants import q, VT
-from src.core.absorption import InterpolatedAbsorption
-from src.utils.loaders import MaterialData, AbsorptionData
 from src.transport.carrier import Carrier
 from src.transport.drift_diffusion import DriftDiffusion
 from src.transport.jitter import TimingJitter
-
-
-def _make_absorption():
-    wl = np.linspace(400e-9, 2000e-9, 50)
-    alpha = np.where(wl < 920e-9, 5000.0,
-                     np.where(wl < 1650e-9, 4000.0 * np.exp(-(wl - 920e-9) / 500e-9), 10.0))
-    return AbsorptionData(material="InP", wavelengths=wl, alphas=alpha)
-
-
-def _make_material():
-    data = MaterialData(
-        name="InP", eps_r=12.5, mu_n=5400, mu_p=2000,
-        vsat_n=1e7, vsat_p=1e7, mc=0.077, mh=0.64,
-        tau_n=1e-6, tau_p=1e-6, Eg_0K=1.42,
-        varshni_alpha=4.9e-4, varshni_beta=327,
-        Nc_300K=5.7e17, Nv_300K=1.1e19, dos_gamma=1.5,
-        ionization_e={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
-        ionization_h={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
-    )
-    return Material(data, absorption=InterpolatedAbsorption(_make_absorption()), T=300.0)
 
 
 def test_carrier():
@@ -50,9 +27,8 @@ def test_carrier():
     assert c.alive is False
 
 
-def test_drift_diffusion():
-    mat = _make_material()
-    dd = DriftDiffusion(mat)
+def test_drift_diffusion(inp_material):
+    dd = DriftDiffusion(inp_material)
 
     v_e = dd.drift_velocity(1e5, "electron")
     assert v_e < 0
@@ -77,19 +53,14 @@ def test_timing_jitter():
 
 
 def test_fwhm():
-    # Gaussian-like distribution centered at 10 ps with sigma ~ 1 ps
     np.random.seed(42)
     t_detect = np.random.normal(10e-12, 1e-12, 500)
     fwhm_val = TimingJitter.fwhm(t_detect, bins=50)
-    # FWHM of Gaussian = 2.355 * sigma ≈ 2.355 ps
     assert np.isfinite(fwhm_val)
     assert fwhm_val > 0
-    assert fwhm_val < 10e-12  # should be much less than 10 ps
+    assert fwhm_val < 10e-12
 
-    # Empty array
     assert np.isnan(TimingJitter.fwhm(np.array([])))
-
-    # Single value
     assert np.isnan(TimingJitter.fwhm(np.array([1e-12])))
 
 

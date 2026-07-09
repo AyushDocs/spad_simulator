@@ -8,11 +8,4 @@ from .loaders import (
     MaterialData, AbsorptionData, DeviceSpec,
     set_data_dir,
 )
-from .plotter import (
-    Plotter, get_plotter, register_plotter,
-    DeviceStructurePlotter, PotentialProfilePlotter,
-    ElectricFieldPlotter, DarkCurrentPlotter, DCRPlotter,
-    PDPPlotter, TriggerProbabilityPlotter, IVCharacteristicPlotter,
-    BreakdownSweepPlotter, TrajectoryPlotter, JitterPlotter,
-    PopulationPlotter, DopingPlotter, PDEPlotter,
-)
+from .plotter import Plotter, get_plotter, register_plotter

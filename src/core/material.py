@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import logging
-
 import numpy as np
 
+from ..utils._logging import get_logger
 from ..utils.loaders import MaterialData
 from .constants import q, VT
 from .absorption import AbsorptionModel, InterpolatedAbsorption
 
-log = logging.getLogger("spad.material")
+log = get_logger("material")
 
 
 class Material:

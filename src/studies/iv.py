@@ -4,6 +4,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..core.constants import h, c
+from ..core.physics_helpers import alpha_to_grid, combined_trigger_probability, avalanche_gain, dead_zone_thickness
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
@@ -38,24 +39,14 @@ def run_iv_characteristic(sim: SPADSimulator, Vbr: float) -> None:
 def run_comprehensive_iv(sim: SPADSimulator, Vbr: float) -> None:
     dead_zone_layers, absorber = sim.pdp_model.find_absorber(
         sim.device.layers, "InGaAs")
-    dead_zone = sum(l.thickness for l in dead_zone_layers)
+    dz = dead_zone_thickness(dead_zone_layers)
 
-    alpha_arr = np.array([
-        sim.materials[lyr.material].absorption_coefficient(1310e-9)
-        for lyr in sim.device.layers
-    ])
-    alpha_grid = np.zeros_like(sim.grid.x)
-    xs = 0.0
-    for lyr, alpha_val in zip(sim.device.layers, alpha_arr):
-        xe = xs + lyr.thickness
-        mask = (sim.grid.x >= xs - 1e-16) & (sim.grid.x <= xe + 1e-16)
-        alpha_grid[mask] = alpha_val
-        xs = xe
+    alpha_grid = alpha_to_grid(sim.grid.x, sim.device.layers, sim.materials, 1310e-9)
 
     Eph = h * c / 1310e-9
     phi_photon = OPTICAL_POWER / (Eph * sim.detector_area)
-    absorber_start = dead_zone
-    absorber_end = dead_zone + absorber.thickness
+    absorber_start = dz
+    absorber_end = dz + absorber.thickness
 
     V_sweep = np.linspace(Vbr - 5, Vbr + 10, 11)
     I_dark, I_photo_prim, I_total, M_vals = [], [], [], []
@@ -63,8 +54,8 @@ def run_comprehensive_iv(sim: SPADSimulator, Vbr: float) -> None:
         try:
             _, E, Pe, Ph, _, xr = sim.get_fields(float(V))
             dc = sim.compute_dark_current(float(V), E=E)
-            Ptr = Pe + Ph - Pe * Ph
-            M = min(1.0 / (1.0 - float(np.max(Ptr)) + 1e-15), 10000.0)
+            Ptr = combined_trigger_probability(Pe, Ph)
+            M = avalanche_gain(float(np.max(Ptr)))
             M_vals.append(M)
             I_dark.append(dc["I_dark"])
 

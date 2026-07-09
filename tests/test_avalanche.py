@@ -8,8 +8,6 @@ from src.core.grid import Grid1D
 from src.core.layer import Layer
 from src.core.material import Material
 from src.core.constants import q
-from src.core.absorption import InterpolatedAbsorption
-from src.utils.loaders import MaterialData, AbsorptionData
 from src.avalanche.ionization import OkutoCrowellModel, IonizationCoefficients
 from src.avalanche.trigger import TriggerSolver
 from src.avalanche.tunneling import TunnelingModel
@@ -19,37 +17,17 @@ from src.avalanche.afterpulsing import AfterpulsingModel
 from src.avalanche.excess_noise import ExcessNoiseFactor
 
 
-def _make_absorption():
-    wl = np.linspace(400e-9, 2000e-9, 50)
-    alpha = np.where(wl < 920e-9, 5000.0,
-                     np.where(wl < 1650e-9, 4000.0 * np.exp(-(wl - 920e-9) / 500e-9), 10.0))
-    return AbsorptionData(material="InP", wavelengths=wl, alphas=alpha)
-
-
-def _make_material():
-    data = MaterialData(
-        name="InP", eps_r=12.5, mu_n=5400, mu_p=2000,
-        vsat_n=1e7, vsat_p=1e7, mc=0.077, mh=0.64,
-        tau_n=1e-6, tau_p=1e-6, Eg_0K=1.42,
-        varshni_alpha=4.9e-4, varshni_beta=327,
-        Nc_300K=5.7e17, Nv_300K=1.1e19, dos_gamma=1.5,
-        ionization_e={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
-        ionization_h={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
-    )
-    return Material(data, absorption=InterpolatedAbsorption(_make_absorption()), T=300.0)
-
-
-def test_okuto_crowell():
+def test_okuto_crowell(inp_material):
     model = OkutoCrowellModel()
-    mat = _make_material()
+    mat = inp_material
     assert model.alpha(5e5, mat, 300.0) > 0
     assert model.beta(5e5, mat, 300.0) > 0
     assert model.alpha(1e3, mat, 300.0) == pytest.approx(0.0, abs=1e-20)
     assert model.alpha(5e5, mat, 300.0) > model.alpha(5e5, mat, 400.0)
 
 
-def test_ionization_coefficients():
-    mat = _make_material()
+def test_ionization_coefficients(inp_material):
+    mat = inp_material
     model = OkutoCrowellModel()
     x = np.linspace(0, 7e-4, 500)
     Eg = np.full(500, 1.34 * q)
@@ -130,8 +108,8 @@ def test_dark_current_model():
     assert dcr >= 0
 
 
-def test_pdp_model():
-    mat_inp = _make_material()
+def test_pdp_model(inp_material):
+    mat_inp = inp_material
     materials = {"InGaAs": mat_inp, "InP": mat_inp, "InGaAsP": mat_inp}
     pdp = PDPModel(materials, reflectivity=0.1)
     layers = [
@@ -157,9 +135,7 @@ def test_pdp_model():
 
 def test_afterpulsing():
     ap = AfterpulsingModel(N_T=1e12, tau_c=1e-6)
-    # At t=0 (holdoff=0), probability is 0 (no time to trap)
     assert ap.afterpulsing_probability(0.0) == pytest.approx(0.0)
-    # At large holdoff, probability saturates near 1 - exp(-N_T * tau_c) ≈ 1.0
     assert ap.afterpulsing_probability(1e-3) > 0.0
     assert ap.holdoff_optimal(0.5) > 0
     assert ap.effective_dcr(1e6, 1e-6) >= 1e6
@@ -169,19 +145,14 @@ def test_afterpulsing_sweep():
     ap = AfterpulsingModel(N_T=1e6, tau_c=1e-6)
     holdoffs = np.logspace(-9, -4, 20)
     P_ap = np.array([ap.afterpulsing_probability(t) for t in holdoffs])
-    # P_ap should be monotonically increasing
     assert np.all(np.diff(P_ap) >= 0)
-    # At very short holdoff (1 ns), P_ap should be small (N_T*tau_c=0.1 << 1)
     assert P_ap[0] < 0.01
-    # At long holdoff (100 us), P_ap should approach saturation
     assert P_ap[-1] > P_ap[0]
 
 
 def test_excess_noise():
     en = ExcessNoiseFactor(k_eff=0.5)
-    # At M=1: F = k*1 + (1-k)*(2-1) = k + 1-k = 1
     assert en.f(1.0) == pytest.approx(1.0)
-    # At M=10: F = 0.5*10 + 0.5*(2-0.1) = 5 + 0.95 = 5.95
     assert en.f(10.0) == pytest.approx(5.95)
     assert en.f(1.0) >= 1.0
 
@@ -193,9 +164,6 @@ def test_excess_noise_sweep():
     en = ExcessNoiseFactor(k_eff=0.3)
     M_vals = np.linspace(1, 50, 20)
     F_vals = en.f(M_vals)
-    # F(M) should be monotonically increasing
     assert np.all(np.diff(F_vals) >= 0)
-    # F(1) = 1
     assert F_vals[0] == pytest.approx(1.0)
-    # F should be > 1 for M > 1
     assert np.all(F_vals[1:] > 1.0)

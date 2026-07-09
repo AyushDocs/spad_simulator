@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 
 from ..core.device import Device
@@ -70,7 +68,7 @@ class SPADSimulator:
 
     # -- Reconfiguration -------------------------------------------------------
 
-    def set_layers(self, layers: List[Layer]) -> None:
+    def set_layers(self, layers: list[Layer]) -> None:
         self.device = Device(layers, self.materials, self.grid.no_of_nodes)
         self.grid = self.device.grid
         self._rebuild()
@@ -114,7 +112,7 @@ class SPADSimulator:
         phi_n: float | None = None,
         phi_p: float = 0.0,
         guess: np.ndarray | None = None,
-    ) -> Tuple[np.ndarray, np.ndarray, dict]:
+    ) -> tuple[np.ndarray, np.ndarray, dict]:
         cached = self._field_cache.get(Vbias)
         if cached is not None:
             return cached[0], self.grid.gradient(cached[0]), {"converged": True, "cached": True}
@@ -134,10 +132,10 @@ class SPADSimulator:
         force: bool = False,
         criterion: str = "current",
         I_threshold: float = 1e-6,
-    ) -> Tuple[float | None, List[dict]]:
+    ) -> tuple[float | None, list[dict]]:
         Vbr, results = _find_breakdown(
-            self.poisson_service, self.ionization, self.trigger,
-            self.dark_current, self.grid, self.device, self.detector_area,
+            self.poisson_service.poisson, self.grid, self.ionization,
+            self.trigger, self.dark_current, self.device, self.detector_area,
             self._Vbr, V_start, V_max, V_step, force, criterion, I_threshold,
         )
         if Vbr is not None and self._Vbr is None:
@@ -146,12 +144,12 @@ class SPADSimulator:
 
     # -- Ionization helpers ------------------------------------------------------
 
-    def solve_trigger(self, Vbias: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def solve_trigger(self, Vbias: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         phi, E, _ = self.solve_poisson(Vbias)
         Pe, Ph = self._ionization_and_trigger(E)
         return Pe, Ph, E
 
-    def depletion_width(self, Vbias: float) -> Tuple[float, float, float]:
+    def depletion_width(self, Vbias: float) -> tuple[float, float, float]:
         return self.poisson_service.depletion_width(Vbias)
 
     def _ionization_and_trigger(self, E: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -159,7 +157,7 @@ class SPADSimulator:
         beta = self.ionization.beta(E)
         return self.trigger.solve(E, alpha, beta, self.grid.x)
 
-    def _trigger_for_pdp(self, E: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def trigger_for_pdp(self, E: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         alpha = self.ionization.alpha(E)
         beta = self.ionization.beta(E)
         return self.trigger.solve(E, alpha, beta, self.grid.x, field_threshold=1e4)
@@ -244,13 +242,14 @@ class SPADSimulator:
     def build_self_consistent(
         self, Vbias: float, Rq: float = 1e5, Cspad: float = 1e-15
     ) -> SelfConsistentLoop:
-        from ..avalanche.breakdown import TriggerCriterion
+        from ..avalanche.breakdown import TriggerCriterion, BreakdownVoltage
         self.mesh = ParticleMesh(self.grid)
         self.transport = DriftDiffusion(self.materials[self.transport_material])
         self.circuit = CircuitSolver(Vbias, Rq, Cspad)
 
         crit = TriggerCriterion(self.ionization, self.trigger, self.grid)
-        Vbr, results = self.poisson_service.find_breakdown(0, max(Vbias + 10, 60), crit, V_step=2.0)
+        bv = BreakdownVoltage(self.poisson_service.poisson, self.grid, crit, V_step=2.0)
+        Vbr, results = bv.find(0, max(Vbias + 10, 60))
         self.circuit.Vbr = results[-1]["V"] if results else 0.0
 
         self.loop = SelfConsistentLoop(
@@ -259,7 +258,7 @@ class SPADSimulator:
         )
         return self.loop
 
-    def run_pic(self, N_steps: int, inject_x: float | None = None) -> List[dict]:
+    def run_pic(self, N_steps: int, inject_x: float | None = None    ) -> list[dict]:
         if self.loop is None:
             raise RuntimeError("Call build_self_consistent() first.")
         if inject_x is not None:
