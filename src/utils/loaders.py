@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import os
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
 from ._exceptions import ConfigError
+
+# Default data directory (set via set_data_dir or DATA_DIR env var)
+_DATA_DIR: str | None = None
 
 
 # ----------------------------------------------------------------
@@ -30,8 +33,8 @@ class MaterialData:
     vsat_p: float
     mc: float
     mh: float
-    ionization_e: Dict[str, float]
-    ionization_h: Dict[str, float]
+    ionization_e: dict[str, float]
+    ionization_h: dict[str, float]
     tau_n: float
     tau_p: float
 
@@ -49,17 +52,15 @@ class DeviceSpec:
     description: str
     nx: int
     temperature: float
-    layers: List[Dict[str, Any]]
+    layers: list[dict[str, Any]]
 
 
 # ----------------------------------------------------------------
 # XML parser utilities
 # ----------------------------------------------------------------
 
-_DATA_DIR: str | None = None
 
-
-def set_data_dir(path: str) -> None:
+def set_data_dir(path: str | None) -> None:
     global _DATA_DIR
     _DATA_DIR = path
 
@@ -112,20 +113,20 @@ def _get_int(root: ET.Element, tag: str) -> int:
 # materials loader
 # ----------------------------------------------------------------
 
-def load_materials(path: str) -> Dict[str, MaterialData]:
+def load_materials(path: str) -> dict[str, MaterialData]:
     tree = ET.parse(_resolve(path))
     root = tree.getroot()
     if root.tag != "materials":
         raise ConfigError(f"Expected <materials> root, got <{root.tag}>")
 
-    materials: Dict[str, MaterialData] = {}
+    materials: dict[str, MaterialData] = {}
     for mat_el in root.findall("material"):
         name = mat_el.attrib.get("name", "")
         if not name:
             raise ConfigError("Material element missing 'name' attribute")
 
         ion_els = mat_el.findall("ionization")
-        ion_map: Dict[str, Dict[str, float]] = {}
+        ion_map: dict[str, dict[str, float]] = {}
         for ion in ion_els:
             carrier = ion.attrib.get("carrier", "")
             ion_map[carrier] = {
@@ -159,13 +160,13 @@ def load_materials(path: str) -> Dict[str, MaterialData]:
     return materials
 
 
-def load_absorption(path: str) -> Dict[str, AbsorptionData]:
+def load_absorption(path: str) -> dict[str, AbsorptionData]:
     tree = ET.parse(_resolve(path))
     root = tree.getroot()
     if root.tag != "absorption":
         raise ConfigError(f"Expected <absorption> root, got <{root.tag}>")
 
-    result: Dict[str, AbsorptionData] = {}
+    result: dict[str, AbsorptionData] = {}
     for mat_el in root.findall("material"):
         name = mat_el.attrib.get("name", "")
         if not name:
@@ -203,7 +204,7 @@ def load_device(path: str) -> DeviceSpec:
         if desc_el is not None and desc_el.text:
             description = desc_el.text.strip()
 
-    layers: List[Dict[str, Any]] = []
+    layers: list[dict[str, Any]] = []
     layers_el = _get(root, "layers")
     for layer_el in layers_el.findall("layer"):
         layers.append({

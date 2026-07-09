@@ -6,8 +6,15 @@ from ..utils._logging import get_logger
 from ..utils.loaders import MaterialData
 from .constants import q, VT
 from .absorption import AbsorptionModel, InterpolatedAbsorption
+from .fermi_dirac import BandgapNarrowing
 
 log = get_logger("material")
+
+# Default BGN models per material
+_BGN_MODELS: dict[str, BandgapNarrowing] = {
+    "InP": BandgapNarrowing.for_inp(),
+    "InGaAs": BandgapNarrowing.for_ingaas(),
+}
 
 
 class Material:
@@ -21,10 +28,12 @@ class Material:
     def __init__(self,
                  data: MaterialData,
                  absorption: AbsorptionModel | None = None,
-                 T: float = 300.0) -> None:
+                 T: float = 300.0,
+                 bandgap_narrowing: BandgapNarrowing | None = None) -> None:
         self._data = data
         self._absorption = absorption or InterpolatedAbsorption()
         self._T = T
+        self._bgn = bandgap_narrowing or _BGN_MODELS.get(data.name)
         log.info("Material %s  T=%.0f K", self.name, T)
 
     @property
@@ -88,6 +97,13 @@ class Material:
         return float(self._data.Eg_0K
                      - self._data.varshni_alpha * T_use ** 2
                      / (T_use + self._data.varshni_beta))
+
+    def Eg_bgn(self, N_doping: float, T: float | None = None) -> float:
+        """Bandgap with narrowing correction for doping N_doping (cm⁻³)."""
+        Eg = self.Eg(T)
+        if self._bgn is not None:
+            Eg -= self._bgn.delta_eg(N_doping)
+        return Eg
 
     def Nc(self, T: float | None = None) -> float:
         T_use = T if T is not None else self._T

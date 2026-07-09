@@ -1,7 +1,6 @@
 from ._logging import get_logger, set_log_level
 from ._exceptions import (
     ConvergenceError, PhysicsError, ConfigError,
-    DeviceError, SimulationError,
 )
 from .loaders import (
     load_materials, load_absorption, load_device,

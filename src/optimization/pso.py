@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import numpy as np
 
@@ -18,7 +18,7 @@ class PSOOptimizer:
     """
 
     def __init__(self, n_particles: int, n_dims: int,
-                 bounds: List[Tuple[float, float]],
+                 bounds: list[tuple[float, float]],
                  w: float = 0.7, c1: float = 1.5, c2: float = 1.5,
                  max_iter: int = 50) -> None:
         self.n = n_particles
@@ -40,10 +40,10 @@ class PSOOptimizer:
         self.p_best_val = -np.inf * np.ones(n_particles)
         self.g_best = self.x[0].copy()
         self.g_best_val = -np.inf
-        self.history: List[float] = []
+        self.history: list[float] = []
 
     def optimize(self, cost_function: Callable,
-                 verbose: bool = True) -> Tuple[np.ndarray, float, List[float]]:
+                 verbose: bool = True) -> tuple[np.ndarray, float, list[float]]:
         for it in range(self.max_iter):
             for i in range(self.n):
                 val, _ = cost_function(self.x[i])

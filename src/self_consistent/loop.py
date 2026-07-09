@@ -47,9 +47,9 @@ class SelfConsistentLoop:
         self.circuit = circuit
         self.dt = dt
 
-        self.carriers: List[Carrier] = []
+        self.carriers: list[Carrier] = []
         self.t = 0.0
-        self.history: List[dict] = []
+        self.history: list[dict] = []
         self._phi_grid = np.linspace(0, circuit.Vbias, grid.no_of_nodes)
         self._E_grid = self.grid.gradient(self._phi_grid)
 
@@ -63,7 +63,7 @@ class SelfConsistentLoop:
         return float(sum(q * c.v / L for c in self.carriers if c.alive))
 
     def step(self) -> dict:
-        new_carriers: List[Carrier] = []
+        new_carriers: list[Carrier] = []
         for c in self.carriers:
             if not c.alive:
                 continue
@@ -105,7 +105,7 @@ class SelfConsistentLoop:
         self.history.append(info)
         return info
 
-    def run(self, N_steps: int) -> List[dict]:
+    def run(self, N_steps: int) -> list[dict]:
         for _ in range(N_steps):
             self.step()
         return self.history

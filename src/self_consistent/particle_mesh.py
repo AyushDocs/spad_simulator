@@ -22,7 +22,7 @@ class ParticleMesh:
     def __init__(self, grid: Grid1D) -> None:
         self.grid = grid
 
-    def deposit_charge(self, carriers: List[Carrier]) -> np.ndarray:
+    def deposit_charge(self, carriers: list[Carrier]) -> np.ndarray:
         N = self.grid.no_of_nodes
         x = self.grid.x
         dx = self.grid.dx
@@ -38,7 +38,7 @@ class ParticleMesh:
             rho[idx + 1] += charge * w_right / dx
         return rho
 
-    def interpolate_field(self, carriers: List[Carrier],
+    def interpolate_field(self, carriers: list[Carrier],
                           E_grid: np.ndarray) -> np.ndarray:
         return np.array([np.interp(c.x, self.grid.x, E_grid)
                          if c.alive else 0.0 for c in carriers])
