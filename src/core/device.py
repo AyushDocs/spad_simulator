@@ -39,9 +39,9 @@ class Device:
         self.grid = Grid1D(self._total_L, self.no_of_nodes)
         self.doping = DopingProfile._from_layers(self.layers, self.grid)
         self.material = MaterialGrid.build(self.layers, self.materials, self.grid)
-        self.nd_on_grid = self.doping.nd(self.grid.x)
-        self.na_on_grid = self.doping.na(self.grid.x)
-        self.net_doping_on_grid = self.doping.net_doping(self.grid.x)
+        self.nd_on_grid = np.asarray(self.doping.nd(self.grid.x))
+        self.na_on_grid = np.asarray(self.doping.na(self.grid.x))
+        self.net_doping_on_grid = np.asarray(self.doping.net_doping(self.grid.x))
 
     @property
     def T(self) -> float:

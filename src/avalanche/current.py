@@ -63,7 +63,9 @@ class BTBTCurrent(CurrentComponent):
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
         J = self._tunnel.btbt_current(
-            F, kwargs.get("Eg_arr"), kwargs.get("mc_arr"), kwargs.get("mh_arr"))
+            F, kwargs.get("Eg_arr", np.zeros_like(F)),
+            kwargs.get("mc_arr", np.zeros_like(F)),
+            kwargs.get("mh_arr", np.zeros_like(F)))
         dx = x[1] - x[0]
         return J / dx
 
@@ -82,7 +84,9 @@ class TATCurrent(CurrentComponent):
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
         J = self._tunnel.tat_current(
-            F, kwargs.get("Eg_arr"), kwargs.get("mc_arr"), kwargs.get("mh_arr"))
+            F, kwargs.get("Eg_arr", np.zeros_like(F)),
+            kwargs.get("mc_arr", np.zeros_like(F)),
+            kwargs.get("mh_arr", np.zeros_like(F)))
         dx = x[1] - x[0]
         return J / dx
 

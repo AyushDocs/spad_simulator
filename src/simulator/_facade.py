@@ -205,6 +205,8 @@ class SPADSimulator:
         Ph: np.ndarray | None = None, xr: float | None = None,
     ) -> np.ndarray:
         Vbr, _ = self.find_breakdown(V_start=0, V_max=90, V_step=0.5)
+        if Vbr is None:
+            Vbr = 0.0
         Vbias = Vbr + Vex
         if E is None or Pe is None or Ph is None or xr is None:
             _, E, _ = self.solve_poisson(Vbias)

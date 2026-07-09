@@ -71,7 +71,7 @@ class DataIngestionService:
         T_use = T if T is not None else cfg.temperature
 
         materials = {
-            name: Material(data, absorption=InterpolatedAbsorption(abs_data.get(name)),
+            name: Material(data, absorption=InterpolatedAbsorption(abs_data.get(name, abs_data[list(abs_data.keys())[0]])),
                            T=T_use)
             for name, data in mat_data.items()
         }

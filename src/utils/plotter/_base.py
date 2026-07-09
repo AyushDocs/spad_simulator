@@ -4,6 +4,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
+import matplotlib.pyplot as plt  # noqa: F401  # imported for subclass use via _import()
+
 
 class Plotter(ABC):
     """Interface for all plotters. Each subclass implements one plot type."""

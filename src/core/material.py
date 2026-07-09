@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..utils._logging import get_logger
-from ..utils.loaders import MaterialData
+from ..utils.loaders import MaterialData, AbsorptionData
 from .constants import q, VT
 from .absorption import AbsorptionModel, InterpolatedAbsorption
 from .fermi_dirac import BandgapNarrowing
@@ -31,7 +31,7 @@ class Material:
                  T: float = 300.0,
                  bandgap_narrowing: BandgapNarrowing | None = None) -> None:
         self._data = data
-        self._absorption = absorption or InterpolatedAbsorption()
+        self._absorption = absorption if absorption is not None else InterpolatedAbsorption(AbsorptionData(material="unknown", wavelengths=np.zeros(1), alphas=np.zeros(1)))
         self._T = T
         self._bgn = bandgap_narrowing or _BGN_MODELS.get(data.name)
         log.info("Material %s  T=%.0f K", self.name, T)

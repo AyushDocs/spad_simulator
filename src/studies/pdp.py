@@ -43,7 +43,7 @@ def run_pdp_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
 
     wl_apt = np.array([1100, 1310, 1550, 1610])
     vex_pts = np.linspace(0, 10, 11)
-    pdp_dict = {lam: [] for lam in wl_apt}
+    pdp_dict: dict[int, list[float]] = {lam: [] for lam in wl_apt}
     for Vex in vex_pts:
         try:
             _, E, _ = sim.solve_poisson(Vbr + Vex)
@@ -72,7 +72,7 @@ def run_pdp_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:
     temps = np.array([285, 315])
     Vex = 3.0
     wavelengths = [1310, 1550]
-    pdp_dict = {wl: [] for wl in wavelengths}
+    pdp_dict: dict[int, list[float]] = {wl: [] for wl in wavelengths}
 
     for T in temps:
         try:

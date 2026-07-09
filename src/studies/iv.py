@@ -28,11 +28,11 @@ def run_iv_characteristic(sim: SPADSimulator, Vbr: float) -> None:
             I_dark.append(np.nan)
             I_light.append(np.nan)
 
-    I_dark, I_light = np.array(I_dark), np.array(I_light)
-    mask = np.isfinite(I_dark)
+    I_dark_arr, I_light_arr = np.array(I_dark), np.array(I_light)
+    mask = np.isfinite(I_dark_arr)
     if np.any(mask):
         get_plotter("iv_characteristic", plot_dir=PLOT_DIR).plot(
-            V_sweep[mask], I_dark[mask], I_light=I_light[mask],
+            V_sweep[mask], I_dark_arr[mask], I_light=I_light_arr[mask],
             optical_power=OPTICAL_POWER)
 
 
@@ -71,11 +71,11 @@ def run_comprehensive_iv(sim: SPADSimulator, Vbr: float) -> None:
             I_total.append(np.nan)
             M_vals.append(np.nan)
 
-    I_dark, I_pp, I_total, M_vals = [np.array(a) for a in
+    I_dark_arr, I_pp_arr, I_total_arr, M_arr = [np.array(a) for a in
                                       (I_dark, I_photo_prim, I_total, M_vals)]
-    mask = np.isfinite(I_dark)
+    mask = np.isfinite(I_dark_arr)
     if np.any(mask):
         get_plotter("comprehensive_iv", plot_dir=PLOT_DIR).plot(
-            V_sweep[mask], I_dark[mask],
-            I_photo_primary=I_pp[mask], I_total_illuminated=I_total[mask],
-            gain=M_vals[mask], Vbr=Vbr)
+            V_sweep[mask], I_dark_arr[mask],
+            I_photo_primary=I_pp_arr[mask], I_total_illuminated=I_total_arr[mask],
+            gain=M_arr[mask], Vbr=Vbr)

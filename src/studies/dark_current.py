@@ -24,13 +24,13 @@ def run_dark_current_sweep(sim: SPADSimulator, Vbr: float) -> None:
             I_dark.append(np.nan)
             dcr.append(np.nan)
 
-    I_dark, dcr = np.array(I_dark), np.array(dcr)
-    mask = np.isfinite(I_dark)
+    I_dark_arr, dcr_arr = np.array(I_dark), np.array(dcr)
+    mask = np.isfinite(I_dark_arr)
     if np.any(mask):
-        log.info(f"I_dark: {np.nanmin(I_dark):.2e} - {np.nanmax(I_dark):.2e} A")
-        log.info(f"DCR:    {np.nanmin(dcr):.2e} - {np.nanmax(dcr):.2e} cps")
-        get_plotter("dark_current", plot_dir=PLOT_DIR).plot(Vex_range[mask], I_dark[mask])
-        get_plotter("dcr", plot_dir=PLOT_DIR).plot(Vex_range[mask], dcr[mask])
+        log.info(f"I_dark: {np.nanmin(I_dark_arr):.2e} - {np.nanmax(I_dark_arr):.2e} A")
+        log.info(f"DCR:    {np.nanmin(dcr_arr):.2e} - {np.nanmax(dcr_arr):.2e} cps")
+        get_plotter("dark_current", plot_dir=PLOT_DIR).plot(Vex_range[mask], I_dark_arr[mask])
+        get_plotter("dcr", plot_dir=PLOT_DIR).plot(Vex_range[mask], dcr_arr[mask])
 
 
 def run_dcr_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:

@@ -31,6 +31,7 @@ def find_breakdown(
     if _Vbr is not None and not force:
         return _Vbr, []
 
+    crit: CurrentCriterion | TriggerCriterion
     if criterion == "current":
         def _compute_current(V: float, phi: np.ndarray, E: np.ndarray) -> float:
             alpha = ionization.alpha(E)
