@@ -1,14 +1,14 @@
 """Smoke tests for simulator facade."""
 from __future__ import annotations
 
-import json
 import os
 import tempfile
 
 import numpy as np
 import pytest
 
-from src.main import build_sagcm_spad, _write_json_output
+from src.main import (build_sagcm_spad, DataIngestionConfig, DataIngestionService,
+                       SimulationArtifact, ArtifactWriter, _collect_artifact)
 from src.avalanche.afterpulsing import AfterpulsingModel
 from src.avalanche.excess_noise import ExcessNoiseFactor
 from src.simulator import SPADSimulator
@@ -73,30 +73,47 @@ def test_json_output(sim):
     dc_metrics = {"I_dark_A": 3e-8, "DCR_cps": 1e9, "Vex_V": 3.0}
     pdp_metrics = {"905nm": 0.5, "1310nm": 0.74, "1550nm": 0.65}
 
+    artifact = _collect_artifact(Vbr, sim, ap_metrics, en_metrics,
+                                 pde_metrics, jitter_metrics,
+                                 dc_metrics, pdp_metrics)
+
+    assert artifact.Vbr_V == Vbr
+    assert artifact.T_K == 300.0
+    assert artifact.I_dark_A == 3e-8
+    assert artifact.pdp_max["1310nm"] == 0.74
+    assert artifact.ap_N_T == 1e12
+    assert artifact.en_k_eff == 0.5
+    assert artifact.jitter_fwhm_s == 2e-12
+
+    d = artifact.to_dict()
+    assert d["device"]["Vbr_V"] == Vbr
+    assert d["dark_current"]["I_dark_A"] == 3e-8
+    assert d["pdp_max"]["1310nm"] == 0.74
+    assert d["afterpulsing"]["N_T"] == 1e12
+
     with tempfile.TemporaryDirectory() as tmpdir:
-        import src.main as main_mod
-        old_dir = main_mod._plot_dir
-        main_mod._plot_dir = tmpdir
-        try:
-            _write_json_output(Vbr, sim, ap_metrics, en_metrics,
-                               pde_metrics, jitter_metrics,
-                               dark_current=dc_metrics, pdp_max=pdp_metrics)
-            path = os.path.join(tmpdir, "sim_results.json")
-            assert os.path.exists(path)
-            with open(path) as f:
-                data = json.load(f)
-            assert "device" in data
-            assert data["device"]["Vbr_V"] == Vbr
-            assert data["device"]["T_K"] == 300.0
-            assert "dark_current" in data
-            assert data["dark_current"]["I_dark_A"] == 3e-8
-            assert "pdp_max" in data
-            assert data["pdp_max"]["1310nm"] == 0.74
-            assert "afterpulsing" in data
-            assert data["afterpulsing"]["N_T"] == 1e12
-            assert "excess_noise" in data
-            assert data["excess_noise"]["k_eff"] == 0.5
-            assert "jitter" in data
-            assert data["jitter"]["fwhm_s"] == 2e-12
-        finally:
-            main_mod._plot_dir = old_dir
+        writer = ArtifactWriter(tmpdir)
+        path = writer.write_xml(artifact)
+        assert os.path.exists(path)
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(path)
+        root = tree.getroot()
+        assert root.tag == "spad_simulation"
+        assert root.find("device") is not None
+        assert root.find("dark_current") is not None
+        assert root.find("pdp_max") is not None
+        assert root.find("afterpulsing") is not None
+        assert root.find("excess_noise") is not None
+        assert root.find("photon_detection_efficiency") is not None
+        assert root.find("timing_jitter") is not None
+
+
+def test_data_ingestion_service():
+    cfg = DataIngestionConfig.from_defaults()
+    assert os.path.exists(cfg.device_xml)
+    assert os.path.exists(cfg.materials_xml)
+    assert os.path.exists(cfg.absorption_xml)
+    svc = DataIngestionService(cfg)
+    dev = svc.build_device()
+    assert dev.T == 300.0
+    assert len(dev.layers) > 0

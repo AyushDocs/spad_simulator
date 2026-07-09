@@ -133,7 +133,17 @@ src/
   self_consistent/ PIC loop, particle-mesh, circuit quenching
   optimization/   PSO optimizer
   utils/          Exceptions, logging, XML loaders, plotters
+  main.py         Config, ingestion, artifacts, writer, orchestration
 ```
+
+### Architecture (main.py)
+
+| Component | Class | Purpose |
+|-----------|-------|---------|
+| **Data Ingestion Config** | `DataIngestionConfig` | Paths to device/materials/absorption XML, simulation parameters |
+| **Data Ingestion Service** | `DataIngestionService` | Loads XML data, builds `Device` and `SPADSimulator` objects |
+| **Simulation Artifact** | `SimulationArtifact` | Structured container for all simulation results |
+| **Artifact Writer** | `ArtifactWriter` | Writes `SimulationArtifact` to XML |
 
 ## Simulation Outputs
 
@@ -229,53 +239,62 @@ All plots are saved to `plots/spad/`. The simulator generates **15 diagnostic pl
 
 **Figure 15 — Single-Photon Timing Response (SPTR).** Histogram of detection times from Monte Carlo avalanche ensemble simulation. The FWHM and standard deviation σ characterise the timing resolution. Narrower histograms indicate better timing performance for LiDAR and time-correlated applications.
 
-### JSON Metrics Output
+### XML Artifact Output
 
-A structured JSON file (`sim_results.json`) is written to the plots directory containing all computed metrics:
+A structured XML file (`sim_results.xml`) is written to the plots directory containing all computed metrics:
 
-```json
-{
-  "device": {
-    "Vbr_V": 75.0,
-    "T_K": 300.0,
-    "detector_area_cm2": 1e-06,
-    "grid_N": 500,
-    "grid_dx_cm": 1.467e-06,
-    "total_thickness_cm": 0.000732,
-    "n_layers": 7
-  },
-  "dark_current": {
-    "I_dark_A": 3.05e-08,
-    "DCR_cps": 1.95e9,
-    "Vex_V": 3.0
-  },
-  "pdp_max": {
-    "905nm": 0.143,
-    "1310nm": 0.679,
-    "1550nm": 0.401
-  },
-  "afterpulsing": {
-    "N_T": 1e12,
-    "tau_c": 1e-06,
-    "P_ap_1us": 1.0,
-    "holdoff_optimal_1pct_s": 1.01e-14
-  },
-  "excess_noise": {
-    "M_max": 10000.0,
-    "F_max": 5608.04,
-    "k_eff": 0.561
-  },
-  "pde_1310nm": {
-    "pde_max": 0.679,
-    "wavelength_nm": 1310
-  },
-  "jitter": {
-    "sigma_s": null,
-    "fwhm_s": null
-  },
-  "dcr_vs_temperature": { ... },
-  "pdp_vs_temperature": { ... }
-}
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<spad_simulation>
+  <device>
+    <breakdown_voltage_V>75.00</breakdown_voltage_V>
+    <temperature_K>300.0</temperature_K>
+    <detector_area_cm2>1.000000e-06</detector_area_cm2>
+    <grid_N>500</grid_N>
+    <grid_dx_cm>1.466934e-06</grid_dx_cm>
+    <total_thickness_cm>7.320000e-04</total_thickness_cm>
+    <n_layers>7</n_layers>
+  </device>
+  <dark_current>
+    <I_dark_A>3.051832e-08</I_dark_A>
+    <DCR_cps>1.953613e+09</DCR_cps>
+    <excess_voltage_V>3.0</excess_voltage_V>
+  </dark_current>
+  <pdp_max>
+    <PDP_905nm wavelength="905nm">0.142939</PDP_905nm>
+    <PDP_1310nm wavelength="1310nm">0.679438</PDP_1310nm>
+    <PDP_1550nm wavelength="1550nm">0.400826</PDP_1550nm>
+  </pdp_max>
+  <afterpulsing>
+    <trap_density_cm3>1.000e+12</trap_density_cm3>
+    <emission_time_constant_s>1.000e-06</emission_time_constant_s>
+    <P_ap_at_1us>1.000000</P_ap_at_1us>
+    <holdoff_for_1pct_s>1.005034e-14</holdoff_for_1pct_s>
+  </afterpulsing>
+  <excess_noise>
+    <M_max>10000.00</M_max>
+    <F_max>5608.0388</F_max>
+    <k_eff>0.5607</k_eff>
+  </excess_noise>
+  <photon_detection_efficiency>
+    <PDE_max>0.679438</PDE_max>
+    <wavelength_nm>1310</wavelength_nm>
+  </photon_detection_efficiency>
+  <timing_jitter>
+    <sigma_s>nan</sigma_s>
+    <FWHM_s>nan</FWHM_s>
+  </timing_jitter>
+  <dcr_vs_temperature>
+    <data_point temperature_K="285" DCR_cps="..." />
+    <data_point temperature_K="315" DCR_cps="..." />
+  </dcr_vs_temperature>
+  <pdp_vs_temperature>
+    <wavelength nm="1310">
+      <data_point temperature_K="285" PDP="..." />
+      <data_point temperature_K="315" PDP="..." />
+    </wavelength>
+  </pdp_vs_temperature>
+</spad_simulation>
 ```
 
 ## License
