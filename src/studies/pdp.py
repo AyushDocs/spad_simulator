@@ -115,3 +115,16 @@ def run_pde_vs_bias(sim: SPADSimulator, Vbr: float) -> dict:
     pde_max = float(np.max(PDE_arr))
     log.info(f"  PDE(1310nm): max={pde_max*100:.1f}%")
     return {"pde_max": pde_max, "wavelength_nm": 1310}
+
+
+def collect_pdp_max_metrics(sim: SPADSimulator, wavelengths_nm: list, Vex: float = 3.0) -> dict:
+    """Collect PDP at key wavelengths for artifact output."""
+    metrics: dict = {}
+    for wl_nm in wavelengths_nm:
+        try:
+            pdp_spectrum = sim.compute_pdp_spectrum(
+                np.array([wl_nm * 1e-9]), Vex, material_name="InGaAs")
+            metrics[f"{wl_nm}nm"] = float(np.max(pdp_spectrum))
+        except Exception:
+            metrics[f"{wl_nm}nm"] = 0.0
+    return metrics

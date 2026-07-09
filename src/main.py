@@ -4,17 +4,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
-
-import numpy as np
 
 from .utils._logging import set_log_level
 from .utils.ingestion import DataIngestionConfig, DataIngestionService
 from .utils.artifacts import collect_artifact, ArtifactWriter
 from .studies.fields import find_breakdown, plot_device_structure, run_field_sweep, run_trigger_profiles
-from .studies.dark_current import run_dark_current_sweep, run_dcr_vs_temp
+from .studies.dark_current import run_dark_current_sweep, run_dcr_vs_temp, collect_dark_current_metrics
 from .studies.iv import run_iv_characteristic, run_comprehensive_iv
-from .studies.pdp import run_pdp_spectrum, run_pdp_vs_vex, run_pdp_vs_temp, run_pde_vs_bias
+from .studies.pdp import (run_pdp_spectrum, run_pdp_vs_vex, run_pdp_vs_temp,
+                           run_pde_vs_bias, collect_pdp_max_metrics)
 from .studies.avalanche import run_afterpulsing, run_excess_noise, run_jitter
 
 
@@ -40,22 +38,8 @@ def main() -> None:
     pde = run_pde_vs_bias(sim, Vbr)
     jitter = run_jitter(sim, Vbr)
 
-    # Collect dark current and PDP metrics at Vex = 3 V
-    dark_current_metrics: Dict[str, Any] = {}
-    try:
-        dc3 = sim.compute_dark_current(Vbr + 3.0)
-        dark_current_metrics = {"I_dark_A": dc3["I_dark"], "DCR_cps": dc3["DCR"], "Vex_V": 3.0}
-    except Exception:
-        pass
-
-    pdp_max_metrics: Dict[str, float] = {}
-    for wl_nm in cfg.target_wavelengths_nm:
-        try:
-            pdp_spectrum = sim.compute_pdp_spectrum(
-                np.array([wl_nm * 1e-9]), 3.0, material_name="InGaAs")
-            pdp_max_metrics[f"{wl_nm}nm"] = float(np.max(pdp_spectrum))
-        except Exception:
-            pdp_max_metrics[f"{wl_nm}nm"] = 0.0
+    dark_current_metrics = collect_dark_current_metrics(sim, Vbr)
+    pdp_max_metrics = collect_pdp_max_metrics(sim, cfg.target_wavelengths_nm)
 
     artifact = collect_artifact(Vbr, sim, afterpulsing, excess_noise,
                                 pde, jitter, dark_current_metrics, pdp_max_metrics)

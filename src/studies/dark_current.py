@@ -56,3 +56,12 @@ def run_dcr_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:
 
     return {"temperatures_K": temps.tolist(), "DCR_cps": DCR_arr.tolist(),
             "Vex": Vex}
+
+
+def collect_dark_current_metrics(sim: SPADSimulator, Vbr: float, Vex: float = 3.0) -> dict:
+    """Collect dark current metrics at a single bias for artifact output."""
+    try:
+        dc = sim.compute_dark_current(Vbr + Vex)
+        return {"I_dark_A": dc["I_dark"], "DCR_cps": dc["DCR"], "Vex_V": Vex}
+    except Exception:
+        return {}
