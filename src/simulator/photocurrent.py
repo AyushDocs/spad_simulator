@@ -38,7 +38,7 @@ def compute_photocurrent(
     absorber_start = dead_zone
     absorber_end = dead_zone + L_abs
 
-    alpha_grid = _alpha_to_grid(grid_x, layers, materials, wavelength)
+    alpha_grid = alpha_to_grid(grid_x, layers, materials, wavelength)
 
     Eph = h * c / wavelength
     phi_photon = power / (Eph * detector_area)

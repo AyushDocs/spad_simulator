@@ -73,7 +73,7 @@ class SPADSimulator:
         self.grid = self.device.grid
         self._rebuild()
 
-    def set_doping(self, layer_specs: List[dict]) -> None:
+    def set_doping(self, layer_specs: list[dict]) -> None:
         from ..core.doping import DopingProfile
         new_doping = DopingProfile(layer_specs)
         self.device.doping = new_doping  # type: ignore[misc]
