@@ -7,8 +7,8 @@ import tempfile
 import numpy as np
 import pytest
 
-from src.main import (build_sagcm_spad, DataIngestionConfig, DataIngestionService,
-                       SimulationArtifact, ArtifactWriter, _collect_artifact)
+from src.utils.ingestion import DataIngestionConfig, DataIngestionService
+from src.utils.artifacts import SimulationArtifact, ArtifactWriter, collect_artifact
 from src.avalanche.afterpulsing import AfterpulsingModel
 from src.avalanche.excess_noise import ExcessNoiseFactor
 from src.simulator import SPADSimulator
@@ -16,7 +16,9 @@ from src.simulator import SPADSimulator
 
 @pytest.fixture
 def sim():
-    device = build_sagcm_spad()
+    cfg = DataIngestionConfig.from_defaults()
+    svc = DataIngestionService(cfg)
+    device = svc.build_device()
     return SPADSimulator(device)
 
 
@@ -73,7 +75,7 @@ def test_json_output(sim):
     dc_metrics = {"I_dark_A": 3e-8, "DCR_cps": 1e9, "Vex_V": 3.0}
     pdp_metrics = {"905nm": 0.5, "1310nm": 0.74, "1550nm": 0.65}
 
-    artifact = _collect_artifact(Vbr, sim, ap_metrics, en_metrics,
+    artifact = collect_artifact(Vbr, sim, ap_metrics, en_metrics,
                                  pde_metrics, jitter_metrics,
                                  dc_metrics, pdp_metrics)
 

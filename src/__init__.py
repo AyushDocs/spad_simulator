@@ -18,5 +18,5 @@ from .core.fermi_dirac import (
 )
 from .avalanche.afterpulsing import AfterpulsingModel
 from .avalanche.excess_noise import ExcessNoiseFactor
-from .main import (DataIngestionConfig, DataIngestionService,
-                    SimulationArtifact, ArtifactWriter)
+from .utils.ingestion import DataIngestionConfig, DataIngestionService
+from .utils.artifacts import SimulationArtifact, ArtifactWriter
