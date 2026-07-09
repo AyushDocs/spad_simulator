@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "1D Poisson-Drift-Diffusion simulator for SAGCM SPAD devices"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
@@ -30,7 +30,7 @@ exclude = ["tests*"]
 "*" = ["*.xml"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 ignore_missing_imports = true
 warn_return_any = false
 warn_unused_configs = true
@@ -38,7 +38,7 @@ disable_error_code = ["no-any-return", "arg-type", "index", "name-defined", "cal
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
