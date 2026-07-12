@@ -8,9 +8,9 @@ from ..core.device import Device
 from ..core.layer import Layer
 from ..poisson.service import PoissonService
 from ..avalanche.ionization import IonizationCoefficients
-from ..avalanche.trigger import TriggerSolver
-from ..transport.drift_diffusion import DriftDiffusion
-from ..transport.monte_carlo import MonteCarloSimulator
+from ..avalanche.trigger import TriggerModel, TriggerSolver
+from ..transport.drift_diffusion import DriftDiffusionSolver, DriftDiffusion
+from ..transport.monte_carlo import MonteCarloTransport
 from ..self_consistent.particle_mesh import ParticleMesh
 from ..self_consistent.circuit import CircuitSolver
 from ..self_consistent.loop import SelfConsistentLoop
@@ -18,12 +18,7 @@ from ..utils._logging import get_logger
 
 from .builder import build_subsystems
 from .field_cache import FieldCache
-from .photocurrent import (
-    compute_photocurrent as _compute_photocurrent,
-    compute_pdp_spectrum as _compute_pdp_spectrum,
-)
 from .breakdown import find_breakdown as _find_breakdown
-from .monte_carlo import run_mc_ensemble as _run_mc_ensemble, compute_jitter as _compute_jitter
 
 log = get_logger("simulator")
 
@@ -53,12 +48,12 @@ class SPADSimulator:
         subs = build_subsystems(device, self.grid, self.materials, self.T)
         self.poisson_service: PoissonService = subs["poisson_service"]
         self.ionization: IonizationCoefficients = subs["ionization"]
-        self.trigger: TriggerSolver = subs["trigger"]
-        self.dark_current = subs["dark_current"]
+        self.current = subs["current"]
         self.pdp_model = subs["pdp_model"]
+        self.trigger = TriggerSolver(self.grid)
 
-        self.transport: DriftDiffusion | None = None
-        self.mc_sim: MonteCarloSimulator | None = None
+        self.transport: DriftDiffusionSolver | None = None
+        self.mc_sim: MonteCarloTransport | None = None
         self.mesh: ParticleMesh | None = None
         self.circuit: CircuitSolver | None = None
         self.loop: SelfConsistentLoop | None = None
@@ -73,18 +68,18 @@ class SPADSimulator:
         self.grid = self.device.grid
         self._rebuild()
 
-    def set_doping(self, layer_specs: list[dict]) -> None:
-        from ..core.doping import DopingProfile
-        new_doping = DopingProfile(layer_specs)
-        self.device.doping = new_doping  # type: ignore[misc]
+    def set_doping(self, layer_specs: list) -> None:
+        from ..core.doping import DopingProfile, LayerSpec
+        specs = [LayerSpec(**s) if isinstance(s, dict) else s for s in layer_specs]
+        new_doping = DopingProfile(specs)
+        self.device.doping = new_doping
         self._rebuild()
 
     def _rebuild(self) -> None:
         subs = build_subsystems(self.device, self.grid, self.materials, self.T)
         self.poisson_service = subs["poisson_service"]
         self.ionization = subs["ionization"]
-        self.trigger = subs["trigger"]
-        self.dark_current = subs["dark_current"]
+        self.current = subs["current"]
         self._Vbr = None
         self._field_cache.clear()
 
@@ -95,12 +90,16 @@ class SPADSimulator:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]:
         cached = self._field_cache.get(Vbias)
         if cached is not None:
-            return cached
+            if len(cached) == 6 and isinstance(cached[2], np.ndarray):
+                return cached
 
         guess = self._field_cache.interpolate_guess(Vbias)
         phi, E, _ = self.poisson_service.solve(Vbias, guess=guess)
-        Pe, Ph = self._ionization_and_trigger(E)
-        xl, xr, _ = self.poisson_service.depletion.from_field(E)
+        xl, xr, _ = self.depletion_width(Vbias, E=E)
+
+        alpha = self.ionization.alpha_n(np.abs(E))
+        beta = self.ionization.alpha_p(np.abs(E))
+        Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
 
         result = (phi, E, Pe, Ph, xl, xr)
         self._field_cache.put(Vbias, result)
@@ -120,9 +119,34 @@ class SPADSimulator:
         if guess is None:
             guess = self._field_cache.interpolate_guess(Vbias)
         phi, E, info = self.poisson_service.solve(Vbias, phi_n, phi_p, guess)
+
+        # Populate field cache for future warm-start
+        cached_phi = self._field_cache.get(Vbias)
+        if cached_phi is None:
+            xl, xr, _ = self.depletion_width(Vbias, E=E)
+            alpha = self.ionization.alpha_n(np.abs(E))
+            beta = self.ionization.alpha_p(np.abs(E))
+            Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
+            self._field_cache.put(Vbias, (phi, E, Pe, Ph, xl, xr))
+
         return phi, E, info
 
-    # -- Breakdown ---------------------------------------------------------------
+    # -- Ionization helpers ------------------------------------------------------
+
+    def solve_trigger(self, Vbias: float, field_threshold: float = 1e4) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        phi, E, _ = self.solve_poisson(Vbias)
+        alpha = self.ionization.alpha_n(np.abs(E))
+        beta = self.ionization.alpha_p(np.abs(E))
+        Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x, field_threshold=field_threshold)
+        return Pe, Ph, E
+
+    def depletion_width(self, Vbias: float, E: np.ndarray | None = None) -> tuple[float, float, float]:
+        if E is not None:
+            # E is in V/cm, from_field expects eps_field in same units. Let's pass 1e4 V/cm (equivalent to 1e6 V/m)
+            return self.poisson_service.depletion.from_field(E, eps_field=1e4)
+        return self.poisson_service.depletion_width(Vbias)
+
+    # -- Breakdown voltage -------------------------------------------------------
 
     def find_breakdown(
         self,
@@ -130,37 +154,15 @@ class SPADSimulator:
         V_max: float = 100.0,
         V_step: float = 0.1,
         force: bool = False,
-        criterion: str = "current",
-        I_threshold: float = 1e-6,
     ) -> tuple[float | None, list[dict]]:
         Vbr, results = _find_breakdown(
-            self.poisson_service.poisson, self.grid, self.ionization,
-            self.trigger, self.dark_current, self.device, self.detector_area,
-            self._Vbr, V_start, V_max, V_step, force, criterion, I_threshold,
+            self.poisson_service.poisson, self.grid,
+            self.ionization, self._Vbr,
+            V_start, V_max, V_step, force,
         )
         if Vbr is not None and self._Vbr is None:
             self._Vbr = Vbr
         return Vbr, results
-
-    # -- Ionization helpers ------------------------------------------------------
-
-    def solve_trigger(self, Vbias: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        phi, E, _ = self.solve_poisson(Vbias)
-        Pe, Ph = self._ionization_and_trigger(E)
-        return Pe, Ph, E
-
-    def depletion_width(self, Vbias: float) -> tuple[float, float, float]:
-        return self.poisson_service.depletion_width(Vbias)
-
-    def _ionization_and_trigger(self, E: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        alpha = self.ionization.alpha(E)
-        beta = self.ionization.beta(E)
-        return self.trigger.solve(E, alpha, beta, self.grid.x)
-
-    def trigger_for_pdp(self, E: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        alpha = self.ionization.alpha(E)
-        beta = self.ionization.beta(E)
-        return self.trigger.solve(E, alpha, beta, self.grid.x, field_threshold=1e4)
 
     # -- Dark current ------------------------------------------------------------
 
@@ -168,91 +170,28 @@ class SPADSimulator:
         if E is None:
             _, E, Pe, Ph, _, _ = self.get_fields(Vbias)
         else:
-            Pe, Ph = self._ionization_and_trigger(E)
+            alpha = self.ionization.alpha_n(np.abs(E))
+            beta = self.ionization.alpha_p(np.abs(E))
+            Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
 
         x = self.grid.x
-        J_total = self.dark_current.total_dark_current_density(
-            x, E, self.device.material.ni, self.device.material.Eg,
-            self.device.material.mc, self.device.material.mh,
-        )
+        J_total = np.zeros_like(x)
+        for comp in self.current.components:
+            J_total += comp.compute(x, np.abs(E))
         I_dark = float(np.trapezoid(J_total, x) * self.detector_area)
-        DCR = self.dark_current.compute_dcr(
-            x, E, Pe, self.device.material.ni, self.device.material.Eg,
-            self.device.material.mc, self.device.material.mh, self.detector_area,
-        )
-        return {"J_total": J_total, "I_dark": I_dark, "DCR": DCR,
+
+        return {"J_total": J_total, "I_dark": I_dark, "DCR": abs(I_dark),
                 "Pe": Pe, "Ph": Ph, "E": E}
-
-    # -- Photocurrent / PDP (delegated) ------------------------------------------
-
-    def compute_photocurrent(
-        self, Vbias: float, wavelength: float = 1310e-9, power: float = 1e-6,
-        E: np.ndarray | None = None, Pe: np.ndarray | None = None,
-        Ph: np.ndarray | None = None, xr: float | None = None,
-    ) -> float:
-        if E is None or Pe is None or Ph is None or xr is None:
-            _, E, _ = self.solve_poisson(Vbias)
-            Pe, Ph = self._ionization_and_trigger(E)
-            _, xr, _ = self.depletion_width(Vbias)
-        return _compute_photocurrent(
-            self.grid.x, self.device.layers, self.materials, self.pdp_model,
-            self.detector_area, wavelength, power, E, Pe, Ph, xr,
-        )
-
-    def compute_pdp_spectrum(
-        self, wavelengths: np.ndarray, Vex: float, material_name: str = "InGaAs",
-        E: np.ndarray | None = None, Pe: np.ndarray | None = None,
-        Ph: np.ndarray | None = None, xr: float | None = None,
-    ) -> np.ndarray:
-        Vbr, _ = self.find_breakdown(V_start=0, V_max=90, V_step=0.5)
-        if Vbr is None:
-            Vbr = 0.0
-        Vbias = Vbr + Vex
-        if E is None or Pe is None or Ph is None or xr is None:
-            _, E, _ = self.solve_poisson(Vbias)
-            Pe, Ph = self._ionization_and_trigger(E)
-            _, xr, _ = self.depletion_width(Vbias)
-        return _compute_pdp_spectrum(
-            self.grid.x, self.grid.dx, self.device.layers, self.pdp_model,
-            wavelengths, Vex, xr, Pe, Ph, material_name,
-        )
-
-    # -- Monte Carlo / timing jitter (delegated) ---------------------------------
-
-    def run_mc_ensemble(
-        self, Vbias: float, x0: float | None = None, N_sim: int = 100,
-        N_threshold: int = 100, dt: float = 1e-15,
-    ) -> dict:
-        return _run_mc_ensemble(
-            self._field_cache, self.solve_poisson, self.depletion_width,
-            self.materials, self.transport_material, self.ionization,
-            self.grid, Vbias, x0, N_sim, N_threshold, dt,
-        )
-
-    def compute_jitter(
-        self, Vbias: float, x0: float | None = None, N_sim: int = 100,
-        N_threshold: int = 100, dt: float = 1e-15,
-    ) -> float:
-        return _compute_jitter(
-            self._field_cache, self.solve_poisson, self.depletion_width,
-            self.materials, self.transport_material, self.ionization,
-            self.grid, Vbias, x0, N_sim, N_threshold, dt,
-        )
 
     # -- Self-consistent PIC -----------------------------------------------------
 
     def build_self_consistent(
-        self, Vbias: float, Rq: float = 1e5, Cspad: float = 1e-15
+        self, Vbias: float, Rq: float = 1e5, Cspad: float = 1e-15,
+        Vbr: float | None = None,
     ) -> SelfConsistentLoop:
-        from ..avalanche.breakdown import TriggerCriterion, BreakdownVoltage
         self.mesh = ParticleMesh(self.grid)
         self.transport = DriftDiffusion(self.materials[self.transport_material])
-        self.circuit = CircuitSolver(Vbias, Rq, Cspad)
-
-        crit = TriggerCriterion(self.ionization, self.trigger, self.grid)
-        bv = BreakdownVoltage(self.poisson_service.poisson, self.grid, crit, V_step=2.0)
-        Vbr, results = bv.find(0, max(Vbias + 10, 60))
-        self.circuit.Vbr = results[-1]["V"] if results else 0.0
+        self.circuit = CircuitSolver(Vbias=Vbias, Rq=Rq, Cspad=Cspad, Vbr=0.0 if Vbr is None else Vbr)
 
         self.loop = SelfConsistentLoop(
             self.grid, self.device.doping, self.poisson_service.poisson,
@@ -260,7 +199,7 @@ class SPADSimulator:
         )
         return self.loop
 
-    def run_pic(self, N_steps: int, inject_x: float | None = None    ) -> list[dict]:
+    def run_pic(self, N_steps: int, inject_x: float | None = None) -> list[dict]:
         if self.loop is None:
             raise RuntimeError("Call build_self_consistent() first.")
         if inject_x is not None:

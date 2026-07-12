@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import List
 
 import numpy as np
 
-from .grid import Grid1D
 from .layer import Layer
+
+
+@dataclass(frozen=True, slots=True)
+class LayerSpec:
+    """Specification for a single doping layer."""
+    type: str
+    A: float
+    m: float
+    x0: float
+    x_start: float
+    x_end: float
 
 
 class DopingProfile:
@@ -15,24 +26,24 @@ class DopingProfile:
         N(x) = A * exp(m * (x - x0))
     """
 
-    def __init__(self, layer_specs: List[dict]) -> None:
+    def __init__(self, layer_specs: List[LayerSpec]) -> None:
         self._specs = list(layer_specs)
 
     @classmethod
-    def _from_layers(cls, layers: List[Layer], grid: Grid1D) -> DopingProfile:
+    def _from_layers(cls, layers: List[Layer]) -> DopingProfile:
         specs = []
         x_start = 0.0
         for lyr in layers:
             x_end = x_start + lyr.thickness
             x0 = lyr.doping_x0 if lyr.doping_x0 is not None else x_start
-            specs.append({
-                "type": lyr.doping_type,
-                "A": lyr.doping_A,
-                "m": lyr.doping_m,
-                "x0": x0,
-                "x_start": x_start,
-                "x_end": x_end,
-            })
+            specs.append(LayerSpec(
+                type=lyr.doping_type,
+                A=lyr.doping_A,
+                m=lyr.doping_m,
+                x0=x0,
+                x_start=x_start,
+                x_end=x_end,
+            ))
             x_start = x_end
         return cls(specs)
 
@@ -43,14 +54,14 @@ class DopingProfile:
             x = np.array([x])
         val = np.zeros_like(x, dtype=float)
         for L in self._specs:
-            if L["type"] != dtype:
+            if L.type != dtype:
                 continue
-            mask = (x >= L["x_start"]) & (x <= L["x_end"])
+            mask = (x >= L.x_start) & (x <= L.x_end)
             if not np.any(mask):
                 continue
-            arg = L["m"] * (x[mask] - L["x0"])
+            arg = L.m * (x[mask] - L.x0)
             arg = np.clip(arg, -700, 700)
-            val[mask] += L["A"] * np.exp(arg)
+            val[mask] += L.A * np.exp(arg)
         return float(val[0]) if scalar_input else val
 
     def nd(self, x: float | np.ndarray) -> float | np.ndarray:

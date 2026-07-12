@@ -9,9 +9,9 @@ from ..core.doping import DopingProfile
 from ..core.constants import q
 from ..poisson.solver import PoissonSolver
 from ..avalanche.ionization import IonizationCoefficients
-from ..transport.carrier import Carrier
-from ..transport.drift_diffusion import DriftDiffusion
-from .particle_mesh import ParticleMesh
+from ..transport.carrier import CarrierTransport
+from ..transport.drift_diffusion import DriftDiffusionSolver
+from .particle_mesh import ParticleMesh, Carrier
 from .circuit import CircuitSolver
 from ..utils._logging import get_logger
 
@@ -34,7 +34,7 @@ class SelfConsistentLoop:
                  doping: DopingProfile,
                  poisson_solver: PoissonSolver,
                  particle_mesh: ParticleMesh,
-                 transport: DriftDiffusion,
+                 transport: DriftDiffusionSolver,
                  ionization: IonizationCoefficients,
                  circuit: CircuitSolver,
                  dt: float = 1e-15) -> None:
@@ -56,11 +56,12 @@ class SelfConsistentLoop:
     def inject_carrier(self, x0: float, typ: str = "electron") -> None:
         E0 = float(np.interp(x0, self.grid.x, self._E_grid))
         l_dead = float(self.ionization.dead_space_length(E0, typ))
-        self.carriers.append(Carrier(x0, typ, dead_space=l_dead))
+        self.carriers.append(Carrier(x=x0, typ=typ, dead_space=l_dead))
 
     def _current(self) -> float:
         L = self.grid.L
-        return float(sum(q * c.v / L for c in self.carriers if c.alive))
+        q_val = float(q.to("C").magnitude)
+        return float(sum(q_val * c.v / L for c in self.carriers if c.alive))
 
     def step(self) -> dict:
         new_carriers: list[Carrier] = []
@@ -80,12 +81,11 @@ class SelfConsistentLoop:
                 P = 1.0 - np.exp(-float(coeff(np.array([E_loc]))[0]) * dx)
                 if np.random.rand() < P:
                     ld = float(self.ionization.dead_space_length(E_loc, c.typ))
-                    new_carriers.extend([Carrier(c.x, "electron", dead_space=ld),
-                                         Carrier(c.x, "hole", dead_space=ld)])
+                    new_carriers.extend([Carrier(x=c.x, typ="electron", dead_space=ld),
+                                         Carrier(x=c.x, typ="hole", dead_space=ld)])
                     c.reset_dead_space(ld)
             new_carriers.append(c)
-        self.carriers = [c for c in self.carriers if c.alive]
-        self.carriers.extend(new_carriers)
+        self.carriers = new_carriers
 
         rho_ext = self.mesh.deposit_charge(self.carriers)
         phi, _ = self.poisson.solve(self.circuit.Vspad,

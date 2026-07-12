@@ -5,17 +5,17 @@
   Layer stack (top to bottom, x=0 at top surface):
 
     idx  material    thickness  doping      role
-      0  InP          2.5 um    p+ 2e18    cap / p-contact
-      1  InP          0.5 um    i           multiplication region
-      2  InP          0.2 um    n+ 1e17    charge layer (field control)
+      0  InP          0.12 um   p+ 2e18    shallow p+ diffusion contact
+      1  InP          1.50 um   i           intrinsic cap / multiplication
+      2  InP          0.20 um   n+ 1e17    charge layer (field control)
       3  InGaAsP      0.12 um   i           grading layer
-      4  InGaAs       1.5 um    i           absorber
-      5  InP          0.5 um    n+ 5e16    buffer
-      6  InP          2.0 um    n+ 1e18    substrate / n-contact
+      4  InGaAs       1.50 um   i           absorber
+      5  InP          0.50 um   n+ 5e16    buffer
+      6  InP          2.00 um   n+ 1e18    substrate / n-contact
 
-  Total thickness = 7.32 um, 500 grid nodes.
-  The p+ cap is partially etched to form a deep diffusion burrow
-  that defines the active area.
+  Total thickness = 5.94 um, 500 grid nodes.
+  A deep semicircular Zn diffusion defines the active-area perimeter
+  through the intrinsic cap down to the charge layer.
 
   All thicknesses in cm, doping in cm^-3.
 -->
@@ -31,25 +31,25 @@ All thicknesses in cm, doping in cm^-3.</description>
   <temperature type="float" unit="K">300.0</temperature>
 
   <layers>
-    <!-- p+ cap — deep Zn diffusion defines the active-area perimeter -->
+    <!-- p+ shallow Zn diffusion — thin contact, defines active-area perimeter -->
     <layer index="0">
-      <thickness unit="cm">2.5e-4</thickness>
+      <thickness unit="cm">2.77e-4</thickness>
       <doping_type>acceptor</doping_type>
-      <doping_A type="float" unit="cm^-3">2e18</doping_A>
+      <doping_A type="float" unit="cm^-3">4e17</doping_A>
       <material>InP</material>
     </layer>
 
-    <!-- i-InP multiplication region — high field, impact ionisation -->
+    <!-- i-InP intrinsic cap / multiplication region — high field, impact ionisation -->
     <layer index="1">
-      <thickness unit="cm">0.5e-4</thickness>
+      <thickness unit="cm">0.59e-4</thickness>
       <doping_type>donor</doping_type>
-      <doping_A type="float" unit="cm^-3">0.0</doping_A>
+      <doping_A type="float" unit="cm^-3">1e15</doping_A>
       <material>InP</material>
     </layer>
 
     <!-- n+ charge sheet — sets the field ratio between multi and absorber -->
     <layer index="2">
-      <thickness unit="cm">0.2e-4</thickness>
+      <thickness unit="cm">0.25e-4</thickness>
       <doping_type>donor</doping_type>
       <doping_A type="float" unit="cm^-3">1e17</doping_A>
       <material>InP</material>
@@ -57,17 +57,17 @@ All thicknesses in cm, doping in cm^-3.</description>
 
     <!-- InGaAsP grading — smooths the valence-band step between InP and InGaAs -->
     <layer index="3">
-      <thickness unit="cm">0.12e-4</thickness>
+      <thickness unit="cm">0.06e-4</thickness>
       <doping_type>donor</doping_type>
-      <doping_A type="float" unit="cm^-3">0.0</doping_A>
+      <doping_A type="float" unit="cm^-3">1e16</doping_A>
       <material>InGaAsP</material>
     </layer>
 
     <!-- i-InGaAs absorber — photo-generated carriers drift into multiplication region -->
     <layer index="4">
-      <thickness unit="cm">1.5e-4</thickness>
+      <thickness unit="cm">2.83e-4</thickness>
       <doping_type>donor</doping_type>
-      <doping_A type="float" unit="cm^-3">0.0</doping_A>
+      <doping_A type="float" unit="cm^-3">1e15</doping_A>
       <material>InGaAs</material>
     </layer>
 
@@ -75,7 +75,7 @@ All thicknesses in cm, doping in cm^-3.</description>
     <layer index="5">
       <thickness unit="cm">0.5e-4</thickness>
       <doping_type>donor</doping_type>
-      <doping_A type="float" unit="cm^-3">5e16</doping_A>
+      <doping_A type="float" unit="cm^-3">6.6e16</doping_A>
       <material>InP</material>
     </layer>
 
@@ -83,7 +83,7 @@ All thicknesses in cm, doping in cm^-3.</description>
     <layer index="6">
       <thickness unit="cm">2.0e-4</thickness>
       <doping_type>donor</doping_type>
-      <doping_A type="float" unit="cm^-3">1e18</doping_A>
+      <doping_A type="float" unit="cm^-3">3e18</doping_A>
       <material>InP</material>
     </layer>
   </layers>

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
+from pydantic import BaseModel, computed_field, model_validator
 
 from ..utils._logging import get_logger
 
 log = get_logger("circuit")
 
 
-class CircuitSolver:
+class CircuitSolver(BaseModel):
     """
     External quenching circuit.
 
@@ -17,15 +18,25 @@ class CircuitSolver:
         Cspad dVspad/dt = (Vbias - Vspad) / Rq - I_av
     """
 
-    def __init__(self, Vbias: float, Rq: float = 1e5,
-                 Cspad: float = 1e-15, Vbr: float = 0.0) -> None:
-        self.Vbias = float(Vbias)
-        self.Rq = float(Rq)
-        self.Cspad = float(Cspad)
-        self.Vbr = float(Vbr)
-        self.Vspad = float(Vbias)
-        self.I_av = 0.0
-        self.tau = self.Rq * self.Cspad
+    model_config = {"arbitrary_types_allowed": True}
+
+    Vbias: float
+    Rq: float = 1e5
+    Cspad: float = 1e-15
+    Vbr: float = 0.0
+    I_av: float = 0.0
+
+    Vspad: float = 0.0
+
+    @model_validator(mode="after")
+    def _init_vspad(self):
+        self.Vspad = self.Vbias
+        return self
+
+    @computed_field
+    @property
+    def tau(self) -> float:
+        return self.Rq * self.Cspad
 
     @property
     def Vex(self) -> float:

@@ -12,38 +12,50 @@ from src.core.grid import Grid1D
 from src.core.doping import DopingProfile
 from src.core.material import Material
 from src.core.layer import Layer
-from src.transport.carrier import Carrier
-from src.transport.drift_diffusion import DriftDiffusion
+from src.self_consistent.particle_mesh import Carrier
+from src.transport.drift_diffusion import DriftDiffusionSolver, DriftDiffusion
 
 
 def _make_material():
     from src.core.absorption import InterpolatedAbsorption
     from src.utils.loaders import MaterialData, AbsorptionData
+    from src.core.units import Q
     wl = np.linspace(400e-9, 2000e-9, 50)
     alpha = np.where(wl < 920e-9, 5000.0,
                      np.where(wl < 1650e-9, 4000.0, 10.0))
     abs_data = AbsorptionData(material="InP", wavelengths=wl, alphas=alpha)
     data = MaterialData(
-        name="InP", eps_r=12.5, mu_n=5400, mu_p=2000,
-        vsat_n=1e7, vsat_p=1e7, mc=0.077, mh=0.64,
-        tau_n=1e-6, tau_p=1e-6, Eg_0K=1.42,
-        varshni_alpha=4.9e-4, varshni_beta=327,
-        Nc_300K=5.7e17, Nv_300K=1.1e19, dos_gamma=1.5,
-        ionization_e={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
-        ionization_h={"Eth": 2.1, "lambda0": 4e-7, "ER0": 3.5e-2, "hw_meV": 42},
+        name="InP",
+        eps_r=Q(12.5, "1"),
+        mu_n=Q(5400, "cm**2/(V*s)"),
+        mu_p=Q(2000, "cm**2/(V*s)"),
+        vsat_n=Q(1e7, "cm/s"),
+        vsat_p=Q(1e7, "cm/s"),
+        mc=Q(0.077, "m0"),
+        mh=Q(0.64, "m0"),
+        tau_n=Q(1e-6, "s"),
+        tau_p=Q(1e-6, "s"),
+        Eg_0K=Q(1.42, "eV"),
+        varshni_alpha=Q(4.9e-4, "eV/K"),
+        varshni_beta=Q(327, "K"),
+        Nc_300K=Q(5.7e17, "cm**-3"),
+        Nv_300K=Q(1.1e19, "cm**-3"),
+        dos_gamma=Q(1.5, "1"),
+        ionization_e={"Eth": Q(2.1, "eV"), "lambda0": Q(4e-7, "cm"), "ER0": Q(3.5e-2, "eV"), "hw_meV": Q(42, "meV")},
+        ionization_h={"Eth": Q(2.1, "eV"), "lambda0": Q(4e-7, "cm"), "ER0": Q(3.5e-2, "eV"), "hw_meV": Q(42, "meV")},
     )
     return Material(data, absorption=InterpolatedAbsorption(abs_data), T=300.0)
 
 
 def _make_grid_and_doping():
     layers = [
-        Layer(0.5e-4, "donor", 3e16, 0, 0, "InP"),
-        Layer(1.8e-4, "acceptor", 1e14, 0, 0, "InP"),
-        Layer(1.0e-4, "acceptor", 1e17, 0, 0, "InGaAs"),
+        Layer(thickness=0.5e-4, doping_type="donor", doping_A=3e16, doping_m=0, doping_x0=0, material="InP"),
+        Layer(thickness=1.8e-4, doping_type="acceptor", doping_A=1e14, doping_m=0, doping_x0=0, material="InP"),
+        Layer(thickness=1.0e-4, doping_type="acceptor", doping_A=1e17, doping_m=0, doping_x0=0, material="InGaAs"),
     ]
     L = sum(ly.thickness for ly in layers)
     grid = Grid1D(L=L, N=300)
-    doping = DopingProfile._from_layers(layers, grid)
+    doping = DopingProfile._from_layers(layers)
     return grid, doping
 
 
@@ -69,7 +81,7 @@ def test_circuit_recharge():
 def test_particle_mesh_deposit():
     grid, _ = _make_grid_and_doping()
     pm = ParticleMesh(grid)
-    c = Carrier(grid.x[50], "electron")
+    c = Carrier(x=grid.x[50], typ="electron")
     c.alive = True
     rho = pm.deposit_charge([c])
     assert np.any(rho != 0.0)
@@ -80,7 +92,7 @@ def test_particle_mesh_interpolate():
     grid, _ = _make_grid_and_doping()
     pm = ParticleMesh(grid)
     E_grid = np.ones(grid.no_of_nodes) * 1e5
-    c = Carrier(grid.x[50], "electron")
+    c = Carrier(x=grid.x[50], typ="electron")
     c.alive = True
     E_vals = pm.interpolate_field([c], E_grid)
     assert len(E_vals) == 1

@@ -1,94 +1,95 @@
+"""Breakdown voltage detection via multiplication-based current rise."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from ..core.grid import Grid1D
-from .ionization import IonizationCoefficients
-from .trigger import TriggerSolver
 from ..utils._logging import get_logger
 
-log = get_logger("breakdown")
+log = get_logger("avalanche.breakdown")
 
 
 class BreakdownCriterion(ABC):
-    """Strategy for detecting breakdown at a given bias."""
+    """Abstract criterion for detecting breakdown at a given bias."""
 
     @abstractmethod
     def check(self, V: float, phi: np.ndarray, E: np.ndarray) -> tuple[bool, dict]:
         ...
 
 
-class TriggerCriterion(BreakdownCriterion):
-    """Detect breakdown when max trigger probability exceeds a threshold."""
+class CurrentRiseCriterion(BreakdownCriterion):
+    """Detect breakdown when current dI/dV exceeds a slope threshold.
 
-    def __init__(self, ionization: IonizationCoefficients,
-                 trigger: TriggerSolver,
-                 grid: Grid1D,
-                 threshold: float = 0.99) -> None:
-        self.ion = ionization
-        self.trigger = trigger
-        self.grid = grid
-        self.threshold = threshold
+    Uses a moving-window current computation to detect the sharp rise
+    characteristic of avalanche multiplication.
+    """
 
-    def check(self, V: float, phi: np.ndarray,
-              E: np.ndarray) -> tuple[bool, dict]:
-        alpha = self.ion.alpha(E)
-        beta = self.ion.beta(E)
-        Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
-        BrP_max = float(np.max(Pe))
-        return BrP_max > self.threshold, {"V": V, "BrP_max": BrP_max}
+    def __init__(self, compute_current, V_step: float,
+                 slope_threshold: float = 2.0, window: int = 3) -> None:
+        self.compute_current = compute_current
+        self.V_step = V_step
+        self.slope_threshold = slope_threshold
+        self.window = window
+        self._prev_currents: list[float] = []
 
+    def check(self, V: float, phi: np.ndarray, E: np.ndarray) -> tuple[bool, dict]:
+        I = self.compute_current(V, phi, E)
+        self._prev_currents.append(I)
 
-class CurrentCriterion(BreakdownCriterion):
-    """Detect breakdown when total current exceeds a threshold."""
+        info = {"V": V, "I": I}
 
-    def __init__(self, compute_current, I_threshold: float = 1e-6) -> None:
-        self._fn = compute_current
-        self._I_th = I_threshold
+        if len(self._prev_currents) < self.window + 1:
+            return False, info
 
-    def check(self, V: float, phi: np.ndarray,
-              E: np.ndarray) -> tuple[bool, dict]:
-        I_total = self._fn(V, phi, E)
-        return I_total > self._I_th, {"V": V, "I_total": I_total}
+        recent = self._prev_currents[-(self.window + 1):]
+        dI = recent[-1] - recent[0]
+        dV = self.V_step * self.window
+        slope = dI / (dV * abs(recent[0]) + 1e-30)
+
+        info["slope"] = slope
+        return slope > self.slope_threshold, info
 
 
 class BreakdownVoltage:
-    """
-    Sweep bias, solve Poisson -> E, then detect breakdown using a
-    pluggable ``BreakdownCriterion`` strategy.
+    """Sweep voltage to find breakdown using a BreakdownCriterion.
+
+    Iterates from V_start upward, solving Poisson at each step,
+    until the criterion triggers.
     """
 
     def __init__(self, poisson_solver, grid: Grid1D,
-                 criterion: BreakdownCriterion,
-                 V_step: float = 0.1) -> None:
+                 criterion: BreakdownCriterion, V_step: float = 0.5) -> None:
         self.poisson = poisson_solver
         self.grid = grid
         self.criterion = criterion
         self.V_step = V_step
 
-    def find(self, V_start: float = 0.0, V_max: float = 100.0,
-             phi_n: float | None = None, phi_p: float = 0.0
-             ) -> Tuple[float | None, List[dict]]:
+    def find(self, V_start: float = 0.0,
+             V_max: float = 150.0) -> tuple[float | None, list[dict]]:
+        results: list[dict] = []
         V = V_start
-        results: List[dict] = []
-        Vbr: float | None = None
-        prev_phi = None
 
         while V <= V_max:
-            phi, info = self.poisson.solve(V, phi_n, phi_p, guess=prev_phi)
-            prev_phi = phi
-            E = self.grid.gradient(phi)
+            try:
+                phi, info_solver = self.poisson.solve(V)
+                E = self.grid.gradient(phi)
+                triggered, info = self.criterion.check(V, phi, E)
+                info["converged"] = True
+                results.append(info)
 
-            detected, rec = self.criterion.check(V, phi, E)
-            rec["converged"] = info["converged"]
-            results.append(rec)
-            if detected and Vbr is None:
-                Vbr = V
-                log.info("Breakdown at V = %.2f V", V)
+                if triggered:
+                    log.info(f"Breakdown criterion triggered at V = {V:.2f} V")
+                    return V, results
 
-            V += self.V_step
+                V += self.V_step
 
-        return Vbr, results
+            except Exception as e:
+                results.append({"V": V, "converged": False, "error": str(e)})
+                log.debug(f"Poisson failed at V = {V:.2f}: {e}")
+                V += self.V_step
+
+        return None, results

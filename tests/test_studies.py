@@ -8,13 +8,14 @@ import pytest
 
 from src.studies.fields import (
     find_breakdown, plot_device_structure, run_field_sweep, run_trigger_profiles,
+    run_trigger_vs_vex,
 )
 from src.studies.dark_current import (
     run_dark_current_sweep, collect_dark_current_metrics,
 )
 from src.studies.iv import run_iv_characteristic, run_comprehensive_iv
 from src.studies.pdp import (
-    run_pdp_spectrum, run_pdp_vs_vex, run_pde_vs_bias, collect_pdp_max_metrics,
+    run_pdp_spectrum, run_pdp_vs_vex, collect_pdp_max_metrics,
 )
 from src.studies.avalanche import (
     run_afterpulsing, run_excess_noise, run_jitter,
@@ -40,6 +41,7 @@ def _mock_sim():
     Ph = np.full(500, 0.3)
     sim.solve_poisson.return_value = (phi, E, {"Vbr": 75.0, "iterations": 5})
     sim.get_fields.return_value = (phi, E, Pe, Ph, 0.0, 3e-4)
+    sim.solve_trigger.return_value = (Pe, Ph, E)
     sim.trigger_for_pdp.return_value = (Pe, Ph)
     sim.depletion_width.return_value = (0.0, 3e-4, 70.0)
     sim.find_breakdown.return_value = (75.0, {"Vbr": 75.0})
@@ -51,7 +53,6 @@ def _mock_sim():
 
     sim.pdp_model.find_absorber.return_value = (
         [MagicMock(thickness=0.5e-4)], MagicMock(thickness=1.5e-4))
-    sim.pdp_model.dead_zone_transmission.return_value = 0.9
     sim.pdp_model.pdp_integral.return_value = 0.7
     sim.pdp_model.photocurrent_density.return_value = np.full(500, 1e2)
 
@@ -82,7 +83,14 @@ def test_run_field_sweep(mock_plotter):
 def test_run_trigger_profiles(mock_plotter):
     sim = _mock_sim()
     run_trigger_profiles(sim, 75.0)
-    assert sim.solve_trigger.call_count == 3
+    assert sim.solve_trigger.call_count == 8
+
+
+@patch("src.studies.fields.get_plotter")
+def test_run_trigger_vs_vex(mock_plotter):
+    sim = _mock_sim()
+    run_trigger_vs_vex(sim, 75.0, n_pts=5)
+    assert sim.solve_trigger.call_count == 5
 
 
 @patch("src.studies.dark_current.get_plotter")
@@ -110,21 +118,14 @@ def test_run_iv_characteristic(mock_plotter):
 def test_run_pdp_spectrum(mock_plotter):
     sim = _mock_sim()
     run_pdp_spectrum(sim, 75.0)
-    assert sim.solve_poisson.call_count > 0
+    assert sim.get_fields.call_count > 0
 
 
 @patch("src.studies.pdp.get_plotter")
 def test_run_pdp_vs_vex(mock_plotter):
     sim = _mock_sim()
     run_pdp_vs_vex(sim, 75.0)
-    assert sim.solve_poisson.call_count > 0
-
-
-@patch("src.studies.pdp.get_plotter")
-def test_run_pde_vs_bias(mock_plotter):
-    sim = _mock_sim()
-    result = run_pde_vs_bias(sim, 75.0)
-    assert "pde_max" in result
+    assert sim.get_fields.call_count > 0
 
 
 def test_collect_pdp_max_metrics():

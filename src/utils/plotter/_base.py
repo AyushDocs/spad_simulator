@@ -4,6 +4,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: F401  # imported for subclass use via _import()
 
 
@@ -26,13 +28,14 @@ class BasePlotter(Plotter):
     def __init__(self, plot_dir: str = "plots") -> None:
         self.plot_dir = plot_dir
 
-    def _import(self) -> None:
-        global plt  # noqa: PLW0603
-        import matplotlib.pyplot as plt  # type: ignore[import-untyped]
+    def _import(self) -> Any:
+        return plt
 
-    def _save(self, fname: str) -> None:
+    def _save(self, fname: str, plt: Any = None) -> None:
         import os
-        from ._logging import get_logger
+        from .._logging import get_logger
+        if plt is None:
+            plt = self._import()
         log = get_logger("plots")
         path = os.path.join(self.plot_dir, fname)
         os.makedirs(os.path.dirname(path), exist_ok=True)

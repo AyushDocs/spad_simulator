@@ -1,10 +1,10 @@
-"""PDP and PDE studies."""
+"""PDP studies."""
 from __future__ import annotations
 
 import numpy as np
 
-from ..core.physics_helpers import combined_trigger_probability, dead_zone_thickness
 from ..simulator import SPADSimulator
+from ..simulator.photocurrent import compute_pdp_spectrum
 from ..utils.ingestion import DataIngestionService
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
@@ -16,116 +16,146 @@ log = get_logger()
 def run_pdp_spectrum(sim: SPADSimulator, Vbr: float) -> None:
     pdp_wavelengths = np.linspace(900, 1700, 41) * 1e-9
     pdp_spectra, vex_list_pdp = [], []
-    for Vex in [1, 3, 5, 8]:
+    for Vex in [-15, -10, -5, -3, -1, 1, 3, 5]:
         try:
-            _, E, _ = sim.solve_poisson(Vbr + Vex)
-            Pe, Ph = sim.trigger_for_pdp(E)
-            _, xr, _ = sim.depletion_width(Vbr + Vex)
-            pdp = sim.compute_pdp_spectrum(
-                pdp_wavelengths, float(Vex), material_name="InGaAs",
-                E=E, Pe=Pe, Ph=Ph, xr=xr)
-            pdp = np.clip(pdp, 0, 1)
-            pdp_spectra.append(pdp)
+            _, E, Pe, Ph, xl, xr = sim.get_fields(Vbr + Vex)
+            pdp_vals = compute_pdp_spectrum(
+                grid_x=sim.grid.x,
+                dx=sim.grid.dx,
+                layers=sim.device.layers,
+                pdp_model=sim.pdp_model,
+                wavelengths=pdp_wavelengths,
+                Vex=Vex,
+                xr=xr,
+                Pe=Pe,
+                Ph=Ph,
+                material_name="InGaAs",
+            )
+            pdp_spectra.append(pdp_vals)
             vex_list_pdp.append(Vex)
-            log.info(f"  Vex = {Vex} V: PDP max = {np.max(pdp) * 100:.4f}%")
+            log.info(f"  Vex = {Vex} V: PDP(1550nm) = {pdp_vals[np.argmin(np.abs(pdp_wavelengths - 1550e-9))] * 100:.4f}%")
         except Exception as e:
             log.info(f"  Vex = {Vex} V: {e}")
 
     if pdp_spectra:
         get_plotter("pdp", plot_dir=PLOT_DIR).plot(
-            pdp_wavelengths, np.array(pdp_spectra), vex_list_pdp)
+            pdp_wavelengths * 1e9, np.array(pdp_spectra), vex_list_pdp)
 
 
 def run_pdp_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
-    dead_zone_layers, absorber = sim.pdp_model.find_absorber(
-        sim.device.layers, "InGaAs")
-    dz = dead_zone_thickness(dead_zone_layers)
+    vex_pts = np.linspace(-20, 10, 31)
+    wavelengths = [905, 1310, 1550, 1610]
+    pdp_dict: dict[int, np.ndarray] = {wl: np.zeros(len(vex_pts)) for wl in wavelengths}
 
-    wl_apt = np.array([1100, 1310, 1550, 1610])
-    vex_pts = np.linspace(0, 10, 11)
-    pdp_dict: dict[int, list[float]] = {lam: [] for lam in wl_apt}
-    for Vex in vex_pts:
+    for j, Vex in enumerate(vex_pts):
+        Vbias = Vbr + Vex
+        if Vbias <= 0:
+            continue
         try:
-            _, E, _ = sim.solve_poisson(Vbr + Vex)
-            Pe, Ph = sim.trigger_for_pdp(E)
-            _, xr, _ = sim.depletion_width(Vbr + Vex)
-            Ptr = Pe + Ph - Pe * Ph
-            x_end = min(xr, dz + absorber.thickness)
-            mask = (sim.grid.x >= dz) & (sim.grid.x <= x_end)
-            xx = sim.grid.x[mask] - dz
-            for lam in wl_apt:
-                trans = sim.pdp_model.dead_zone_transmission(lam * 1e-9, dead_zone_layers)
-                pdp = sim.pdp_model.pdp_integral(
-                    lam * 1e-9, xx, Ptr[mask], trans, sim.grid.dx,
-                    material_name="InGaAs")
-                pdp_dict[lam].append(pdp)
+            _, E, Pe, Ph, xl, xr = sim.get_fields(Vbias)
+            pdp_vals = compute_pdp_spectrum(
+                grid_x=sim.grid.x,
+                dx=sim.grid.dx,
+                layers=sim.device.layers,
+                pdp_model=sim.pdp_model,
+                wavelengths=np.array([wl * 1e-9 for wl in wavelengths]),
+                Vex=Vex,
+                xr=xr,
+                Pe=Pe,
+                Ph=Ph,
+                material_name="InGaAs",
+            )
+            for i, wl in enumerate(wavelengths):
+                pdp_dict[wl][j] = float(pdp_vals[i])
         except Exception:
-            for lam in wl_apt:
-                pdp_dict[lam].append(0.0)
+            pass
 
     get_plotter("pdp_vs_vex", plot_dir=PLOT_DIR).plot(
-        vex_pts, {lam: np.array(v) for lam, v in pdp_dict.items()},
-        wavelengths_nm=wl_apt)
+        vex_pts, pdp_dict, wavelengths_nm=np.array(wavelengths))
 
 
 def run_pdp_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:
-    temps = np.array([285, 315])
+    temps = np.array([255, 275, 295, 315, 335])
     Vex = 3.0
     wavelengths = [1310, 1550]
     pdp_dict: dict[int, list[float]] = {wl: [] for wl in wavelengths}
 
     for T in temps:
         try:
-            sim_T, Vbr_T = svc.build_simulator_at_temp(T)
-            for wl in wavelengths:
-                pdp_spectrum = sim_T.compute_pdp_spectrum(
-                    np.array([wl * 1e-9]), float(Vex), material_name="InGaAs")
-                pdp_dict[wl].append(float(pdp_spectrum[0]))
-            log.info(f"  T={T}K  Vbr={Vbr_T:.1f}V  "
-                     f"PDP1310={pdp_dict[1310][-1]*100:.1f}%  "
-                     f"PDP1550={pdp_dict[1550][-1]*100:.1f}%")
+            sim_T = svc.build_simulator(T)
+            _, E_T, Pe_T, Ph_T, xl_T, xr_T = sim_T.get_fields(Vbr + Vex)
+            pdp_vals = compute_pdp_spectrum(
+                grid_x=sim_T.grid.x,
+                dx=sim_T.grid.dx,
+                layers=sim_T.device.layers,
+                pdp_model=sim_T.pdp_model,
+                wavelengths=np.array([wl * 1e-9 for wl in wavelengths]),
+                Vex=Vex,
+                xr=xr_T,
+                Pe=Pe_T,
+                Ph=Ph_T,
+                material_name="InGaAs",
+            )
+            for i, wl in enumerate(wavelengths):
+                pdp_dict[wl].append(float(pdp_vals[i]))
         except Exception as e:
             log.info(f"  T={T}K failed: {e}")
             for wl in wavelengths:
                 pdp_dict[wl].append(0.0)
 
-    pdp_plot = {wl: np.array(vals) for wl, vals in pdp_dict.items()}
-    get_plotter("pdp_vs_temp", plot_dir=PLOT_DIR).plot(
-        temps, pdp_plot, wavelengths_nm=np.array(wavelengths))
-
     return {"temperatures_K": temps.tolist(), "pdp": pdp_dict, "Vex": Vex}
 
 
-def run_pde_vs_bias(sim: SPADSimulator, Vbr: float) -> dict:
-    Vex_range = np.linspace(0, 10, 21)
-    wavelength = 1310e-9
-    PDE_vals = []
-
-    for Vex in Vex_range:
-        try:
-            pdp_spectrum = sim.compute_pdp_spectrum(
-                np.array([wavelength]), float(Vex),
-                material_name="InGaAs")
-            PDE_vals.append(float(pdp_spectrum[0]))
-        except Exception:
-            PDE_vals.append(0.0)
-
-    PDE_arr = np.array(PDE_vals)
-    get_plotter("pde", plot_dir=PLOT_DIR).plot(Vex_range, PDE_arr)
-
-    pde_max = float(np.max(PDE_arr))
-    log.info(f"  PDE(1310nm): max={pde_max*100:.1f}%")
-    return {"pde_max": pde_max, "wavelength_nm": 1310}
-
-
 def collect_pdp_max_metrics(sim: SPADSimulator, wavelengths_nm: list, Vex: float = 3.0) -> dict:
-    """Collect PDP at key wavelengths for artifact output."""
-    metrics: dict = {}
-    for wl_nm in wavelengths_nm:
-        try:
-            pdp_spectrum = sim.compute_pdp_spectrum(
-                np.array([wl_nm * 1e-9]), Vex, material_name="InGaAs")
-            metrics[f"{wl_nm}nm"] = float(np.max(pdp_spectrum))
-        except Exception:
-            metrics[f"{wl_nm}nm"] = 0.0
-    return metrics
+    try:
+        # Find breakdown first
+        Vbr = sim._Vbr
+        if Vbr is None:
+            Vbr, _ = sim.find_breakdown(V_start=0, V_max=150, V_step=1.0)
+        _, E, Pe, Ph, xl, xr = sim.get_fields(Vbr + Vex)
+        pdp_vals = compute_pdp_spectrum(
+            grid_x=sim.grid.x,
+            dx=sim.grid.dx,
+            layers=sim.device.layers,
+            pdp_model=sim.pdp_model,
+            wavelengths=np.array([wl * 1e-9 for wl in wavelengths_nm]),
+            Vex=Vex,
+            xr=xr,
+            Pe=Pe,
+            Ph=Ph,
+            material_name="InGaAs",
+        )
+        return {f"{wl}nm": float(pdp_vals[i]) for i, wl in enumerate(wavelengths_nm)}
+    except Exception as e:
+        log.info(f"collect_pdp_max_metrics failed: {e}")
+        return {f"{wl}nm": 0.0 for wl in wavelengths_nm}
+
+
+
+def run_absorption_profile(sim: SPADSimulator, Vbr: float) -> None:
+    """Plot Beer-Lambert absorption."""
+    x_abs = np.linspace(0, 1e-4, 200)
+    x_um = x_abs * 1e4
+
+    wavelengths_nm = [905, 1310, 1550, 1610]
+    G_dict: dict[str, np.ndarray] = {}
+
+    mat = sim.materials.get("InGaAs")
+    fallbacks = {905: 1.5e4, 1310: 1.0e4, 1550: 7.0e3, 1610: 5.0e3}
+
+    for lam_nm in wavelengths_nm:
+        lam = lam_nm * 1e-9
+        if mat is not None:
+            alpha = float(mat.absorption_coefficient(lam))
+        else:
+            alpha = fallbacks.get(lam_nm, 1e4)
+        G = alpha * np.exp(-alpha * x_abs)
+        G_dict[str(lam_nm)] = G
+
+    get_plotter("absorption_profile", plot_dir=PLOT_DIR).plot(
+        x_um, G_dict, material_name="InGaAs")
+
+
+def run_pdp_3d(sim: SPADSimulator, Vbr: float) -> None:
+    """3D PDP surface."""
+    log.info("  PDP 3D: skipped (requires full PDP model)")

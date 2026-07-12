@@ -14,28 +14,40 @@ class DarkCurrentPlotter(BasePlotter):
     def plot(self, Vbias: np.ndarray, I_dark: np.ndarray,
              J_th: np.ndarray | None = None,
              J_btbt: np.ndarray | None = None,
-             J_tat: np.ndarray | None = None) -> None:
-        self._import()
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+             J_tat: np.ndarray | None = None,
+             Vbr: float | None = None,
+             gain: np.ndarray | None = None) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        title = f"Dark Current Density vs Excess Voltage (Vbr = {Vbr:.1f} V)" if Vbr else "Dark Current Density vs Excess Voltage"
+        ax.set_title(title, fontsize=12, pad=12)
 
-        ax1.semilogy(Vbias, np.abs(I_dark) + 1e-20)
-        ax1.set_xlabel("Bias (V)")
-        ax1.set_ylabel("Dark Current (A)")
-        ax1.grid(True, alpha=0.3)
-
+        eps = 1e-20
         if J_th is not None and J_btbt is not None and J_tat is not None:
-            ax2.semilogy(Vbias, np.abs(J_th) + 1e-20, label="Thermal", lw=2)
-            ax2.semilogy(Vbias, np.abs(J_btbt) + 1e-20, label="BTBT", lw=2)
-            ax2.semilogy(Vbias, np.abs(J_tat) + 1e-20, label="TAT", lw=2)
-            total = np.abs(J_th + J_btbt + J_tat) + 1e-20
-            ax2.semilogy(Vbias, total, "k--", label="Total", lw=1.5)
-            ax2.legend(fontsize=8)
-        ax2.set_xlabel("Bias (V)")
-        ax2.set_ylabel("Current Density (A/cm²)")
-        ax2.grid(True, alpha=0.3)
+            if gain is not None:
+                ax.semilogy(Vbias, J_th * gain + eps, label="Thermal × M", lw=2)
+                ax.semilogy(Vbias, J_btbt * gain + eps, label="BTBT × M", lw=2)
+                ax.semilogy(Vbias, J_tat * gain + eps, label="TAT × M", lw=2)
+                J_total_mult = (J_th + J_btbt + J_tat) * gain
+                ax.semilogy(Vbias, J_total_mult + eps, "k--", label="Total × M", lw=1.5)
+            else:
+                ax.semilogy(Vbias, np.abs(J_th) + eps, label="Thermal", lw=2)
+                ax.semilogy(Vbias, np.abs(J_btbt) + eps, label="BTBT", lw=2)
+                ax.semilogy(Vbias, np.abs(J_tat) + eps, label="TAT", lw=2)
+                J_total = np.abs(J_th + J_btbt + J_tat)
+                ax.semilogy(Vbias, J_total + eps, "k--", label="Total", lw=1.5)
+            ax.legend(fontsize=7)
+        else:
+            # Fallback: plot aggregate I_dark when components aren't available
+            ax.semilogy(Vbias, np.abs(I_dark) + eps, "b-o", lw=2, ms=4,
+                        label="Dark Current")
+            ax.legend(fontsize=8)
+        ax.set_xlabel("Excess Voltage (V)")
+        ax.set_ylabel("Current Density (A/cm²)")
+        ax.grid(True, alpha=0.3)
 
         plt.tight_layout()
-        self._save("dark_current_vs_bias.png")
+        self._save("dark_current_vs_bias.png", plt)
 
 
 class DCRPlotter(BasePlotter):
@@ -44,14 +56,15 @@ class DCRPlotter(BasePlotter):
         return "dcr"
 
     def plot(self, Vbias: np.ndarray, DCR: np.ndarray) -> None:
-        self._import()
+        plt = self._import()
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.semilogy(Vbias, DCR + 1e-10)
+        ax.set_title("Dark Count Rate (DCR) vs Bias Voltage", fontsize=12, pad=12)
         ax.set_xlabel("Bias (V)")
         ax.set_ylabel("DCR (cps)")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        self._save("dcr_vs_bias.png")
+        self._save("dcr_vs_bias.png", plt)
 
 
 class IVCharacteristicPlotter(BasePlotter):
@@ -61,9 +74,11 @@ class IVCharacteristicPlotter(BasePlotter):
 
     def plot(self, Vbias: np.ndarray, I_dark: np.ndarray,
              I_light: np.ndarray | None = None,
-             optical_power: float | None = None) -> None:
-        self._import()
+             optical_power: float | None = None,
+             Vbr: float | None = None) -> None:
+        plt = self._import()
         fig, ax = plt.subplots(figsize=(8, 5))
+        ax.set_title("I-V Characteristic", fontsize=12, pad=12)
         ax.semilogy(Vbias, np.abs(I_dark) + 1e-20, "b-",
                     label="Dark", lw=2)
         if I_light is not None:
@@ -72,12 +87,27 @@ class IVCharacteristicPlotter(BasePlotter):
                 label += f" ({optical_power*1e6:.0f} µW)"
             ax.semilogy(Vbias, np.abs(I_light) + 1e-20, "r--",
                         label=label, lw=2)
+        if Vbr is not None:
+            ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5,
+                        label=f"Vbr = {Vbr:.1f} V")
+        # Transition from linear to exponential growth:
+        # find the first point where d(log I)/dV exceeds the low-bias
+        # median by a significant margin
+        eps = 1e-20
+        logI = np.log(np.abs(I_dark) + eps)
+        dlogI_dV = np.gradient(logI, Vbias)
+        baseline = np.median(dlogI_dV[:len(Vbias)//4])
+        threshold = baseline + 2.0 * np.std(dlogI_dV[:len(Vbias)//4])
+        above = np.where(dlogI_dV > threshold)[0]
+        V_trans = float(Vbias[above[0]]) if len(above) > 0 else float(Vbias[-1])
+        ax.axvline(x=V_trans, color="orange", ls="--", lw=2, alpha=0.9,
+                    label=f"Transition ≈ {V_trans:.1f} V", zorder=5)
         ax.set_xlabel("Bias (V)")
-        ax.set_ylabel("Current (A)")
+        ax.set_ylabel("log I (A)")
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8)
         plt.tight_layout()
-        self._save("iv_characteristic.png")
+        self._save("iv_characteristic.png", plt)
 
 
 class ComprehensiveIVPlotter(BasePlotter):
@@ -86,51 +116,33 @@ class ComprehensiveIVPlotter(BasePlotter):
         return "comprehensive_iv"
 
     def plot(self, Vbias: np.ndarray, I_dark: np.ndarray,
-             I_photo_primary: np.ndarray | None = None,
-             I_total_illuminated: np.ndarray | None = None,
              gain: np.ndarray | None = None,
              Vbr: float | None = None) -> None:
-        self._import()
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
 
         eps = 1e-20
-        ax1.semilogy(Vbias, np.abs(I_dark) + eps, "b-",
-                     label="Dark (primary)", lw=2)
-        if I_photo_primary is not None:
-            ax1.semilogy(Vbias, np.abs(I_photo_primary) + eps, "orange",
-                         label="Photo-primary", lw=2, ls="--")
-        if I_total_illuminated is not None:
-            ax1.semilogy(Vbias, np.abs(I_total_illuminated) + eps, "r-.",
-                         label="Total illuminated", lw=2)
+        ax.semilogy(Vbias, np.abs(I_dark) + eps, "b-",
+                     label="Dark", lw=2)
+        # Transition from linear to exponential growth:
+        # first point where d(log I)/dV exceeds low-bias baseline
+        logI = np.log(np.abs(I_dark) + eps)
+        dlogI_dV = np.gradient(logI, Vbias)
+        baseline = np.median(dlogI_dV[:len(Vbias)//4])
+        threshold = baseline + 2.0 * np.std(dlogI_dV[:len(Vbias)//4])
+        above = np.where(dlogI_dV > threshold)[0]
+        V_trans = float(Vbias[above[0]]) if len(above) > 0 else float(Vbias[-1])
+        ax.axvline(x=V_trans, color="orange", ls="--", lw=2, alpha=0.9,
+                    label=f"Transition ≈ {V_trans:.1f} V", zorder=5)
         if Vbr is not None:
-            ax1.axvline(x=Vbr, color="k", ls=":", alpha=0.5,
+            ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5,
                         label=f"Vbr = {Vbr:.1f} V")
-        ax1.set_xlabel("Bias (V)")
-        ax1.set_ylabel("Current (A)")
-        ax1.legend(fontsize=8)
-        ax1.grid(True, alpha=0.3)
 
-        ax2.semilogy(Vbias, np.abs(I_dark) + eps, "b-",
-                     label="Dark (primary)", lw=2)
-        if I_photo_primary is not None:
-            ax2.semilogy(Vbias, np.abs(I_photo_primary) + eps, "orange",
-                         label="Photo-primary", lw=2, ls="--")
-        if I_total_illuminated is not None:
-            ax2.semilogy(Vbias, np.abs(I_total_illuminated) + eps, "r-.",
-                         label="Total illuminated", lw=2)
-        if gain is not None:
-            ax_twin = ax2.twinx()
-            ax_twin.plot(Vbias, gain, "g:", lw=1.5, alpha=0.7)
-            ax_twin.set_ylabel("Gain M", color="g")
-            ax_twin.tick_params(axis="y", labelcolor="g")
-        if Vbr is not None:
-            ax2.axvline(x=Vbr, color="k", ls=":", alpha=0.5)
-        ax2.set_xlabel("Bias (V)")
-        ax2.set_ylabel("Current (A)")
-        ax2.set_xlim(0, Vbr + 5 if Vbr else Vbias[-1])
-        ax2.legend(fontsize=8)
-        ax2.grid(True, alpha=0.3)
+        ax.set_xlabel("Bias (V)")
+        ax.set_ylabel("log I (A)")
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
 
         fig.suptitle("Comprehensive I-V Characteristic", fontsize=12)
         plt.tight_layout()
-        self._save("comprehensive_iv.png")
+        self._save("comprehensive_iv.png", plt)

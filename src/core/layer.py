@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal
+
+import pint
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from .units import Q_
 
 DopingType = Literal["donor", "acceptor"]
 
 
-@dataclass(frozen=True)
-class Layer:
+class Layer(BaseModel, frozen=True):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     thickness: float
     doping_type: DopingType = "acceptor"
     doping_A: float = 1e15
@@ -15,13 +20,19 @@ class Layer:
     doping_x0: float | None = None
     material: str = "Si"
 
-    def __post_init__(self) -> None:
-        if self.thickness <= 0:
-            raise ValueError(
-                f"Layer thickness must be positive, got {self.thickness}")
-        if self.doping_A < 0:
-            raise ValueError(
-                f"doping_A must be non-negative, got {self.doping_A}")
+    @field_validator("thickness")
+    @classmethod
+    def _thickness_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"Layer thickness must be positive, got {v}")
+        return v
+
+    @field_validator("doping_A")
+    @classmethod
+    def _doping_nonneg(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError(f"doping_A must be non-negative, got {v}")
+        return v
 
     @property
     def is_donor(self) -> bool:

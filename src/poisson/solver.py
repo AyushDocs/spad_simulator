@@ -3,18 +3,21 @@ from __future__ import annotations
 from typing import Tuple
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
 from scipy.linalg import solve_banded
 
 from ..core.grid import Grid1D
 from ..core.doping import DopingProfile
-from ..core.constants import q, VT
+from ..core.constants import q, VT, eps0
 from ..utils._exceptions import ConvergenceError, PhysicsError
 from ..utils._logging import get_logger
+from ..utils.pydantic_types import NDArray
+from .numba_solver import newton_iteration
 
 log = get_logger("poisson")
 
 
-class PoissonSolver:
+class PoissonSolver(BaseModel):
     """
     Nonlinear 1-D Poisson solver with Newton-Raphson iteration.
 
@@ -23,22 +26,58 @@ class PoissonSolver:
         p(x) = ni(x) exp((phi_p - phi) / V_T)
     """
 
-    def __init__(self, grid: Grid1D, T: float,
-                 doping: DopingProfile,
-                 eps_grid: np.ndarray,
-                 ni_grid: np.ndarray,
-                 tol: float = 1e-6, max_iter: int = 100,
-                 damp: float = 0.5, max_dphi: float = 2.0) -> None:
-        self.grid = grid
-        self.T = T
-        self.doping = doping
-        self._eps = np.asarray(eps_grid)
-        self._ni = np.asarray(ni_grid)
-        self.tol = tol
-        self.max_iter = max_iter
-        self.damp = damp
-        self.max_dphi = max_dphi
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    grid: Grid1D
+    T: float
+    doping: DopingProfile
+    eps_grid: NDArray
+    ni_grid: NDArray
+    tol: float = 5e-4
+    max_iter: int = 300
+    max_dphi: float = 50.0
+    damp: float = 0.5
+
+    _eps: np.ndarray = PrivateAttr()
+    _ni: np.ndarray = PrivateAttr()
+    _eps_half: np.ndarray = PrivateAttr()
+    _q_val: float = PrivateAttr()
+
+    @field_validator("T")
+    @classmethod
+    def _T_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"Temperature must be positive, got {v}")
+        return v
+
+    @field_validator("tol")
+    @classmethod
+    def _tol_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"Tolerance must be positive, got {v}")
+        return v
+
+    @field_validator("max_iter")
+    @classmethod
+    def _iter_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError(f"max_iter must be positive, got {v}")
+        return v
+
+    @field_validator("damp")
+    @classmethod
+    def _damp_range(cls, v: float) -> float:
+        if v <= 0 or v > 1:
+            raise ValueError(f"damp must be in (0, 1], got {v}")
+        return v
+
+    @model_validator(mode="after")
+    def _init_arrays(self):
+        self._eps = np.asarray(self.eps_grid, dtype=float)
+        self._ni = np.asarray(self.ni_grid, dtype=float)
         self._eps_half = 0.5 * (self._eps[:-1] + self._eps[1:])
+        self._q_val = float(q.to("C").magnitude)
+        return self
 
     def _contact_bias(self, Vbias: float) -> Tuple[float, float]:
         x = self.grid.x
@@ -64,7 +103,7 @@ class PoissonSolver:
                 rho_ext: np.ndarray | None = None) -> np.ndarray:
         n, p = self._carrier_densities(phi, phi_n, phi_p)
         net = self.doping.net_doping(self.grid.x)
-        rho = q * (p - n + net)
+        rho = self._q_val * (p - n + net)
         if rho_ext is not None:
             rho = rho + rho_ext
         return rho
@@ -73,7 +112,7 @@ class PoissonSolver:
                    phi_n: float, phi_p: float) -> np.ndarray:
         vth = VT(self.T)
         n, p = self._carrier_densities(phi, phi_n, phi_p)
-        return -q / vth * (n + p)
+        return -self._q_val / vth * (n + p)
 
     def _residual(self, phi: np.ndarray, Vbias: float,
                   phi_n: float, phi_p: float,
@@ -125,7 +164,7 @@ class PoissonSolver:
         Vbi = max(phi_L - phi_0, 0.01)
         if n_doping > 1e10:
             W_dep = float(np.sqrt(2.0 * self._eps[idx_j] * Vbi
-                                  / (q * n_doping)))
+                                  / (self._q_val * n_doping)))
         else:
             W_dep = self.grid.L / 4.0
         W_dep = float(np.clip(W_dep, self.grid.L / 200.0, self.grid.L / 2.0))
@@ -164,39 +203,32 @@ class PoissonSolver:
         if guess is None:
             phi = self._step_guess(Vbias)
         else:
-            phi = guess.copy()
+            phi = guess.value.copy() if hasattr(guess, 'value') else guess.copy()
 
         if phi_n is None:
             phi_n = Vbias
 
         V0, VL = self._contact_bias(Vbias)
 
+        dx2 = self.grid.dx ** 2
+        vth = VT(self.T)
+
         for it in range(self.max_iter):
-            F = self._residual(phi, Vbias, phi_n, phi_p, rho_ext)
-            norm = float(np.linalg.norm(F, np.inf))
+            phi, norm, nls, _step = newton_iteration(
+                phi, Vbias, phi_n, phi_p, V0, VL,
+                dx2, self._eps_half, self._ni, vth,
+                self.doping.net_doping(self.grid.x),
+                self.max_dphi, self._q_val,
+            )
 
             if norm < self.tol:
                 log.debug("Poisson converged  V=%.2f  %d iters", Vbias, it)
-                return phi, {"converged": True, "iterations": it, "residual_norm": 0.0}
+                return phi, {"converged": True, "iterations": it, "residual_norm": norm}
 
             if not np.isfinite(norm):
                 raise PhysicsError(
                     f"Non-finite Poisson residual at iteration {it}")
 
-            dl, d, du = self._jacobian(phi, Vbias, phi_n, phi_p)
-            delta = self._tridiagonal_solve(dl, d, du, -F)
-            delta = np.clip(delta, -self.max_dphi, self.max_dphi)
-
-            step = self.damp
-            for _ in range(20):
-                phi_new = phi + step * delta
-                F_new = self._residual(phi_new, Vbias, phi_n, phi_p, rho_ext)
-                nnew = float(np.linalg.norm(F_new, np.inf))
-                if nnew < norm and np.isfinite(nnew):
-                    break
-                step *= 0.5
-            phi = phi_new
-        else:
-            raise ConvergenceError(
-                f"Poisson did not converge at V={Vbias:.2f} V "
-                f"(residual {norm:.2e})")
+        raise ConvergenceError(
+            f"Poisson did not converge at V={Vbias:.2f} V "
+            f"(residual {norm:.2e})")

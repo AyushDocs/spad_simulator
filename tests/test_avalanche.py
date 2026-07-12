@@ -71,13 +71,10 @@ def test_trigger_solver():
 
 
 def test_tunneling_model():
-    Eg_grid = np.full(500, 1.34 * q)
-    model = TunnelingModel(T=300.0, N_T=1e12, Eg_grid=Eg_grid)
+    model = TunnelingModel(T=300.0, N_T=1e12, Eg_mulp=1.35, mc_mulp=0.041, mh_mulp=0.4)
     E = np.full(500, 5e5)
-    mc = np.full(500, 0.077)
-    mh = np.full(500, 0.64)
-    J_btbt = model.btbt_current(E, Eg_grid, mc, mh)
-    J_tat = model.tat_current(E, Eg_grid, mc, mh)
+    J_btbt = model.btbt_current(E)
+    J_tat = model.tat_current(E, Eg_mulp=1.35, mc_mulp=0.041, mh_mulp=0.4)
     assert J_btbt.shape == (500,)
     assert J_tat.shape == (500,)
     assert np.all(J_btbt >= 0)
@@ -85,50 +82,55 @@ def test_tunneling_model():
 
 
 def test_dark_current_model():
-    Eg_grid = np.full(500, 1.34 * q)
-    mc_grid = np.full(500, 0.077)
-    mh_grid = np.full(500, 0.64)
     x = np.linspace(0, 7e-4, 500)
-    tau_n = np.full(500, 1e-6)
-    tau_p = np.full(500, 1e-6)
-    ni = np.full(500, 1e10)
+    ni_arr = np.full(500, 1e10)
+    Eg_arr = np.full(500, 1.34 * q)
+    mc_arr = np.full(500, 0.077)
+    mh_arr = np.full(500, 0.64)
+
+    mat_name_grid = np.where(x > 5e-4, "InGaAs", "InP")
 
     model = DarkCurrentModel(
-        T=300.0, Eg_grid=Eg_grid, mc_grid=mc_grid, mh_grid=mh_grid,
-        grid_x=x, tau_n_grid=tau_n, tau_p_grid=tau_p,
+        T=300.0,
+        grid_x=x,
+        N_T=1e12,
+        mat_name_grid=mat_name_grid,
+        ni_absorber=1e10,
+        tau_n_absorber=1e-6,
+        tau_p_absorber=1e-6,
+        Eg_mulp=1.35,
+        mc_mulp=0.041,
+        mh_mulp=0.4,
     )
     F = np.full(500, 5e5)
-    J = model.total_dark_current_density(x, F, ni, Eg_grid, mc_grid, mh_grid)
+    J = model.total_dark_current_density(x, F, ni_arr, Eg_arr, mc_arr, mh_arr)
     assert J.shape == (500,)
 
-    G = model.generation_rate(x, F, ni, Eg_grid, mc_grid, mh_grid)
+    G = model.generation_rate(x, F, ni_arr, Eg_arr, mc_arr, mh_arr)
     assert G.shape == (500,)
 
-    dcr = model.compute_dcr(x, F, np.ones(500), ni, Eg_grid, mc_grid, mh_grid)
+    dcr = model.compute_dcr(x, F, np.ones(500), ni_arr, Eg_arr, mc_arr, mh_arr)
     assert dcr >= 0
 
 
 def test_pdp_model(inp_material):
     mat_inp = inp_material
     materials = {"InGaAs": mat_inp, "InP": mat_inp, "InGaAsP": mat_inp}
-    pdp = PDPModel(materials, reflectivity=0.1)
+    pdp = PDPModel(materials=materials, reflectivity=0.1)
     layers = [
-        Layer(2.5e-4, "acceptor", 2e18, 0, material="InP"),
-        Layer(0.5e-4, "donor", 0, 0, material="InP"),
-        Layer(0.2e-4, "donor", 1e17, 0, material="InP"),
-        Layer(0.12e-4, "donor", 0, 0, material="InGaAsP"),
-        Layer(1.5e-4, "donor", 0, 0, material="InGaAs"),
+        Layer(thickness=2.5e-4, doping_type="acceptor", doping_A=2e18, doping_m=0, material="InP"),
+        Layer(thickness=0.5e-4, doping_type="donor", doping_A=0, doping_m=0, material="InP"),
+        Layer(thickness=0.2e-4, doping_type="donor", doping_A=1e17, doping_m=0, material="InP"),
+        Layer(thickness=0.12e-4, doping_type="donor", doping_A=0, doping_m=0, material="InGaAsP"),
+        Layer(thickness=1.5e-4, doping_type="donor", doping_A=0, doping_m=0, material="InGaAs"),
     ]
     dead_zone, absorber = pdp.find_absorber(layers, "InGaAs")
     assert len(dead_zone) == 4
     assert absorber.thickness == 1.5e-4
 
-    trans = pdp.dead_zone_transmission(1550e-9, dead_zone)
-    assert 0 <= trans <= 1
-
     x = np.linspace(0, absorber.thickness, 100)
     Ptr = np.ones(100) * 0.9
-    pdp_val = pdp.pdp_integral(1550e-9, x, Ptr, trans, x[1] - x[0])
+    pdp_val = pdp.pdp_integral(1550e-9, x, Ptr, x[1] - x[0])
     assert pdp_val >= 0
     assert pdp_val <= 1
 

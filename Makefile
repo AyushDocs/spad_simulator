@@ -8,6 +8,9 @@ ROOT = ..
 run:   ## Run the full SPAD simulation
 	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator
 
+run-ui:  ## Launch the SPAD simulation GUI
+	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --ui
+
 run-quick:  ## Run with minimal output (WARNING level only)
 	PYTHONPATH=$(ROOT) $(PYTHON) -c "import logging; from spad_simulator.src.utils._logging import set_log_level; set_log_level(logging.WARNING); from spad_simulator.src.main import main; main()"
 

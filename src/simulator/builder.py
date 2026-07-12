@@ -4,12 +4,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..core.device import Device
+from ..core.material_grid import MaterialGrid
 from ..poisson.solver import PoissonSolver
 from ..poisson.field import DepletionWidth
 from ..poisson.service import PoissonService
-from ..avalanche.ionization import IonizationCoefficients, OkutoCrowellModel
-from ..avalanche.trigger import TriggerSolver
-from ..avalanche.dark_current import DarkCurrentModel
+from ..avalanche.ionization import IonizationCoefficients, OkutoCrowellCoefficients
+from ..avalanche.trigger import TriggerModel
+from ..avalanche.current import (
+    CompositeCurrentDensity,
+    BTBTCurrentDensity,
+    TATCurrentDensity,
+    SRHCurrentDensity,
+)
+from ..avalanche.tunneling import TunnelingModel
 from ..avalanche.pdp import PDPModel
 
 if TYPE_CHECKING:
@@ -26,42 +33,75 @@ def build_subsystems(
 
     Returns a dict of subsystem instances keyed by name.
     """
+    # Poisson solver needs absolute permittivity in F/cm
+    # device.material.eps is already eps_r * eps0 (F/cm) from MaterialGrid.build()
+    eps_grid = device.material.eps
+
     poisson_solver = PoissonSolver(
-        grid, T, device.doping, device.material.eps, device.material.ni,
+        grid=grid, T=T, doping=device.doping,
+        eps_grid=eps_grid,
+        ni_grid=device.material.ni,
         max_iter=200,
     )
     depletion = DepletionWidth(grid)
     poisson_service = PoissonService(poisson_solver, grid, depletion)
 
-    ionization = IonizationCoefficients(
-        OkutoCrowellModel(),
-        materials,
-        Eg_grid=device.material.Eg,
-        Eth_grid=device.material.Eth,
-        mc_grid=device.material.mc,
-        mh_grid=device.material.mh,
-        E_ie_grid=device.material.E_ie,
-        E_ih_grid=device.material.E_ih,
-        grid_x=grid.x,
-        mat_names=device.material.mat_name,
-        T=T,
+    # Ionization coefficients — Okuto-Crowell model using InP material params from XML.
+    # The OC parameters (lambda0, ER0, hw_meV, Eth) for electrons and holes in InP
+    # are calibrated from literature (Osaka et al. 1984, Hamoui & Zavalichin 1992).
+    # mat_inp is extracted just below, so we build ionization after it.
+    # Current components
+    mat_inp = materials.get("InP")
+    if mat_inp is not None:
+        Eg_mulp = mat_inp.Eg()
+        mc_mulp = mat_inp.mc
+        mh_mulp = mat_inp.mh
+        # Build ionization with Okuto-Crowell using InP XML parameters
+        ionization = OkutoCrowellCoefficients(mat_inp, T=T)
+    else:
+        raise ValueError("InP material data required for multiplication layer")
+
+    mat_ingaas = materials.get("InGaAs")
+    if mat_ingaas is not None:
+        ni_absorber = mat_ingaas.ni()
+        tau_n_absorber = mat_ingaas.tau_n
+        tau_p_absorber = mat_ingaas.tau_p
+    else:
+        raise ValueError("InGaAs material data required for absorption layer")
+
+    current = CompositeCurrentDensity()
+    current.add(SRHCurrentDensity(
+        tau_n_absorber=tau_n_absorber,
+        tau_p_absorber=tau_p_absorber,
+        mat_name_grid=device.material.mat_name,
+        ni_absorber=ni_absorber,
+    ))
+    current.add(BTBTCurrentDensity(
+        Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp))
+    current.add(TATCurrentDensity(
+        Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp))
+
+    # PDP model - compute absorber layer position from device layers
+    x_start_acc = 0.0
+    x_abs_start, x_abs_stop = 0.0, 0.0
+    for lyr in device.layers:
+        if lyr.material == "InGaAs":
+            x_abs_start = x_start_acc
+            x_abs_stop = x_start_acc + lyr.thickness
+            break
+        x_start_acc += lyr.thickness
+
+    pdp_model = PDPModel(
+        grid=grid.x,
+        x_abs_start=x_abs_start,
+        x_abs_stop=x_abs_stop,
+        materials=materials,
     )
-    trigger = TriggerSolver(grid)
-    dark_current = DarkCurrentModel(
-        T=T,
-        Eg_grid=device.material.Eg,
-        mc_grid=device.material.mc,
-        mh_grid=device.material.mh,
-        grid_x=grid.x,
-        tau_n_grid=device.material.tau_n,
-        tau_p_grid=device.material.tau_p,
-    )
-    pdp_model = PDPModel(materials)
+
 
     return {
         "poisson_service": poisson_service,
         "ionization": ionization,
-        "trigger": trigger,
-        "dark_current": dark_current,
+        "current": current,
         "pdp_model": pdp_model,
     }

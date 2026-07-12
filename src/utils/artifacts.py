@@ -42,10 +42,6 @@ class SimulationArtifact:
     en_F_max: float = 0.0
     en_k_eff: float = 0.5
 
-    # PDE
-    pde_max: float = 0.0
-    pde_wavelength_nm: int = 1310
-
     # Jitter
     jitter_sigma_s: float = 0.0
     jitter_fwhm_s: float = 0.0
@@ -82,10 +78,6 @@ class SimulationArtifact:
                 "F_max": self.en_F_max,
                 "k_eff": self.en_k_eff,
             },
-            "pde_1310nm": {
-                "pde_max": self.pde_max,
-                "wavelength_nm": self.pde_wavelength_nm,
-            },
             "jitter": {
                 "sigma_s": self.jitter_sigma_s,
                 "fwhm_s": self.jitter_fwhm_s,
@@ -96,7 +88,7 @@ class SimulationArtifact:
 
 
 def collect_artifact(Vbr: float, sim: Any, afterpulsing: dict,
-                     excess_noise: dict, pde: dict, jitter: dict,
+                     excess_noise: dict, jitter: dict,
                      dark_current: dict | None = None,
                      pdp_max: dict | None = None,
                      dcr_temp: dict | None = None,
@@ -121,8 +113,6 @@ def collect_artifact(Vbr: float, sim: Any, afterpulsing: dict,
         en_M_max=excess_noise.get("M_max", 0.0),
         en_F_max=excess_noise.get("F_max", 0.0),
         en_k_eff=excess_noise.get("k_eff", 0.5),
-        pde_max=pde.get("pde_max", 0.0),
-        pde_wavelength_nm=pde.get("wavelength_nm", 1310),
         jitter_sigma_s=jitter.get("sigma_s", 0.0),
         jitter_fwhm_s=jitter.get("fwhm_s", 0.0),
         dcr_vs_temp=dcr_temp or {},
@@ -178,10 +168,6 @@ class ArtifactWriter:
         self._add_element(en_el, "M_max", f"{artifact.en_M_max:.2f}")
         self._add_element(en_el, "F_max", f"{artifact.en_F_max:.4f}")
         self._add_element(en_el, "k_eff", f"{artifact.en_k_eff:.4f}")
-
-        pde_el = self._add_element(root, "photon_detection_efficiency")
-        self._add_element(pde_el, "PDE_max", f"{artifact.pde_max:.6f}")
-        self._add_element(pde_el, "wavelength_nm", artifact.pde_wavelength_nm)
 
         jit_el = self._add_element(root, "timing_jitter")
         self._add_element(jit_el, "sigma_s", f"{artifact.jitter_sigma_s:.6e}")

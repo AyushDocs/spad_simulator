@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from src.core.constants import q, VT
-from src.transport.carrier import Carrier
+from src.self_consistent.particle_mesh import Carrier
 from src.transport.drift_diffusion import DriftDiffusion
 from src.transport.jitter import TimingJitter
 

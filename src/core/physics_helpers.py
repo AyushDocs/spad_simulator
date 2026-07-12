@@ -4,14 +4,9 @@ from __future__ import annotations
 import numpy as np
 
 
-def combined_trigger_probability(Pe: np.ndarray, Ph: np.ndarray) -> np.ndarray:
+def avalanche_trigger_probability(Pe: np.ndarray, Ph: np.ndarray) -> np.ndarray:
     """Combined trigger probability: Pe ∪ Ph (independent events)."""
     return Pe + Ph - Pe * Ph
-
-
-def avalanche_gain(Ptr_max: float) -> float:
-    """Multiplication factor from combined trigger probability."""
-    return min(1.0 / (1.0 - Ptr_max + 1e-15), 10000.0)
 
 
 def dead_zone_thickness(dead_zone_layers: list) -> float:

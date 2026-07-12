@@ -17,6 +17,6 @@ from .core.fermi_dirac import (
     FermiDiracStatistics, BandgapNarrowing, CaugheyThomasMobility,
 )
 from .avalanche.afterpulsing import AfterpulsingModel
-from .avalanche.excess_noise import ExcessNoiseFactor
+from .avalanche.excess_noise import ExcessNoiseModel
 from .utils.ingestion import DataIngestionConfig, DataIngestionService
 from .utils.artifacts import SimulationArtifact, ArtifactWriter

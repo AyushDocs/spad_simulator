@@ -69,21 +69,22 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
   </material>
 
   <!-- InP multiplication region (high k ratio, wide gap, good for low-noise APDs). -->
+  <!-- Values from: Xu et al., "Extracting dark current components...", Infr. Phys. & Tech. -->
   <material name="InP">
     <property name="eps_r" type="float" unit="1">12.5</property>
-    <property name="Eg_0K" type="float" unit="eV">1.35</property>
+    <property name="Eg_0K" type="float" unit="eV">1.40</property>
     <varshni>
       <alpha type="float" unit="eV/K">4.5e-4</alpha>
       <beta type="float" unit="K">327.0</beta>
     </varshni>
     <dos>
-      <Nc_300K type="float" unit="cm^-3">5.7e17</Nc_300K>
-      <Nv_300K type="float" unit="cm^-3">1.1e19</Nv_300K>
+      <Nc_300K type="float" unit="cm^-3">5.66e17</Nc_300K>
+      <Nv_300K type="float" unit="cm^-3">2.03e19</Nv_300K>
       <gamma type="float" unit="1">1.5</gamma>
     </dos>
     <mobility>
-      <mu_n type="float" unit="cm^2/V·s">3000.0</mu_n>
-      <mu_p type="float" unit="cm^2/V·s">150.0</mu_p>
+      <mu_n type="float" unit="cm^2/V·s">4730.0</mu_n>
+      <mu_p type="float" unit="cm^2/V·s">151.0</mu_p>
     </mobility>
     <saturation_velocity>
       <vsat_n type="float" unit="cm/s">2.5e7</vsat_n>
@@ -91,7 +92,7 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     </saturation_velocity>
     <effective_mass>
       <mc type="float" unit="m0">0.08</mc>
-      <mh type="float" unit="m0">0.6</mh>
+      <mh type="float" unit="m0">0.86</mh>
     </effective_mass>
     <ionization carrier="electron">
       <lambda0 type="float" unit="cm">4.2e-7</lambda0>
@@ -109,31 +110,35 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
       <tau_n type="float" unit="s">1e-9</tau_n>
       <tau_p type="float" unit="s">1e-9</tau_p>
     </lifetime>
+    <!-- Xu et al. values not in current model: -->
+    <!-- C_n (Auger, electron) = 3.7e-31 cm^6/s; C_p (Auger, hole) = 8.7e-30 cm^6/s -->
+    <!-- B (radiative) = 2e-11 cm^3/s -->
   </material>
 
   <!-- InGaAs absorber (narrow gap, high absorption at 1300-1650 nm). -->
+  <!-- Values from: Xu et al., "Extracting dark current components...", Infr. Phys. & Tech. -->
   <material name="InGaAs">
     <property name="eps_r" type="float" unit="1">13.9</property>
-    <property name="Eg_0K" type="float" unit="eV">0.75</property>
+    <property name="Eg_0K" type="float" unit="eV">0.85</property>
     <varshni>
       <alpha type="float" unit="eV/K">4.5e-4</alpha>
       <beta type="float" unit="K">300.0</beta>
     </varshni>
     <dos>
-      <Nc_300K type="float" unit="cm^-3">2.1e17</Nc_300K>
-      <Nv_300K type="float" unit="cm^-3">9.0e18</Nv_300K>
+      <Nc_300K type="float" unit="cm^-3">2.75e17</Nc_300K>
+      <Nv_300K type="float" unit="cm^-3">7.62e18</Nv_300K>
       <gamma type="float" unit="1">1.5</gamma>
     </dos>
     <mobility>
-      <mu_n type="float" unit="cm^2/V·s">8000.0</mu_n>
-      <mu_p type="float" unit="cm^2/V·s">300.0</mu_p>
+      <mu_n type="float" unit="cm^2/V·s">12000.0</mu_n>
+      <mu_p type="float" unit="cm^2/V·s">450.0</mu_p>
     </mobility>
     <saturation_velocity>
       <vsat_n type="float" unit="cm/s">2.5e7</vsat_n>
       <vsat_p type="float" unit="cm/s">2.0e7</vsat_p>
     </saturation_velocity>
     <effective_mass>
-      <mc type="float" unit="m0">0.041</mc>
+      <mc type="float" unit="m0">0.0489</mc>
       <mh type="float" unit="m0">0.45</mh>
     </effective_mass>
     <ionization carrier="electron">
@@ -149,9 +154,12 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
       <Eth type="float" unit="eV">1.2</Eth>
     </ionization>
     <lifetime>
-      <tau_n type="float" unit="s">1e-9</tau_n>
-      <tau_p type="float" unit="s">1e-9</tau_p>
+      <tau_n type="float" unit="s">1e-6</tau_n>
+      <tau_p type="float" unit="s">1e-6</tau_p>
     </lifetime>
+    <!-- Xu et al. values not in current model: -->
+    <!-- C_n (Auger, electron) = 3.2e-28 cm^6/s; C_p (Auger, hole) = 3.2e-28 cm^6/s -->
+    <!-- B (radiative) = 1.43e-10 cm^3/s -->
   </material>
 
   <!-- InGaAsP grading layer (quaternary, Eg ~ 1.0 eV, reduces valence-band barrier). -->

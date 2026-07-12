@@ -13,7 +13,7 @@ class DeviceStructurePlotter(BasePlotter):
 
     def plot(self, x: np.ndarray, mat_names: np.ndarray,
              doping: np.ndarray, net_doping: np.ndarray) -> None:
-        self._import()
+        plt = self._import()
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
         x_um = x * 1e4
@@ -39,9 +39,9 @@ class DeviceStructurePlotter(BasePlotter):
         ax2.legend(fontsize=8)
         ax2.grid(True, alpha=0.3)
 
-        fig.suptitle("Device Structure", fontsize=12)
+        fig.suptitle("Device Schematic and Net Doping Profile", fontsize=12)
         plt.tight_layout()
-        self._save("device_structure.png")
+        self._save("device_structure.png", plt)
 
 
 class DopingPlotter(BasePlotter):
@@ -50,8 +50,9 @@ class DopingPlotter(BasePlotter):
         return "doping"
 
     def plot(self, x: np.ndarray, nd: np.ndarray, na: np.ndarray) -> None:
-        self._import()
+        plt = self._import()
         fig, ax = plt.subplots(figsize=(10, 5))
+        ax.set_title("Doping Concentrations vs Depth", fontsize=12, pad=12)
         x_um = x * 1e4
         ax.semilogy(x_um, np.abs(nd) + 1e10, label="Donors")
         ax.semilogy(x_um, np.abs(na) + 1e10, label="Acceptors")
@@ -62,4 +63,4 @@ class DopingPlotter(BasePlotter):
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        self._save("doping_profile.png")
+        self._save("doping_profile.png", plt)

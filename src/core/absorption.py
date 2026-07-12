@@ -11,7 +11,7 @@ class AbsorptionModel(ABC):
     """Pluggable optical absorption coefficient model."""
 
     @abstractmethod
-    def coefficient(self, lam: float) -> float: ...
+    def coefficient(self, wavelength: float) -> float: ...
 
 
 class InterpolatedAbsorption(AbsorptionModel):
@@ -20,9 +20,9 @@ class InterpolatedAbsorption(AbsorptionModel):
     def __init__(self, data: AbsorptionData) -> None:
         self._data = data
 
-    def coefficient(self, lam: float) -> float:
+    def coefficient(self, wavelength: float) -> float:
         return float(
             np.interp(
-                lam, self._data.wavelengths, self._data.alphas, left=0.0, right=0.0
+                wavelength, self._data.wavelengths, self._data.alphas, left=0.0, right=0.0
             )
         )

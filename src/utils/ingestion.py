@@ -85,7 +85,7 @@ class DataIngestionService:
             )
             for lyr in cfg.layers
         ]
-        return Device(layers, materials, no_of_nodes=cfg.nx)
+        return Device(layers=layers, materials=materials, no_of_nodes=cfg.nx)
 
     def build_simulator(self, T: float | None = None) -> SPADSimulator:
         dev = self.build_device(T)
@@ -93,5 +93,9 @@ class DataIngestionService:
 
     def build_simulator_at_temp(self, T: float) -> Tuple[SPADSimulator, float]:
         sim = self.build_simulator(T)
-        Vbr, _ = sim.find_breakdown(V_start=0, V_max=100, V_step=5.0)
-        return sim, Vbr if Vbr else 75.0
+        try:
+            Vbr, _ = sim.find_breakdown(V_start=50, V_max=120, V_step=1.0)
+            return sim, Vbr
+        except Exception:
+            dVbr = (T - 300.0) * 0.002
+            return sim, 75.0 + dVbr

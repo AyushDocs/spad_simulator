@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..core.constants import h, c
-from ..core.physics_helpers import alpha_to_grid, combined_trigger_probability, dead_zone_thickness
+from ..core.physics_helpers import alpha_to_grid, avalanche_trigger_probability, dead_zone_thickness
 
 if TYPE_CHECKING:
     from ..core.device import Device
@@ -26,8 +26,11 @@ def compute_photocurrent(
     Pe: np.ndarray,
     Ph: np.ndarray,
     xr: float,
+    multiply: bool = True,
+    V_bias: float = 80.0,
+    V_br: float = 78.0,
 ) -> float:
-    """Compute primary photocurrent multiplied by avalanche gain."""
+    """Compute primary photocurrent (optionally multiplied by Geiger-mode gain)."""
     dead_zone_layers, absorber = pdp_model.find_absorber(layers, "InGaAs")
     dead_zone = sum(l.thickness for l in dead_zone_layers)
     L_abs = max(min(xr - dead_zone, absorber.thickness), 0.0)
@@ -41,7 +44,8 @@ def compute_photocurrent(
     alpha_grid = alpha_to_grid(grid_x, layers, materials, wavelength)
 
     Eph = h * c / wavelength
-    phi_photon = power / (Eph * detector_area)
+    trans = pdp_model.dead_zone_transmission(wavelength, dead_zone_layers)
+    phi_photon = (1.0 - pdp_model.reflectivity) * trans * power / (Eph * detector_area)
 
     J_photo = pdp_model.photocurrent_density(
         grid_x, alpha_grid, phi_photon, absorber_start, absorber_end
@@ -49,17 +53,21 @@ def compute_photocurrent(
     # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
     I_primary = float(np.trapezoid(J_photo, grid_x) * detector_area)
 
-    if I_primary <= 0:
-        return 0.0
+    if I_primary <= 0 or not multiply:
+        return I_primary
 
+    from ..core.constants import eps0
     Ptr_abs = np.interp(
         np.linspace(absorber_start, absorber_end, 10),
         grid_x,
-        combined_trigger_probability(Pe, Ph),
+        avalanche_trigger_probability(Pe, Ph),
     )
     Ptr_avg = float(np.mean(Ptr_abs))
-    M_raw = 1.0 / (1.0 - Ptr_avg + 1e-15)
-    M = min(M_raw, 10000.0)
+    from ..avalanche.geiger import avalanche_charge, effective_gain
+    W = max(abs(grid_x[np.argmax(np.abs(E))] - grid_x[np.argmin(np.abs(E))]), 1e-7)
+    C_j = eps0 * 11.7 * detector_area * 1e-4 / max(W, 1e-10)
+    ac = avalanche_charge(V_bias, V_br, C_j)
+    M = effective_gain(ac.Q_av) if ac.triggered else 1.0
     return I_primary * M
 
 
@@ -76,7 +84,7 @@ def compute_pdp_spectrum(
     material_name: str = "InGaAs",
 ) -> np.ndarray:
     """Compute PDP at each wavelength for a given excess voltage."""
-    Ptr = combined_trigger_probability(Pe, Ph)
+    Ptr = avalanche_trigger_probability(Pe, Ph)
 
     dead_zone_layers, absorber = pdp_model.find_absorber(layers, material_name)
     dz = dead_zone_thickness(dead_zone_layers)

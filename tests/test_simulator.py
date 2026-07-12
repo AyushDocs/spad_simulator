@@ -49,13 +49,13 @@ def test_get_fields(sim):
 
 
 def test_find_breakdown(sim):
-    Vbr, info = sim.find_breakdown(V_start=0, V_max=80, V_step=1.0)
+    Vbr, info = sim.find_breakdown(V_start=0, V_max=150, V_step=1.0)
     assert Vbr is not None
-    assert 50 < Vbr < 100
+    assert 60 < Vbr < 150
 
 
 def test_dark_current(sim):
-    Vbr, _ = sim.find_breakdown(V_start=0, V_max=80, V_step=1.0)
+    Vbr, _ = sim.find_breakdown(V_start=0, V_max=150, V_step=1.0)
     dc = sim.compute_dark_current(Vbr + 1.0)
     assert dc["I_dark"] > 0
     assert dc["DCR"] > 0
@@ -63,21 +63,20 @@ def test_dark_current(sim):
 
 
 def test_json_output(sim):
-    Vbr, _ = sim.find_breakdown(V_start=0, V_max=80, V_step=1.0)
+    Vbr, _ = sim.find_breakdown(V_start=0, V_max=150, V_step=1.0)
     ap = AfterpulsingModel(N_T=1e12, tau_c=1e-6, Vbr=Vbr)
     en = ExcessNoiseFactor(k_eff=0.5)
     ap_metrics = {"N_T": ap.N_T, "tau_c": ap.tau_c,
                   "P_ap_1us": ap.afterpulsing_probability(1e-6),
                   "holdoff_optimal_1pct_s": ap.holdoff_optimal(0.01)}
     en_metrics = {"M_max": 10.0, "F_max": en.f(10.0), "k_eff": 0.5}
-    pde_metrics = {"pde_max": 0.68, "wavelength_nm": 1310}
     jitter_metrics = {"sigma_s": 1e-12, "fwhm_s": 2e-12}
     dc_metrics = {"I_dark_A": 3e-8, "DCR_cps": 1e9, "Vex_V": 3.0}
     pdp_metrics = {"905nm": 0.5, "1310nm": 0.74, "1550nm": 0.65}
 
     artifact = collect_artifact(Vbr, sim, ap_metrics, en_metrics,
-                                 pde_metrics, jitter_metrics,
-                                 dc_metrics, pdp_metrics)
+                                jitter_metrics,
+                                dc_metrics, pdp_metrics)
 
     assert artifact.Vbr_V == Vbr
     assert artifact.T_K == 300.0
@@ -106,7 +105,6 @@ def test_json_output(sim):
         assert root.find("pdp_max") is not None
         assert root.find("afterpulsing") is not None
         assert root.find("excess_noise") is not None
-        assert root.find("photon_detection_efficiency") is not None
         assert root.find("timing_jitter") is not None
 
 

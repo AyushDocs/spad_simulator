@@ -46,12 +46,12 @@ def test_layer():
 
 def test_doping_profile():
     layers = [
-        Layer(1e-4, "acceptor", 1e18, 0, material="InP"),
-        Layer(1e-4, "donor", 0, 0, material="InP"),
-        Layer(1e-4, "donor", 1e18, 0, material="InP"),
+        Layer(thickness=1e-4, doping_type="acceptor", doping_A=1e18, doping_m=0, material="InP"),
+        Layer(thickness=1e-4, doping_type="donor", doping_A=0, doping_m=0, material="InP"),
+        Layer(thickness=1e-4, doping_type="donor", doping_A=1e18, doping_m=0, material="InP"),
     ]
     grid = Grid1D(L=3e-4, N=60)
-    dp = DopingProfile._from_layers(layers, grid)
+    dp = DopingProfile._from_layers(layers)
     net = dp.net_doping(grid.x)
     assert len(net) == 60
     assert net[0] < 0

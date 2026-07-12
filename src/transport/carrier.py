@@ -1,50 +1,35 @@
+"""Carrier transport module."""
+
 from __future__ import annotations
 
 import numpy as np
 
+from ..core.constants import q, kB
 
-class Carrier:
-    """A single charge carrier (electron or hole)."""
 
-    def __init__(self, x: float, typ: str, v: float = 0.0,
-                 dead_space: float = 0.0) -> None:
-        self._x = float(x)
-        self.typ = typ
-        self.v = float(v)
-        self.E = 0.0
-        self.dead_space_remaining = float(dead_space)
-        self.ionized = False
-        self.alive = True
-        self.age = 0.0
+class CarrierTransport:
+    """Handles drift-diffusion transport equations.
 
-    @property
-    def x(self) -> float:
-        return self._x
+    Continuity equation:
+        ∂n/∂t = (1/q) ∂J_n/∂x + G - R
+        ∂p/∂t = -(1/q) ∂J_p/∂x + G - R
 
-    @x.setter
-    def x(self, value: float) -> None:
-        self._x = float(value)
+    Current densities:
+        J_n = q * n * mu_n * F + q * D_n * ∂n/∂x
+        J_p = q * p * mu_p * F - q * D_p * ∂p/∂x
+    """
 
-    @property
-    def is_electron(self) -> bool:
-        return self.typ == "electron"
+    def drift_velocity(self, F: float, mu: float, vsat: float) -> float:
+        """Drift velocity (cm/s).
 
-    @property
-    def is_hole(self) -> bool:
-        return self.typ == "hole"
+        v = mu * F / sqrt(1 + (mu * F / vsat)²)
+        """
+        muF = mu * F
+        return muF / np.sqrt(1.0 + (muF / vsat) ** 2)
 
-    def move(self, dx: float, dt: float) -> None:
-        self._x += dx
-        self.age += dt
+    def diffusion_coefficient(self, mu: float) -> float:
+        """Diffusion coefficient via Einstein relation.
 
-    def exit_check(self, x_left: float, x_right: float) -> None:
-        if self._x < x_left or self._x > x_right:
-            self.alive = False
-
-    def reset_dead_space(self, l_dead: float) -> None:
-        self.dead_space_remaining = l_dead
-        self.ionized = True
-
-    def __repr__(self) -> str:
-        return (f"Carrier({self.typ}, x={self._x:.3e}, "
-                f"v={self.v:.3e}, alive={self.alive})")
+        D = (k_B * T / q) * mu
+        """
+        return float(kB.magnitude) * 300.0 / float(q.magnitude) * mu

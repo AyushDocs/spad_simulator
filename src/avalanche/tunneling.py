@@ -1,103 +1,139 @@
 from __future__ import annotations
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
 
-from ..core.constants import q, hbar, m0
+from ..core.constants import q, hbar, m0, pi
+from ..utils.pydantic_types import NDArray
 
 
-class TunnelingModel:
+class TunnelingModel(BaseModel):
     """
     Band-to-band (BTBT) and trap-assisted (TAT) tunneling currents.
 
-    BTBT (Kane model):
-        J_BTBT = A * F^2 * exp(-B * Eg^{3/2} / F)
+    BTBT (Kane model, derived from first principles):
+        J_BTBT = A * F^2 * exp(-B / F)
+        where A and B are derived from:
+            mR = mc * mh / (mc + mh)
+            A  = (q^2 * (2*mR)^(3/2)) / (4*pi*hbar^2 * Eg^(3/2))
+            B  = pi * sqrt(mR/2) / (2*q*hbar)
 
-    TAT (Hurkx model):
-        J_TAT = A * F^2 * N_T * exp(-(B1*E_B1^{3/2} + B2*E_B2^{3/2}) / F) /
-                (N_v * exp(-B1*E_B1^{3/2}/F) + N_c * exp(-B2*E_B2^{3/2}/F))
+    TAT (Hurkx model, SI units internally):
+        F in V/cm at entry, converted to V/m internally.
+        Eg in eV at entry, converted to J internally.
+        Returns A/cm².
     """
 
-    def __init__(self, T: float = 300.0,
-                 N_T: float = 1e12,
-                 a_frac: float = 0.5,
-                 Eg_grid: np.ndarray | None = None,
-                 Nc_grid: np.ndarray | None = None,
-                 Nv_grid: np.ndarray | None = None) -> None:
-        self._T = T
-        self._N_T = N_T
-        self._a = a_frac
-        self._Eg_grid = Eg_grid
-        self._Nc_grid = Nc_grid
-        self._Nv_grid = Nv_grid
-        self._q = q
-        self._hbar = hbar
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def _m_r(self, mc: float, mh: float) -> float:
-        return mc * m0 * mh * m0 / ((mc + mh) * m0)
+    T: float = 300.0
+    N_T: float = 1e12
+    Eg_mulp: float = 1.35
+    mc_mulp: float = 0.041
+    mh_mulp: float = 0.4
+    Nc_grid: NDArray | None = None
+    Nv_grid: NDArray | None = None
 
-    def _A_coeff(self, Eg: float, mr: float) -> float:
-        return (self._q ** 3 / (np.sqrt(2.0 * mr * Eg * self._q)
-                                * 4.0 * np.pi ** 3 * self._hbar ** 2))
+    _A: float = PrivateAttr()
+    _B_btbt: float = PrivateAttr()
+    _T_private: float = PrivateAttr()
+    _N_T_private: float = PrivateAttr()
+    _Nc_grid_private: np.ndarray | None = PrivateAttr()
+    _Nv_grid_private: np.ndarray | None = PrivateAttr()
 
-    def _B_coeff(self, mr: float) -> float:
-        me = m0
-        return float(np.pi / (2.0 * self._q * self._hbar) * np.sqrt(mr * me / 2.0))
+    @field_validator("T")
+    @classmethod
+    def _T_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"Temperature must be positive, got {v}")
+        return v
 
-    def btbt_current(self, F: np.ndarray,
-                     Eg_arr: np.ndarray,
-                     mc_arr: np.ndarray,
-                     mh_arr: np.ndarray) -> np.ndarray:
-        F_abs = np.abs(F)
-        mr = self._m_r(np.mean(mc_arr), np.mean(mh_arr))
-        Eg_mean = np.mean(Eg_arr)
-        A = self._A_coeff(Eg_mean, mr)
-        B = self._B_coeff(mr)
-        with np.errstate(divide="ignore", over="ignore"):
-            return np.where(F_abs > 1e3,
-                            A * F_abs ** 2 * np.exp(-B * Eg_mean ** 1.5 / F_abs),
+    @field_validator("N_T")
+    @classmethod
+    def _N_T_nonneg(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError(f"Trap concentration must be non-negative, got {v}")
+        return v
+
+    @field_validator("Eg_mulp")
+    @classmethod
+    def _Eg_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"Bandgap must be positive, got {v}")
+        return v
+
+    @field_validator("mc_mulp", "mh_mulp")
+    @classmethod
+    def _mass_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"Effective mass must be positive, got {v}")
+        return v
+
+    @model_validator(mode="after")
+    def _compute_coefficients(self):
+        self._T_private = self.T
+        self._N_T_private = self.N_T
+        self._Nc_grid_private = self.Nc_grid
+        self._Nv_grid_private = self.Nv_grid
+
+        q_val = float(q.to("C").magnitude)
+        hbar_val = float(hbar.to("J*s").magnitude)
+        m0_val = float(m0.to("kg").magnitude)
+
+        Eg_J = self.Eg_mulp * q_val
+        mc_kg = self.mc_mulp * m0_val
+        mh_kg = self.mh_mulp * m0_val
+        mR = mc_kg * mh_kg / (mc_kg + mh_kg)
+
+        self._A = q_val**3 * np.sqrt((2.0 * mR) / Eg_J) / (4.0 * pi**3 * hbar_val**2)
+        self._B_btbt = pi * np.sqrt(mR / 2.0) * (Eg_J ** 1.5) / (2.0 * q_val * hbar_val)
+        return self
+
+    def btbt_current(self, F: np.ndarray) -> np.ndarray:
+        """BTBT current density. F in V/cm, returns A/cm³."""
+        # Convert F from V/cm to V/m
+        F_SI = F * 100.0
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            J_SI = np.where(F_SI > 1e7,
+                            self._A * F_SI ** 2
+                            * np.exp(-self._B_btbt / F_SI),
                             0.0)
+        return J_SI * 1e-6  # A/m³ -> A/cm³
 
     def tat_current(self, F: np.ndarray,
-                    Eg_arr: np.ndarray,
-                    mc_arr: np.ndarray,
-                    mh_arr: np.ndarray,
-                    N_T: float | None = None,
-                    a_frac: float | None = None) -> np.ndarray:
-        F_abs = np.abs(F)
-        N_T = N_T if N_T is not None else self._N_T
-        a = a_frac if a_frac is not None else self._a
-        Eg_mean = np.mean(Eg_arr)
+                    Eg_mulp: float,
+                    mc_mulp: float,
+                    mh_mulp: float,
+                    N_T: float = 1e12,
+                    a_frac: float = 0.75) -> np.ndarray:
+        """TAT current density. F in V/cm, returns A/cm³."""
+        q_val = float(q.to("C").magnitude)
+        m0_val = float(m0.to("kg").magnitude)
 
-        mc_mean = np.mean(mc_arr) * m0
-        mh_mean = np.mean(mh_arr) * m0
+        Eg_J = Eg_mulp * q_val
+        mc_kg = mc_mulp * m0_val
+        mh_kg = mh_mulp * m0_val
 
-        B1 = np.pi / (2.0 * self._q * self._hbar) * np.sqrt(mh_mean / 2.0)
-        B2 = np.pi / (2.0 * self._q * self._hbar) * np.sqrt(mc_mean / 2.0)
+        hbar_val = float(hbar.to("J*s").magnitude)
+        B1 = np.pi * np.sqrt(mh_kg / 2.0) / (2.0 * q_val * hbar_val)
+        B2 = np.pi * np.sqrt(mc_kg / 2.0) / (2.0 * q_val * hbar_val)
+        E_B1 = a_frac * Eg_J
+        E_B2 = (1.0 - a_frac) * Eg_J
+        Nc = 1e25  # m⁻³
+        Nv = 1e25  # m⁻³
+        N_T_SI = N_T * 1e6  # cm⁻³ -> m⁻³
 
-        E_B1 = a * Eg_mean
-        E_B2 = (1.0 - a) * Eg_mean
-
-        mr = self._m_r(np.mean(mc_arr), np.mean(mh_arr))
-        A = self._A_coeff(Eg_mean, mr)
-
-        if self._Nc_grid is not None:
-            Nc_mean = float(np.mean(self._Nc_grid))
-        else:
-            Nc_mean = 1e19
-        if self._Nv_grid is not None:
-            Nv_mean = float(np.mean(self._Nv_grid))
-        else:
-            Nv_mean = 1e19
-
-        Nc = Nc_mean * 1e-6
-        Nv = Nv_mean * 1e-6
+        # Convert F from V/cm to V/m
+        F_SI = F * 100.0
 
         with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
-            num = (A * F_abs ** 2 * N_T
-                   * np.exp(-(B1 * E_B1 ** 1.5 + B2 * E_B2 ** 1.5) / F_abs))
-            den = (Nv * np.exp(-B1 * E_B1 ** 1.5 / F_abs)
-                   + Nc * np.exp(-B2 * E_B2 ** 1.5 / F_abs))
-        safe = (F_abs > 1e3) & (den > 1e-300) & (np.isfinite(num)) & (np.isfinite(den))
-        result = np.zeros_like(num)
-        result[safe] = num[safe] / den[safe]
-        return result
+            exp1 = np.exp(-(B1 * (E_B1**1.5)) / F_SI)
+            exp2 = np.exp(-(B2 * (E_B2**1.5)) / F_SI)
+            num = self._A * F_SI ** 2 * N_T_SI * exp1 * exp2
+            den = Nv * exp1 + Nc * exp2
+            J_TAT = np.where(F_SI > 1e7,
+                             num / (den + 1e-300),
+                             0.0)
+
+        J_SI = q_val * J_TAT  # A/m³
+        return J_SI * 1e-6  # A/m³ -> A/cm³

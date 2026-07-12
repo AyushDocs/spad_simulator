@@ -3,16 +3,19 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import numpy as np
+from pydantic.dataclasses import dataclass
 
 from ..core.constants import q
+from ..utils.pydantic_types import NDArray
 from .tunneling import TunnelingModel
 
 
-class CurrentComponent(ABC):
+class CurrentDensityComponent(ABC):
     """Interface for current density components returning A/cm³."""
 
     @abstractmethod
-    def compute(self, x: np.ndarray, F: np.ndarray, **kwargs) -> np.ndarray:
+    def compute(self, x: np.ndarray, F: np.ndarray,
+                **kwargs) -> np.ndarray:
         ...
 
     @property
@@ -21,16 +24,18 @@ class CurrentComponent(ABC):
         ...
 
 
-class SRHCurrent(CurrentComponent):
-    """Shockley-Read-Hall thermal generation current density."""
+@dataclass(config=dict(arbitrary_types_allowed=True))
+class SRHCurrentDensity(CurrentDensityComponent):
+    """Shockley-Read-Hall thermal generation current density.
 
-    def __init__(self,
-                 tau_n_grid: np.ndarray | None = None,
-                 tau_p_grid: np.ndarray | None = None,
-                 tau_default: float = 1e-6) -> None:
-        self._tau_n = tau_n_grid
-        self._tau_p = tau_p_grid
-        self._tau_default = tau_default
+    Only active inside the InGaAs absorption region.  Uses a single
+    ni value and tau_n, tau_p for the absorption layer only.
+    """
+
+    tau_n_absorber: float
+    tau_p_absorber: float
+    mat_name_grid: NDArray
+    ni_absorber: float
 
     @property
     def name(self) -> str:
@@ -38,23 +43,33 @@ class SRHCurrent(CurrentComponent):
 
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
-        ni_arr = kwargs.get("ni_arr", None)
-        if self._tau_n is not None and self._tau_p is not None:
-            tau = (self._tau_n + self._tau_p) / 2.0
-        elif ni_arr is not None:
-            tau = np.full_like(ni_arr, self._tau_default)
-        else:
-            return np.zeros_like(x)
-        G = ni_arr / (2.0 * tau)
-        return q * G
+        tau = (self.tau_n_absorber + self.tau_p_absorber) / 2.0
+        G = self.ni_absorber / (2.0 * tau)
+        J = float(q.to("C").magnitude) * G
+        in_absorber = self.mat_name_grid == "InGaAs"
+        return J * in_absorber * (F > 1e4)
 
 
-class BTBTCurrent(CurrentComponent):
-    """Band-to-band tunneling current density (Kane model)."""
+@dataclass(config=dict(arbitrary_types_allowed=True))
+class BTBTCurrentDensity(CurrentDensityComponent):
+    """Band-to-band tunneling current density (Kane model).
 
-    def __init__(self, T: float = 300.0,
-                 N_T: float = 1e12) -> None:
-        self._tunnel = TunnelingModel(T=T, N_T=N_T)
+    A and B are derived from first principles using the multiplication
+    layer bandgap and conductivity effective masses.
+    """
+
+    Eg_mulp: float
+    mc_mulp: float
+    mh_mulp: float
+    T: float = 300.0
+    N_T: float = 1e12
+
+    _tunnel: TunnelingModel | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_tunnel", TunnelingModel(
+            T=self.T, N_T=self.N_T,
+            Eg_mulp=self.Eg_mulp, mc_mulp=self.mc_mulp, mh_mulp=self.mh_mulp))
 
     @property
     def name(self) -> str:
@@ -62,20 +77,24 @@ class BTBTCurrent(CurrentComponent):
 
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
-        J = self._tunnel.btbt_current(
-            F, kwargs.get("Eg_arr", np.zeros_like(F)),
-            kwargs.get("mc_arr", np.zeros_like(F)),
-            kwargs.get("mh_arr", np.zeros_like(F)))
-        dx = x[1] - x[0]
-        return J / dx
+        J = self._tunnel.btbt_current(F)  # A/cm³
+        return J
 
 
-class TATCurrent(CurrentComponent):
+@dataclass(config=dict(arbitrary_types_allowed=True))
+class TATCurrentDensity(CurrentDensityComponent):
     """Trap-assisted tunneling current density (Hurkx model)."""
 
-    def __init__(self, T: float = 300.0,
-                 N_T: float = 1e12) -> None:
-        self._tunnel = TunnelingModel(T=T, N_T=N_T)
+    Eg_mulp: float
+    mc_mulp: float
+    mh_mulp: float
+    T: float = 300.0
+    N_T: float = 1e12
+
+    _tunnel: TunnelingModel | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_tunnel", TunnelingModel(T=self.T, N_T=self.N_T))
 
     @property
     def name(self) -> str:
@@ -84,24 +103,21 @@ class TATCurrent(CurrentComponent):
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
         J = self._tunnel.tat_current(
-            F, kwargs.get("Eg_arr", np.zeros_like(F)),
-            kwargs.get("mc_arr", np.zeros_like(F)),
-            kwargs.get("mh_arr", np.zeros_like(F)))
-        dx = x[1] - x[0]
-        return J / dx
+            F, self.Eg_mulp, self.mc_mulp, self.mh_mulp, N_T=self.N_T)  # A/cm³
+        return J
 
 
-class CompositeCurrent(CurrentComponent):
+class CompositeCurrentDensity(CurrentDensityComponent):
     """Sum of multiple current components."""
 
     def __init__(self) -> None:
-        self._components: list[CurrentComponent] = []
+        self._components: list[CurrentDensityComponent] = []
 
-    def add(self, component: CurrentComponent) -> None:
+    def add(self, component: CurrentDensityComponent) -> None:
         self._components.append(component)
 
     @property
-    def components(self) -> list[CurrentComponent]:
+    def components(self) -> list[CurrentDensityComponent]:
         return list(self._components)
 
     @property

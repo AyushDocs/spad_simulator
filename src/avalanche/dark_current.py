@@ -1,104 +1,109 @@
+"""Dark current density components."""
+
 from __future__ import annotations
 
-import numpy as np
+from abc import ABC, abstractmethod
 
-from ..core.constants import q
+import numpy as np
+from pydantic.dataclasses import dataclass
+
+from ..core.constants import q, kB
+from ..utils.pydantic_types import NDArray
+from .current import CurrentDensityComponent
 from .tunneling import TunnelingModel
-from .current import SRHCurrent, BTBTCurrent, TATCurrent, CompositeCurrent
+
+
+@dataclass(config=dict(arbitrary_types_allowed=True))
+class DiffusionCurrentDensity(CurrentDensityComponent):
+    """Diffusion current density from minority carriers.
+
+    J_diff ~ q * (Dn/tau_n + Dp/tau_p) * ni² / N_A
+    Only active in the InGaAs absorption region.
+    """
+
+    T: float
+    tau_n_absorber: float
+    tau_p_absorber: float
+    mat_name_grid: NDArray
+    ni_absorber: float
+
+    @property
+    def name(self) -> str:
+        return "Diffusion"
+
+    def compute(self, x: np.ndarray, F: np.ndarray, **kwargs) -> np.ndarray:
+        vth = float((q * kB * T / q**2).magnitude)  # rough thermal velocity
+        Dn = 26.0  # cm²/s typical for InGaAs
+        Dp = 10.0  # cm²/s typical for InGaAs
+        J = float(q.to("C").magnitude) * self.ni_absorber**2 * (
+            Dn / self.tau_n_absorber + Dp / self.tau_p_absorber) / 1e16
+        in_absorber = self.mat_name_grid == "InGaAs"
+        return J * in_absorber
+
+
+@dataclass(config=dict(arbitrary_types_allowed=True))
+class GenerationCurrentDensity(CurrentDensityComponent):
+    """Thermal generation current density (SRH).
+
+    J_gen ~ q * ni * W / (2 * tau)
+    """
+
+    T: float
+    tau_n_absorber: float
+    tau_p_absorber: float
+    mat_name_grid: NDArray
+    ni_absorber: float
+
+    @property
+    def name(self) -> str:
+        return "Generation"
+
+    def compute(self, x: np.ndarray, F: np.ndarray, **kwargs) -> np.ndarray:
+        tau = (self.tau_n_absorber + self.tau_p_absorber) / 2.0
+        G = self.ni_absorber / (2.0 * tau)
+        J = float(q.to("C").magnitude) * G
+        in_absorber = self.mat_name_grid == "InGaAs"
+        return J * in_absorber
 
 
 class DarkCurrentModel:
-    """
-    SPAD dark current model combining thermal generation, BTBT, and TAT
-    via the CurrentComponent interface.
+    """DarkCurrentModel compatibility class for tests."""
 
-    Thermal generation (mid-gap traps, depletion approximation):
-        G_thermal = n_i / (2*tau)
-        J_thermal = q * G_thermal
-        where tau = (tau_n + tau_p)/2 assumed equal for mid-gap
+    def __init__(self, T, grid_x, N_T, mat_name_grid, ni_absorber, tau_n_absorber, tau_p_absorber, Eg_mulp, mc_mulp, mh_mulp):
+        self.T = T
+        self.grid_x = grid_x
+        self.N_T = N_T
+        self.mat_name_grid = mat_name_grid
+        self.ni_absorber = ni_absorber
+        self.tau_n_absorber = tau_n_absorber
+        self.tau_p_absorber = tau_p_absorber
+        self.Eg_mulp = Eg_mulp
+        self.mc_mulp = mc_mulp
+        self.mh_mulp = mh_mulp
 
-    BTBT and TAT from TunnelingModel wrapped as components.
+        from .current import CompositeCurrentDensity, BTBTCurrentDensity, TATCurrentDensity, SRHCurrentDensity
+        self.current = CompositeCurrentDensity()
+        self.current.add(SRHCurrentDensity(
+            tau_n_absorber=tau_n_absorber,
+            tau_p_absorber=tau_p_absorber,
+            mat_name_grid=mat_name_grid,
+            ni_absorber=ni_absorber,
+        ))
+        self.current.add(BTBTCurrentDensity(
+            Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp, T=T, N_T=N_T
+        ))
+        self.current.add(TATCurrentDensity(
+            Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp, T=T, N_T=N_T
+        ))
 
-    DCR = A_det * int (G_thermal + G_BTBT/q + G_TAT/q) * P_trigger(x) dx
-    """
+    def total_dark_current_density(self, x, F, ni_arr, Eg_arr, mc_arr, mh_arr):
+        return self.current.compute(x, F)
 
-    def __init__(self, T: float = 300.0,
-                 Eg_grid: np.ndarray | None = None,
-                 mc_grid: np.ndarray | None = None,
-                 mh_grid: np.ndarray | None = None,
-                 grid_x: np.ndarray | None = None,
-                 N_T: float = 1e12,
-                 tau_n_grid: np.ndarray | None = None,
-                 tau_p_grid: np.ndarray | None = None) -> None:
-        self.tunneling = TunnelingModel(T=T, N_T=N_T,
-                                        Eg_grid=Eg_grid)
-        self._Eg_grid = Eg_grid
-        self._mc_grid = mc_grid
-        self._mh_grid = mh_grid
-        self._x = grid_x
-        self._N_T = N_T
-        self._tau_n = tau_n_grid
-        self._tau_p = tau_p_grid
-        self._q = q
+    def generation_rate(self, x, F, ni_arr, Eg_arr, mc_arr, mh_arr):
+        J_total = self.total_dark_current_density(x, F, ni_arr, Eg_arr, mc_arr, mh_arr)
+        q_val = float(q.to("C").magnitude)
+        return J_total / q_val
 
-        self._current = CompositeCurrent()
-        self._current.add(SRHCurrent(tau_n_grid, tau_p_grid))
-        self._current.add(BTBTCurrent(T=T, N_T=N_T))
-        self._current.add(TATCurrent(T=T, N_T=N_T))
-
-    @property
-    def current_model(self) -> CompositeCurrent:
-        return self._current
-
-    def thermal_generation(self, x: np.ndarray,
-                            ni_arr: np.ndarray) -> np.ndarray:
-        if self._tau_n is not None and self._tau_p is not None:
-            tau = (self._tau_n + self._tau_p) / 2.0
-        elif self._x is not None and ni_arr is not None:
-            tau = np.full_like(ni_arr, 1e-6)
-        else:
-            tau = 1e-6
-        return ni_arr / (2.0 * tau)
-
-    def thermal_current_density(self, x: np.ndarray,
-                                ni_arr: np.ndarray) -> float:
-        G = self.thermal_generation(x, ni_arr)
-        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
-        if self._x is not None:
-            return float(self._q * np.trapezoid(G, self._x))
-        return float(self._q * np.trapezoid(G, x))
-
-    def total_dark_current_density(self, x: np.ndarray,
-                                   F: np.ndarray,
-                                   ni_arr: np.ndarray,
-                                   Eg_arr: np.ndarray,
-                                   mc_arr: np.ndarray,
-                                   mh_arr: np.ndarray) -> np.ndarray:
-        return self._current.compute(
-            x, F, ni_arr=ni_arr, Eg_arr=Eg_arr,
-            mc_arr=mc_arr, mh_arr=mh_arr)
-
-    def generation_rate(self, x: np.ndarray,
-                        F: np.ndarray,
-                        ni_arr: np.ndarray,
-                        Eg_arr: np.ndarray,
-                        mc_arr: np.ndarray,
-                        mh_arr: np.ndarray) -> np.ndarray:
-        J = self.total_dark_current_density(x, F, ni_arr, Eg_arr, mc_arr, mh_arr)
-        return J / self._q
-
-    def compute_dcr(self, x: np.ndarray,
-                    F: np.ndarray,
-                    Pe: np.ndarray,
-                    ni_arr: np.ndarray,
-                    Eg_arr: np.ndarray,
-                    mc_arr: np.ndarray,
-                    mh_arr: np.ndarray,
-                    A_det: float = 1e-6) -> float:
+    def compute_dcr(self, x, F, Pe, ni_arr, Eg_arr, mc_arr, mh_arr, detector_area=1e-6):
         G = self.generation_rate(x, F, ni_arr, Eg_arr, mc_arr, mh_arr)
-        integrand = G * Pe
-        # Trapezoidal rule: O(h²), handles non-uniform grid near heterojunctions
-        total_gen = float(np.trapezoid(integrand, x))
-        return A_det * total_gen
-
-
+        return float(np.trapezoid(G * Pe, x) * detector_area)
