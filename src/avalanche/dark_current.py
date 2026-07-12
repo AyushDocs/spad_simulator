@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 
 import numpy as np
 from pydantic.dataclasses import dataclass
@@ -10,7 +9,6 @@ from pydantic.dataclasses import dataclass
 from ..core.constants import q, kB
 from ..utils.pydantic_types import NDArray
 from .current import CurrentDensityComponent
-from .tunneling import TunnelingModel
 
 
 @dataclass(config=dict(arbitrary_types_allowed=True))

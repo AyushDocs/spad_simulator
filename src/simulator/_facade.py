@@ -8,7 +8,7 @@ from ..core.device import Device
 from ..core.layer import Layer
 from ..poisson.service import PoissonService
 from ..avalanche.ionization import IonizationCoefficients
-from ..avalanche.trigger import TriggerModel, TriggerSolver
+from ..avalanche.trigger import TriggerSolver
 from ..transport.drift_diffusion import DriftDiffusionSolver, DriftDiffusion
 from ..transport.monte_carlo import MonteCarloTransport
 from ..self_consistent.particle_mesh import ParticleMesh
@@ -59,6 +59,7 @@ class SPADSimulator:
         self.loop: SelfConsistentLoop | None = None
 
         self._Vbr: float | None = None
+        self._dead_space_Eg = 1.35  # InP bandgap (eV) for dead-space correction
         self._field_cache = FieldCache(maxlen=cache_maxlen)
 
     # -- Reconfiguration -------------------------------------------------------
@@ -97,8 +98,8 @@ class SPADSimulator:
         phi, E, _ = self.poisson_service.solve(Vbias, guess=guess)
         xl, xr, _ = self.depletion_width(Vbias, E=E)
 
-        alpha = self.ionization.alpha_n(np.abs(E))
-        beta = self.ionization.alpha_p(np.abs(E))
+        alpha = self.ionization.effective_alpha_n(E, Eg=self._dead_space_Eg)
+        beta = self.ionization.effective_alpha_p(E, Eg=self._dead_space_Eg)
         Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
 
         result = (phi, E, Pe, Ph, xl, xr)
@@ -124,8 +125,8 @@ class SPADSimulator:
         cached_phi = self._field_cache.get(Vbias)
         if cached_phi is None:
             xl, xr, _ = self.depletion_width(Vbias, E=E)
-            alpha = self.ionization.alpha_n(np.abs(E))
-            beta = self.ionization.alpha_p(np.abs(E))
+            alpha = self.ionization.effective_alpha_n(E, Eg=self._dead_space_Eg)
+            beta = self.ionization.effective_alpha_p(E, Eg=self._dead_space_Eg)
             Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
             self._field_cache.put(Vbias, (phi, E, Pe, Ph, xl, xr))
 
@@ -135,8 +136,8 @@ class SPADSimulator:
 
     def solve_trigger(self, Vbias: float, field_threshold: float = 1e4) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         phi, E, _ = self.solve_poisson(Vbias)
-        alpha = self.ionization.alpha_n(np.abs(E))
-        beta = self.ionization.alpha_p(np.abs(E))
+        alpha = self.ionization.effective_alpha_n(E, Eg=self._dead_space_Eg)
+        beta = self.ionization.effective_alpha_p(E, Eg=self._dead_space_Eg)
         Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x, field_threshold=field_threshold)
         return Pe, Ph, E
 
@@ -170,8 +171,8 @@ class SPADSimulator:
         if E is None:
             _, E, Pe, Ph, _, _ = self.get_fields(Vbias)
         else:
-            alpha = self.ionization.alpha_n(np.abs(E))
-            beta = self.ionization.alpha_p(np.abs(E))
+            alpha = self.ionization.effective_alpha_n(E, Eg=self._dead_space_Eg)
+            beta = self.ionization.effective_alpha_p(E, Eg=self._dead_space_Eg)
             Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x)
 
         x = self.grid.x

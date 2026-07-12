@@ -8,7 +8,7 @@ from scipy.linalg import solve_banded
 
 from ..core.grid import Grid1D
 from ..core.doping import DopingProfile
-from ..core.constants import q, VT, eps0
+from ..core.constants import q, VT
 from ..utils._exceptions import ConvergenceError, PhysicsError
 from ..utils._logging import get_logger
 from ..utils.pydantic_types import NDArray

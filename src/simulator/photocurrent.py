@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..core.constants import h, c
+from ..core.constants import h
 from ..core.physics_helpers import alpha_to_grid, avalanche_trigger_probability, dead_zone_thickness
 
+# Speed of light in m/s for photon energy computation
+_C_MS = 2.998e8
+
 if TYPE_CHECKING:
-    from ..core.device import Device
-    from ..core.grid import Grid1D
     from ..avalanche.pdp import PDPModel
 
 
@@ -43,7 +44,7 @@ def compute_photocurrent(
 
     alpha_grid = alpha_to_grid(grid_x, layers, materials, wavelength)
 
-    Eph = h * c / wavelength
+    Eph = float(h.magnitude) * _C_MS / wavelength
     trans = pdp_model.dead_zone_transmission(wavelength, dead_zone_layers)
     phi_photon = (1.0 - pdp_model.reflectivity) * trans * power / (Eph * detector_area)
 

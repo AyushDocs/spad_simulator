@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import numpy as np
-from pydantic.dataclasses import dataclass
 from ..core.constants import q, kB
 from ..core.material import Material
 from ..utils.pydantic_types import NDArray
@@ -106,10 +105,23 @@ class OkutoCrowellCoefficients:
     def beta(self, E: np.ndarray) -> np.ndarray:
         return self.alpha_p(np.abs(E))
 
-    def dead_space_length(self, E: float | np.ndarray, carrier: str = "electron") -> float | np.ndarray:
-        return 1e-6
+    def dead_space_length(self, E: float | np.ndarray, carrier: str = "electron",
+                          Eg: float = 1.35) -> float | np.ndarray:
+        E_abs = np.abs(np.asarray(E, dtype=float))
+        E_th = (1.5 * Eg) if carrier == "electron" else (1.0 * Eg)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            l_dead = np.where(E_abs > 1e4, E_th / E_abs, 0.0)
+        return float(l_dead) if np.ndim(E) == 0 else l_dead
 
+    def effective_alpha_n(self, F: np.ndarray, Eg: float = 1.35) -> np.ndarray:
+        alpha = self.alpha_n(np.abs(F))
+        ld = self.dead_space_length(F, "electron", Eg)
+        return np.where(ld > 0, alpha / (1.0 + alpha * ld), alpha)
 
+    def effective_alpha_p(self, F: np.ndarray, Eg: float = 1.35) -> np.ndarray:
+        alpha = self.alpha_p(np.abs(F))
+        ld = self.dead_space_length(F, "hole", Eg)
+        return np.where(ld > 0, alpha / (1.0 + alpha * ld), alpha)
 
 
 class IonizationCoefficients:
@@ -198,5 +210,20 @@ class IonizationCoefficients:
         else:
             return self.alpha_p(np.abs(E))
 
-    def dead_space_length(self, E: float | np.ndarray, carrier: str = "electron") -> float | np.ndarray:
-        return 1e-6
+    def dead_space_length(self, E: float | np.ndarray, carrier: str = "electron",
+                          Eg: float = 1.35) -> float | np.ndarray:
+        E_abs = np.abs(np.asarray(E, dtype=float))
+        E_th = (1.5 * Eg) if carrier == "electron" else (1.0 * Eg)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            l_dead = np.where(E_abs > 1e4, E_th / E_abs, 0.0)
+        return float(l_dead) if np.ndim(E) == 0 else l_dead
+
+    def effective_alpha_n(self, F: np.ndarray, Eg: float = 1.35) -> np.ndarray:
+        alpha = self.alpha_n(np.abs(F))
+        ld = self.dead_space_length(F, "electron", Eg)
+        return np.where(ld > 0, alpha / (1.0 + alpha * ld), alpha)
+
+    def effective_alpha_p(self, F: np.ndarray, Eg: float = 1.35) -> np.ndarray:
+        alpha = self.alpha_p(np.abs(F))
+        ld = self.dead_space_length(F, "hole", Eg)
+        return np.where(ld > 0, alpha / (1.0 + alpha * ld), alpha)

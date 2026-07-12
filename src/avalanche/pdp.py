@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import List, Tuple, Optional
 import numpy as np
-from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 
-from ..core.constants import q
 from ..core.material import Material
+
+# elementary charge (C) — avoid pint import to prevent UnitStrippedWarning
+_Q_C = 1.602176634e-19
 from ..core.layer import Layer
 from ..utils._logging import get_logger
 from ..utils.pydantic_types import NDArray
@@ -126,5 +127,5 @@ class PDPModel(BaseModel):
         alpha_m = alpha[mask]
         G_opt = phi_photon * alpha_m * np.exp(-alpha_m * x_rel)
         J = np.zeros_like(x)
-        J[mask] = float(q.to("C").magnitude) * G_opt
+        J[mask] = _Q_C * G_opt
         return J

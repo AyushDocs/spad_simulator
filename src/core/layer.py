@@ -2,10 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-import pint
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from .units import Q_
 
 DopingType = Literal["donor", "acceptor"]
 

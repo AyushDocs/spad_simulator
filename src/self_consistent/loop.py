@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List
 
 import numpy as np
 
@@ -9,7 +8,6 @@ from ..core.doping import DopingProfile
 from ..core.constants import q
 from ..poisson.solver import PoissonSolver
 from ..avalanche.ionization import IonizationCoefficients
-from ..transport.carrier import CarrierTransport
 from ..transport.drift_diffusion import DriftDiffusionSolver
 from .particle_mesh import ParticleMesh, Carrier
 from .circuit import CircuitSolver
@@ -55,7 +53,7 @@ class SelfConsistentLoop:
 
     def inject_carrier(self, x0: float, typ: str = "electron") -> None:
         E0 = float(np.interp(x0, self.grid.x, self._E_grid))
-        l_dead = float(self.ionization.dead_space_length(E0, typ))
+        l_dead = float(self.ionization.dead_space_length(E0, typ, Eg=1.35))
         self.carriers.append(Carrier(x=x0, typ=typ, dead_space=l_dead))
 
     def _current(self) -> float:
@@ -80,7 +78,7 @@ class SelfConsistentLoop:
                          else self.ionization.beta)
                 P = 1.0 - np.exp(-float(coeff(np.array([E_loc]))[0]) * dx)
                 if np.random.rand() < P:
-                    ld = float(self.ionization.dead_space_length(E_loc, c.typ))
+                    ld = float(self.ionization.dead_space_length(E_loc, c.typ, Eg=1.35))
                     new_carriers.extend([Carrier(x=c.x, typ="electron", dead_space=ld),
                                          Carrier(x=c.x, typ="hole", dead_space=ld)])
                     c.reset_dead_space(ld)

@@ -4,19 +4,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..core.device import Device
-from ..core.material_grid import MaterialGrid
 from ..poisson.solver import PoissonSolver
 from ..poisson.field import DepletionWidth
 from ..poisson.service import PoissonService
-from ..avalanche.ionization import IonizationCoefficients, OkutoCrowellCoefficients
-from ..avalanche.trigger import TriggerModel
+from ..avalanche.ionization import OkutoCrowellCoefficients
+
 from ..avalanche.current import (
     CompositeCurrentDensity,
     BTBTCurrentDensity,
     TATCurrentDensity,
     SRHCurrentDensity,
 )
-from ..avalanche.tunneling import TunnelingModel
 from ..avalanche.pdp import PDPModel
 
 if TYPE_CHECKING:

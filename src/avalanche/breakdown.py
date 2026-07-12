@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from ..core.grid import Grid1D
 from ..utils._logging import get_logger

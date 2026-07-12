@@ -9,7 +9,7 @@ import numpy as np
 import pint
 
 from ._exceptions import ConfigError
-from ..core.units import Q, ureg
+from ..core.units import Q
 
 # Default data directory (set via set_data_dir or DATA_DIR env var)
 _DATA_DIR: str | None = None

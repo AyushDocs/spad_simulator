@@ -277,9 +277,9 @@ class MultiplicationVsExcessBiasPlotter(BasePlotter):
         ax.semilogy(Vex_arr[mask], M_arr[mask], "o-", lw=2, color="#1f77b4")
         if Vbr is not None:
             ax.axvline(x=0, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
-        ax.set_xlabel("Excess Voltage (V)")
+        ax.set_xlabel("V - Vbr (V)")
         ax.set_ylabel("Multiplication Factor M")
-        ax.set_title("Avalanche Multiplication vs Excess Bias", fontsize=12, pad=12)
+        ax.set_title("Avalanche Multiplication vs Bias (below breakdown)", fontsize=12, pad=12)
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()

@@ -1,9 +1,14 @@
-from .ionization import IonizationCoefficients
-from .trigger import TriggerModel
-from .tunneling import TunnelingModel
-from .current import CurrentDensityComponent, SRHCurrentDensity, BTBTCurrentDensity, TATCurrentDensity, CompositeCurrentDensity
-from .pdp import PDPModel
-from .breakdown import BreakdownVoltage, BreakdownCriterion, CurrentRiseCriterion
-from .excess_noise import ExcessNoiseModel
-from .afterpulsing import AfterpulsingModel
-from .geiger import GeigerModel
+from .ionization import IonizationCoefficients as IonizationCoefficients
+from .tunneling import TunnelingModel as TunnelingModel
+from .current import CurrentDensityComponent as CurrentDensityComponent
+from .current import SRHCurrentDensity as SRHCurrentDensity
+from .current import BTBTCurrentDensity as BTBTCurrentDensity
+from .current import TATCurrentDensity as TATCurrentDensity
+from .current import CompositeCurrentDensity as CompositeCurrentDensity
+from .pdp import PDPModel as PDPModel
+from .breakdown import BreakdownVoltage as BreakdownVoltage
+from .breakdown import BreakdownCriterion as BreakdownCriterion
+from .breakdown import CurrentRiseCriterion as CurrentRiseCriterion
+from .excess_noise import ExcessNoiseModel as ExcessNoiseModel
+from .afterpulsing import AfterpulsingModel as AfterpulsingModel
+from .geiger import GeigerModel as GeigerModel

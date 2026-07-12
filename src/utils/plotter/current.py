@@ -50,6 +50,33 @@ class DarkCurrentPlotter(BasePlotter):
         self._save("dark_current_vs_bias.png", plt)
 
 
+class DarkCurrentComponentsPlotter(BasePlotter):
+    @property
+    def name(self) -> str:
+        return "dark_current_components"
+
+    def plot(self, Vex: np.ndarray, I_srh: np.ndarray,
+             I_btbt: np.ndarray, I_tat: np.ndarray,
+             Vbr: float | None = None) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        eps = 1e-20
+        ax.semilogy(Vex, np.abs(I_srh) + eps, label="SRH", lw=2)
+        ax.semilogy(Vex, np.abs(I_btbt) + eps, label="BTBT", lw=2)
+        ax.semilogy(Vex, np.abs(I_tat) + eps, label="TAT", lw=2)
+        I_total = np.abs(I_srh + I_btbt + I_tat)
+        ax.semilogy(Vex, I_total + eps, "k--", label="Total", lw=1.5)
+        if Vbr is not None:
+            ax.axvline(x=0, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax.set_xlabel("Excess Voltage (V)")
+        ax.set_ylabel("Dark Current (A)")
+        ax.set_title("Dark Current Components vs Excess Voltage", fontsize=12, pad=12)
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("dark_current_components.png", plt)
+
+
 class DCRPlotter(BasePlotter):
     @property
     def name(self) -> str:

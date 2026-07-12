@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 
-from ..core.constants import q, hbar, m0, kB
+from ..core.constants import q, m0, kB
 from ..utils._logging import get_logger
 
 log = get_logger("transport.monte_carlo")

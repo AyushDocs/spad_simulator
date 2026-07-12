@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import numpy as np
-import pint
 
 from ..utils._logging import get_logger
 from ..utils.loaders import MaterialData, AbsorptionData
 from .constants import q, VT
 from .absorption import AbsorptionModel, InterpolatedAbsorption
 from .fermi_dirac import BandgapNarrowing
-from .units import Q_, ureg
+from .units import Q_
 
 log = get_logger("material")
 

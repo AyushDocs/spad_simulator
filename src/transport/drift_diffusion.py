@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 
 from typing import TYPE_CHECKING
 

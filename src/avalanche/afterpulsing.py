@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 import numpy as np
-from pydantic import BaseModel, ConfigDict, PrivateAttr, field_validator, model_validator
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from ..utils._logging import get_logger
 

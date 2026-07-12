@@ -12,8 +12,8 @@ def _register_builtins() -> None:
     from .structure import DeviceStructurePlotter, DopingPlotter
     from .fields import (PotentialProfilePlotter, ElectricFieldPlotter,
                          BreakdownSweepPlotter, PeakFieldVsBiasPlotter)
-    from .current import (DarkCurrentPlotter, DCRPlotter,
-                          IVCharacteristicPlotter, ComprehensiveIVPlotter)
+    from .current import (DarkCurrentPlotter, DarkCurrentComponentsPlotter,
+                          DCRPlotter, IVCharacteristicPlotter, ComprehensiveIVPlotter)
     from .pdp import (PDPPlotter, PDPVsExcessVoltagePlotter,
                       AbsorptionProfilePlotter, PDP3DPlotter)
     from .avalanche import (TriggerProbabilityPlotter, TriggerVsVexPlotter,
@@ -41,6 +41,7 @@ def _register_builtins() -> None:
         "breakdown_sweep": BreakdownSweepPlotter,
         "peak_field_vs_bias": PeakFieldVsBiasPlotter,
         "dark_current": DarkCurrentPlotter,
+        "dark_current_components": DarkCurrentComponentsPlotter,
         "dcr": DCRPlotter,
         "iv_characteristic": IVCharacteristicPlotter,
         "comprehensive_iv": ComprehensiveIVPlotter,

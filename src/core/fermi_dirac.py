@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..core.constants import q, kB, VT
+from ..core.constants import q, VT
 
 
 class FermiDiracStatistics:

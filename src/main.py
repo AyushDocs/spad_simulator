@@ -13,7 +13,9 @@ from .studies.fields import (find_breakdown, plot_device_structure,
                              run_trigger_vs_vex,
                              run_peak_field_vs_bias, run_avalanche_probability_map,
                              run_breakdown_vs_temp)
-from .studies.dark_current import (run_dark_current_sweep, run_dcr_vs_temp,
+from .studies.dark_current import (run_dark_current_sweep,
+                                   run_dark_current_component_sweep,
+                                   run_dcr_vs_temp,
                                    collect_dark_current_metrics,
                                    run_dark_current_components_vs_temp)
 from .studies.iv import run_iv_characteristic, run_comprehensive_iv
@@ -39,6 +41,7 @@ def main() -> None:
 
     run_field_sweep(sim, Vbr)
     run_dark_current_sweep(sim, Vbr)
+    run_dark_current_component_sweep(sim, Vbr)
     run_iv_characteristic(sim, Vbr)
     run_pdp_spectrum(sim, Vbr)
     run_pdp_vs_vex(sim, Vbr)

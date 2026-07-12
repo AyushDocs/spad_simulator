@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..core.physics_helpers import avalanche_trigger_probability
-from ..core.constants import eps0, q
 from ..simulator import SPADSimulator
 from ..utils.ingestion import DataIngestionService
 from ..utils._logging import get_logger
@@ -66,6 +64,41 @@ def run_dcr_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:
 
     return {"temperatures_K": temps.tolist(), "DCR_cps": DCR_arr.tolist(),
             "Vex": Vex}
+
+
+def run_dark_current_component_sweep(sim: SPADSimulator, Vbr: float) -> None:
+    """Sweep excess bias and plot each dark current component separately."""
+    Vex_range = np.linspace(-15, 50, 131)
+    I_srh, I_btbt, I_tat = [], [], []
+    x = sim.grid.x
+
+    for Vex in Vex_range:
+        Vb = Vbr + Vex
+        if Vb <= 0:
+            I_srh.append(np.nan)
+            I_btbt.append(np.nan)
+            I_tat.append(np.nan)
+            continue
+        try:
+            _, E, _, _, _, _ = sim.get_fields(float(Vb))
+            F = np.abs(E)
+            comps = sim.current.components
+            J_srh = comps[0].compute(x, F)
+            J_btbt = comps[1].compute(x, F)
+            J_tat = comps[2].compute(x, F)
+            I_srh.append(float(np.trapezoid(J_srh, x) * sim.detector_area))
+            I_btbt.append(float(np.trapezoid(J_btbt, x) * sim.detector_area))
+            I_tat.append(float(np.trapezoid(J_tat, x) * sim.detector_area))
+        except Exception:
+            I_srh.append(np.nan)
+            I_btbt.append(np.nan)
+            I_tat.append(np.nan)
+
+    arr_srh, arr_btbt, arr_tat = map(np.array, (I_srh, I_btbt, I_tat))
+    mask = np.isfinite(arr_srh)
+    if np.any(mask):
+        get_plotter("dark_current_components", plot_dir=PLOT_DIR).plot(
+            Vex_range[mask], arr_srh[mask], arr_btbt[mask], arr_tat[mask], Vbr=Vbr)
 
 
 def collect_dark_current_metrics(sim: SPADSimulator, Vbr: float, Vex: float = 3.0) -> dict:

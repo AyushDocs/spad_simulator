@@ -7,7 +7,6 @@ from pydantic.dataclasses import dataclass
 
 from ..core.grid import Grid1D
 from ..core.constants import q
-from ..utils.pydantic_types import NDArray
 
 
 @dataclass(config=dict(arbitrary_types_allowed=True))

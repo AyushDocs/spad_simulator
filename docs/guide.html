@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPAD Simulator — Complete Guide</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+  :root { --bg: #0f1117; --card: #181b23; --border: #2a2e3a; --text: #e0e0e6;
+          --accent: #6c9cfc; --accent2: #a78bfa; --green: #6ee7b7; --red: #fca5a5;
+          --orange: #fbbf24; --code-bg: #1e2130; --sidebar-w: 260px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background:var(--bg);
+         color:var(--text); line-height:1.7; }
+  nav { position:fixed; top:0; left:0; width:var(--sidebar-w); height:100vh;
+        background:var(--card); border-right:1px solid var(--border);
+        overflow-y:auto; padding:1.5rem 1rem; z-index:10; }
+  nav h2 { font-size:1rem; color:var(--accent); margin-bottom:1rem; letter-spacing:.05em; text-transform:uppercase; }
+  nav a { display:block; padding:.35rem .5rem; color:var(--text); text-decoration:none;
+          font-size:.85rem; border-radius:6px; margin-bottom:2px; transition: background .15s; }
+  nav a:hover, nav a.active { background:var(--border); color:var(--accent); }
+  nav a.sub { padding-left:1.2rem; font-size:.8rem; color:#888; }
+  nav a.sub2 { padding-left:2rem; font-size:.78rem; color:#666; }
+  main { margin-left:var(--sidebar-w); max-width:900px; padding:2rem 2.5rem 4rem; }
+  h1 { font-size:2rem; margin-bottom:.3rem; color:#fff; }
+  h1 span { color:var(--accent); }
+  .subtitle { color:#888; font-size:.95rem; margin-bottom:2.5rem; }
+  h2 { font-size:1.35rem; color:var(--accent); margin:2.5rem 0 1rem;
+       padding-bottom:.4rem; border-bottom:1px solid var(--border); }
+  h3 { font-size:1.05rem; color:var(--accent2); margin:1.5rem 0 .6rem; }
+  h4 { font-size:.95rem; color:var(--green); margin:1rem 0 .4rem; }
+  p, li { font-size:.92rem; }
+  ul, ol { padding-left:1.4rem; margin:.5rem 0 1rem; }
+  li { margin-bottom:.3rem; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px;
+          padding:1.2rem 1.4rem; margin:1rem 0; }
+  .card.green { border-left:3px solid var(--green); }
+  .card.red   { border-left:3px solid var(--red); }
+  .card.blue  { border-left:3px solid var(--accent); }
+  .card.orange { border-left:3px solid var(--orange); }
+  pre { background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+        padding:1rem; overflow-x:auto; margin:.8rem 0; font-size:.82rem; line-height:1.55; }
+  code { font-family:'JetBrains Mono','Fira Code',monospace; font-size:.85em; }
+  :not(pre)>code { background:var(--code-bg); padding:.15em .4em; border-radius:4px; }
+  .file { color:var(--accent2); font-weight:600; }
+  table { width:100%; border-collapse:collapse; margin:.8rem 0; font-size:.88rem; }
+  th { text-align:left; padding:.5rem .7rem; background:var(--code-bg); color:var(--accent);
+       border-bottom:1px solid var(--border); }
+  td { padding:.45rem .7rem; border-bottom:1px solid var(--border); }
+  .eq { background:var(--code-bg); border-left:3px solid var(--accent2);
+        padding:.8rem 1.2rem; margin:.8rem 0; border-radius:0 8px 8px 0; overflow-x:auto; }
+  .arch { font-family:monospace; font-size:.82rem; line-height:1.6; color:var(--green);
+          background:var(--code-bg); padding:1rem; border-radius:8px; white-space:pre; overflow-x:auto; }
+  img { max-width:100%; border-radius:8px; border:1px solid var(--border); margin:1rem 0; }
+  .fig { text-align:center; margin:1.5rem 0; }
+  .fig img { display:inline-block; max-width:80%; }
+  .fig p { font-size:.82rem; color:#888; margin-top:.4rem; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0; }
+  @media(max-width:900px) { nav{display:none;} main{margin-left:0;} .two-col{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<nav>
+  <h2>SPAD Guide</h2>
+  <a href="#ch1">Ch 1: Semiconductors</a>
+  <a href="#ch1-si" class="sub">1.1 Silicon</a>
+  <a href="#ch1-iii-v" class="sub">1.2 III-V Materials</a>
+  <a href="#ch1-ingaas" class="sub">1.3 InGaAs &amp; InP</a>
+  <a href="#ch2">Ch 2: APD Theory</a>
+  <a href="#ch2-iv" class="sub">2.1 I-V Characteristic</a>
+  <a href="#ch2-multiplication" class="sub">2.2 Multiplication</a>
+  <a href="#ch2-noise" class="sub">2.3 Excess Noise</a>
+  <a href="#ch2-efficiency" class="sub">2.4 Efficiency</a>
+  <a href="#ch3">Ch 3: SPAD</a>
+  <a href="#ch3-why" class="sub">3.1 Why SPAD?</a>
+  <a href="#ch3-models" class="sub">3.2 SPAD Architectures</a>
+  <a href="#ch3-our" class="sub">3.3 Our SAGCM SPAD</a>
+  <a href="#ch4">Ch 4: Simulation</a>
+  <a href="#ch4-poisson" class="sub">4.1 Poisson Solver</a>
+  <a href="#ch4-ionization" class="sub">4.2 Ionization</a>
+  <a href="#ch4-trigger" class="sub">4.3 Trigger Probability</a>
+  <a href="#ch4-dark" class="sub">4.4 Dark Current</a>
+  <a href="#ch4-pdp" class="sub">4.5 PDP</a>
+  <a href="#ch4-transport" class="sub">4.6 Transport</a>
+  <a href="#ch4-mc" class="sub">4.7 Monte Carlo</a>
+  <a href="#ch5">Ch 5: Results</a>
+  <a href="#ch5-structure" class="sub">5.1 Device Structure</a>
+  <a href="#ch5-fields" class="sub">5.2 Field Profiles</a>
+  <a href="#ch5-iv" class="sub">5.3 I-V Curves</a>
+  <a href="#ch5-pdp" class="sub">5.4 PDP Spectra</a>
+  <a href="#ch5-noise" class="sub">5.5 Noise &amp; Jitter</a>
+</nav>
+
+<main>
+
+<h1><span>SPAD</span> Simulator — Complete Guide</h1>
+<p class="subtitle">From semiconductor physics to single-photon detection: a comprehensive reference.</p>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 1                                                     -->
+<!-- ============================================================ -->
+<h2 id="ch1">Chapter 1: Semiconductors for Photodetection</h2>
+
+<h3 id="ch1-si">1.1 Silicon — The Starting Point</h3>
+<p>Silicon is the workhorse of electronics and the first semiconductor used for photodetection. Its key properties:</p>
+<table>
+<tr><th>Property</th><th>Value</th><th>Implication</th></tr>
+<tr><td>Bandgap $E_g$</td><td>1.12 eV</td><td>Cutoff wavelength $\lambda_c = 1240/1.12 \approx 1100$ nm</td></tr>
+<tr><td>Crystal structure</td><td>Diamond cubic</td><td>Mature, cheap fabrication</td></tr>
+<tr><td>Native oxide</td><td>$\text{SiO}_2$ (excellent)</td><td>Enables MOS technology</td></tr>
+<tr><td>Electron mobility</td><td>1350 cm²/V·s</td><td>Moderate speed</td></tr>
+</table>
+
+<div class="card orange">
+<strong>Limitation:</strong> Silicon is <strong>opaque above ~1100 nm</strong>. The telecom wavelengths (1310 nm, 1550 nm) used in fiber-optic communication are far beyond silicon's absorption edge. For near-infrared detection, we need a different material.
+</div>
+
+<h3 id="ch1-iii-v">1.2 Why III-V Semiconductors?</h3>
+<p>III-V compounds (elements from groups III and V of the periodic table) offer:</p>
+<ul>
+  <li><strong>Tunable bandgap</strong> — by alloying GaAs with InAs, we can cover 0.35–2.5 eV</li>
+  <li><strong>Direct bandgap</strong> — strong optical absorption (unlike silicon's indirect gap)</li>
+  <li><strong>High electron mobility</strong> — faster carrier transport</li>
+  <li><strong>Lattice matching</strong> — certain compositions share the same crystal lattice constant, enabling epitaxial growth of heterostructures</li>
+</ul>
+
+<h3 id="ch1-ingaas">1.3 InGaAs and InP — The Telecom Materials</h3>
+
+<h4>InGaAs (In$_{0.53}$Ga$_{0.47}$As)</h4>
+<div class="card green">
+$$E_g = 0.75 \text{ eV} \quad \Rightarrow \quad \lambda_c = \frac{1240}{0.75} \approx 1650 \text{ nm}$$
+</div>
+<ul>
+  <li>Absorbs strongly from 1000–1700 nm — covers both telecom windows (1310 nm and 1550 nm)</li>
+  <li>High absorption coefficient: $\alpha \sim 10^4$ cm$^{-1}$ — a 1.5 μm layer absorbs >95% of 1310 nm light</li>
+  <li>Direct bandgap → efficient photogeneration</li>
+</ul>
+
+<h4>InP (Indium Phosphide)</h4>
+<div class="card green">
+$$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}$$
+</div>
+<ul>
+  <li><strong>Transparent</strong> at 1310/1550 nm — used as the window and multiplication layer</li>
+  <li>Excellent breakdown properties — high ionization threshold, low noise</li>
+  <li><strong>Lattice matched to InGaAs</strong> at $a = 5.8687$ Å — enables defect-free epitaxial growth</li>
+</ul>
+
+<div class="card blue">
+<strong>Key insight:</strong> The InGaAs/InP system lets us <em>absorb</em> at telecom wavelengths in InGaAs while <em>multiplying</em> in InP. This separation is the foundation of SACM SPADs.
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/device_structure.png" alt="Device structure">
+  <p>Figure 1: Layer structure of our InGaAs/InP SAGCM SPAD. Top panel shows material regions, bottom shows the net doping profile.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 2                                                     -->
+<!-- ============================================================ -->
+<h2 id="ch2">Chapter 2: Avalanche Photodiode (APD) Theory</h2>
+
+<h3 id="ch2-iv">2.1 The I-V Characteristic</h3>
+<p>An APD is a p-n junction operated in <strong>reverse bias</strong>. The current has several regimes:</p>
+
+<div class="fig">
+  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <p>Figure 2: I-V characteristic showing dark current (blue) and illuminated current (orange) vs reverse bias.</p>
+</div>
+
+<ol>
+  <li><strong>Low reverse bias</strong> ($V \ll V_{BR}$): Small dark current from thermal generation. Photocurrent is roughly constant (one electron-hole pair per absorbed photon).</li>
+  <li><strong>Mid reverse bias</strong>: Depletion region widens. Dark current increases slowly. Still no multiplication.</li>
+  <li><strong>Near breakdown</strong> ($V \to V_{BR}$): Impact ionization begins. Carriers gain enough energy to create secondary pairs. Current starts rising exponentially.</li>
+  <li><strong>At breakdown</strong> ($V = V_{BR}$): Gain $M \to \infty$. A single carrier triggers a self-sustaining avalanche. This is the <strong>Geiger mode</strong> used in SPADs.</li>
+</ol>
+
+<h3 id="ch2-multiplication">2.2 Multiplication and Gain</h3>
+<p>When a carrier (electron or hole) travels through the high-field multiplication region, it can impact-ionize:</p>
+<div class="eq">
+$$\alpha(E) = \text{ionization probability per cm (electrons)}$$
+$$\beta(E) = \text{ionization probability per cm (holes)}$$
+</div>
+<p>The <strong>multiplication factor</strong> $M$ is the average number of electron-hole pairs produced by one injected carrier. It diverges at breakdown:</p>
+<div class="eq">
+$$M = \frac{1}{1 - (V/V_{BR})^n}$$
+</div>
+<p>where $n$ depends on the material and device structure (typically 2–6).</p>
+
+<div class="fig">
+  <img src="../plots/spad/comprehensive_iv.png" alt="Comprehensive I-V">
+  <p>Figure 3: Comprehensive I-V showing dark current, primary photocurrent, total illuminated current, and gain vs bias near breakdown.</p>
+</div>
+
+<h3 id="ch2-noise">2.3 Excess Noise Factor</h3>
+<p>Avalanche multiplication is a <strong>statistical process</strong> — the gain fluctuates from event to event. The excess noise factor $F(M)$ quantifies this:</p>
+<div class="card blue">
+$$F(M) = k_{\text{eff}} M + (1 - k_{\text{eff}})\left(2 - \frac{1}{M}\right)$$
+$$k_{\text{eff}} = \frac{\beta}{\alpha} \quad \text{(ionization rate ratio)}$$
+</div>
+
+<table>
+<tr><th>$k_{\text{eff}}$</th><th>Noise</th><th>Material</th></tr>
+<tr><td>$k = 1$</td><td>Worst: $F = 2M - 1$</td><td>Si (if both carriers ionized equally)</td></tr>
+<tr><td>$k = 0$</td><td>Best: $F = 2$</td><td>Asymmetric ionization</td></tr>
+<tr><td>$k \approx 0.4$</td><td>Moderate</td><td>InP (our material)</td></tr>
+</table>
+
+<div class="fig">
+  <img src="../plots/spad/excess_noise.png" alt="Excess noise">
+  <p>Figure 4: Excess noise factor $F(M)$ vs gain $M$ for different $k_{\text{eff}}$ values.</p>
+</div>
+
+<h3 id="ch2-efficiency">2.4 Quantum Efficiency</h3>
+<p>The <strong>external quantum efficiency</strong> (EQE) is the probability that an incident photon produces a measurable electron-hole pair:</p>
+<div class="eq">
+$$\eta = (1 - R) \cdot \left(1 - e^{-\alpha_{\text{abs}} \cdot L_{\text{abs}}}\right) \cdot \eta_{\text{collection}}$$
+</div>
+<ul>
+  <li>$(1 - R)$: Surface reflection loss ($R \approx 0.3$ for uncoated InP)</li>
+  <li>$1 - e^{-\alpha L}$: Absorption probability in the InGaAs layer</li>
+  <li>$\eta_{\text{collection}}$: Probability that photo-generated carriers reach the multiplication region</li>
+</ul>
+
+<p>The <strong>photodetection probability</strong> (PDP) adds the trigger probability:</p>
+<div class="eq">
+$$\text{PDP}(\lambda) = \eta(\lambda) \cdot P_{\text{trigger}}$$
+</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 3                                                     -->
+<!-- ============================================================ -->
+<h2 id="ch3">Chapter 3: Single-Photon Avalanche Diodes</h2>
+
+<h3 id="ch3-why">3.1 Why Move from APD to SPAD?</h3>
+
+<table>
+<tr><th>Feature</th><th>APD (Linear Mode)</th><th>SPAD (Geiger Mode)</th></tr>
+<tr><td>Bias</td><td>$V < V_{BR}$</td><td>$V > V_{BR}$ (overbias)</td></tr>
+<tr><td>Gain</td><td>Finite ($M \sim 10$–$100$)</td><td>Effectively infinite (self-sustaining)</td></tr>
+<tr><td>Output</td><td>Analog current $\propto$ optical power</td><td>Digital pulse (avalanche or no avalanche)</td></tr>
+<tr><td>Sensitivity</td><td>~nW</td><td><strong>Single photon</strong></td></tr>
+<tr><td>Timing</td><td>Limited by RC, transit time</td><td>Sub-ns jitter possible</td></tr>
+<tr><td>Circuit</td><td>Transimpedance amplifier</td><td>Quench circuit (active or passive)</td></tr>
+</table>
+
+<div class="card orange">
+<strong>Key advantage:</strong> A SPAD can detect a <em>single photon</em>. The avalanche gain is so high that one photo-carrier produces a measurable current pulse (μA–mA), detectable with simple electronics.
+</div>
+
+<h3 id="ch3-models">3.2 SPAD Architectures</h3>
+
+<h4>SAM — Separate Absorption and Multiplication</h4>
+<ul>
+  <li><strong>Structure:</strong> InGaAs absorber + InP multiplier, no charge sheet</li>
+  <li><strong>Problem:</strong> The electric field extends into the absorber, causing tunneling dark current</li>
+  <li><strong>Use:</strong> Simple but limited performance</li>
+</ul>
+
+<h4>SAGCM — Separate Absorption, Grading, Charge, Multiplication</h4>
+<ul>
+  <li><strong>Structure:</strong> Adds a grading layer (InGaAsP) and a charge sheet (n+ InP)</li>
+  <li><strong>Grading layer:</strong> Smooths the valence band discontinuity at InP/InGaAs interface — prevents carrier trapping</li>
+  <li><strong>Charge sheet:</strong> Controls the field distribution — high field in InP (for multiplication), low field in InGaAs (reduces tunneling)</li>
+  <li><strong>This is our architecture</strong></li>
+</ul>
+
+<h4>SACM — Separate Absorption, Charge, Multiplication</h4>
+<ul>
+  <li>Similar to SAGCM but without the grading layer</li>
+  <li>Valence band barrier causes hole trapping → afterpulsing</li>
+</ul>
+
+<h4>Reach-Through</h4>
+<ul>
+  <li>Depletion region extends from multiplication all the way through absorber to contact</li>
+  <li>Good collection efficiency but harder to control field profile</li>
+</ul>
+
+<h3 id="ch3-our">3.3 Our SAGCM SPAD</h3>
+
+<p>Our device (<code>data/device_sagcm.xml</code>) has 7 layers:</p>
+
+<table>
+<tr><th>#</th><th>Material</th><th>Thickness</th><th>Doping</th><th>Role</th></tr>
+<tr><td>0</td><td>InP</td><td>2.5 μm</td><td>p+ $2\times10^{18}$</td><td>Cap / p-contact</td></tr>
+<tr><td>1</td><td>InP</td><td>0.5 μm</td><td>i (intrinsic)</td><td><strong>Multiplication region</strong></td></tr>
+<tr><td>2</td><td>InP</td><td>0.2 μm</td><td>n+ $10^{17}$</td><td><strong>Charge sheet</strong> (field control)</td></tr>
+<tr><td>3</td><td>InGaAsP</td><td>0.12 μm</td><td>i</td><td><strong>Grading layer</strong></td></tr>
+<tr><td>4</td><td>InGaAs</td><td>1.5 μm</td><td>i</td><td><strong>Absorber</strong></td></tr>
+<tr><td>5</td><td>InP</td><td>0.5 μm</td><td>n+ $5\times10^{16}$</td><td>Buffer</td></tr>
+<tr><td>6</td><td>InP</td><td>2.0 μm</td><td>n+ $10^{18}$</td><td>Substrate / n-contact</td></tr>
+</table>
+
+<div class="card blue">
+<strong>Breakdown voltage:</strong> $V_{BR} = 75$ V (at 300 K). Typical operating excess bias: 2–5 V above $V_{BR}$.
+</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 4                                                     -->
+<!-- ============================================================ -->
+<h2 id="ch4">Chapter 4: Physics Models in the Simulator</h2>
+
+<h3 id="ch4-poisson">4.1 Poisson Solver</h3>
+<p>Solves for electrostatic potential $\phi(x)$ and field $E(x)$:</p>
+<div class="eq">
+$$\frac{d}{dx}\left[\varepsilon(x)\frac{d\phi}{dx}\right] = -q\left[p(x) - n(x) + N_D(x) - N_A(x)\right]$$
+</div>
+<p>Carrier densities via Boltzmann statistics: $n = n_i e^{(\phi-\phi_n)/V_T}$, $p = n_i e^{(\phi_p-\phi)/V_T}$.</p>
+<p>Solved with Newton-Raphson iteration on a 500-node uniform grid. Voltage ramped from 0 to $V_{\text{bias}}$ in 2V steps for convergence.</p>
+
+<div class="fig">
+  <img src="../plots/spad/potential_profile.png" alt="Potential profile">
+  <p>Figure 5: Electrostatic potential $\phi(x)$ at different reverse biases (0V to $V_{BR}+5$V).</p>
+</div>
+
+<h3 id="ch4-ionization">4.2 Impact Ionization</h3>
+<p>Three models available (Okuto-Crowell is default):</p>
+
+<h4>Okuto-Crowell</h4>
+<div class="eq">
+$$\alpha(E,T) = \frac{E}{E_{th}} \exp\!\left\{A - \sqrt{A^2 + \left(\frac{E_{th}}{E\lambda}\right)^2}\right\}, \quad A = 0.217\left(\frac{E_{th}}{E_R}\right)^{1.14}$$
+</div>
+<p>Temperature dependence via $\lambda(T) = \lambda_0 \tanh(\hbar\omega/2k_BT)$.</p>
+
+<h4>Chynoweth (simplest)</h4>
+<div class="eq">
+$$\alpha(E) = A \cdot e^{-B/E}, \quad B = E_{th}/\lambda$$
+</div>
+
+<h4>Wolff (semi-physical)</h4>
+<div class="eq">
+$$\alpha(E) = \frac{E}{E_{th}} \exp\!\left(-\frac{\pi}{2}\left(\frac{E_{th}}{E\lambda}\right)^2\right)$$
+</div>
+
+<h3 id="ch4-trigger">4.3 Trigger Probability (McIntyre)</h3>
+<p>Given $\alpha(x)$ and $\beta(x)$, the trigger probability for electron injection at $x$:</p>
+<div class="eq">
+$$\mu(x) = \exp\!\left(\int_x^W [\alpha - \beta]\,ds\right), \quad M(x) = \frac{\mu(x)}{1 - \int_x^W \beta\mu\,ds}, \quad P_e(x) = 1 - \frac{1}{M(x)}$$
+</div>
+
+<h4>What are $\mu$ and $M$?</h4>
+<table>
+<tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td>$\mu(x)$</td><td><strong>Net multiplication integral</strong> — captures the asymmetry between electron and hole ionization. When $\alpha > \beta$, electrons multiply faster; $\mu$ quantifies this directional bias.</td></tr>
+<tr><td>$M(x)$</td><td><strong>Mean avalanche gain</strong> — average number of e-h pairs produced by one carrier at $x$. Diverges at breakdown when the positive-feedback denominator $\to 0$.</td></tr>
+</table>
+
+<div class="fig">
+  <img src="../plots/spad/trigger_probability.png" alt="Trigger probability">
+  <p>Figure 6: Electron trigger probability $P_e(x)$ and hole trigger probability $P_h(x)$ at different excess biases.</p>
+</div>
+
+<h3 id="ch4-dark">4.4 Dark Current Components</h3>
+<p>Three physical mechanisms contribute to dark current:</p>
+
+<table>
+<tr><th>Component</th><th>Formula</th><th>Physics</th></tr>
+<tr><td><strong>SRH</strong></td><td>$J = q \cdot n_i / (2\tau)$</td><td>Thermal generation via mid-gap traps in depletion region</td></tr>
+<tr><td><strong>BTBT</strong></td><td>$J = A F^2 e^{-B E_g^{3/2}/F}$</td><td>Band-to-band tunneling at high field</td></tr>
+<tr><td><strong>TAT</strong></td><td>Hurkx model</td><td>Trap-assisted tunneling — intermediate between SRH and BTBT</td></tr>
+</table>
+
+<p><strong>DCR</strong> (dark count rate) only counts carriers that <em>trigger</em> an avalanche:</p>
+<div class="eq">
+$$\text{DCR} = A_{\text{det}} \int G_{\text{dark}}(x) \cdot P_{\text{trigger}}(x)\, dx$$
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/dark_current_vs_bias.png" alt="Dark current">
+  <p>Figure 7: Dark current vs excess bias $V_{ex} = V - V_{BR}$.</p>
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/dcr_vs_bias.png" alt="DCR">
+  <p>Figure 8: Dark count rate (DCR) vs excess bias.</p>
+</div>
+
+<h3 id="ch4-pdp">4.5 Photon Detection Probability</h3>
+<p>PDP combines absorption, dead-zone transmission, and trigger probability:</p>
+<div class="eq">
+$$\text{PDP}(\lambda) = (1-R) \cdot T_{\text{dead}}(\lambda) \int_{\text{absorber}} \alpha(\lambda)\, e^{-\alpha(x-x_0)} \cdot P_{\text{trigger}}(x)\, dx$$
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/pdp_spectrum.png" alt="PDP spectrum">
+  <p>Figure 9: PDP vs wavelength at different excess biases. Peak PDP occurs where absorption and trigger probability are both high.</p>
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/pdp_vs_excess_voltage.png" alt="PDP vs Vex">
+  <p>Figure 10: PDP at key wavelengths (1100, 1310, 1550, 1610 nm) vs excess bias.</p>
+</div>
+
+<h3 id="ch4-transport">4.6 Carrier Transport</h3>
+<p>Drift-diffusion with velocity saturation:</p>
+<div class="eq">
+$$v_d = \frac{\mu E}{1 + |E|/E_{\text{sat}}}, \quad D = \mu V_T \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\right)^2\right)$$
+</div>
+<p>Position update: $x_{\text{new}} = x + v_d\,dt + \sqrt{2D\,dt}\cdot\xi$ (stochastic Wiener process).</p>
+
+<h3 id="ch4-mc">4.7 Monte Carlo Avalanche</h3>
+<p>Simulates individual carrier histories:</p>
+<ol>
+  <li>Inject seed carrier at $x_0$</li>
+  <li>Drift-diffuse each carrier</li>
+  <li>After dead space: sample ionization with $P_{\text{ion}} = 1 - e^{-\alpha \cdot dx}$</li>
+  <li>On ionization: spawn new e-h pair</li>
+  <li>Stop when carrier count $\geq N_{\text{threshold}}$</li>
+</ol>
+
+<p>This captures the <strong>stochastic nature</strong> of avalanche build-up and gives timing jitter.</p>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 5                                                     -->
+<!-- ============================================================ -->
+<h2 id="ch5">Chapter 5: Simulation Results</h2>
+
+<h3 id="ch5-structure">5.1 Device Structure</h3>
+<div class="fig">
+  <img src="../plots/spad/device_structure.png" alt="Device structure">
+  <p>Figure 1: Complete device structure showing material regions and doping profile.</p>
+</div>
+
+<h3 id="ch5-fields">5.2 Electric Field Profile</h3>
+<div class="fig">
+  <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
+  <p>Figure 11: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) creates a sharp field drop, keeping the absorber field low while the multiplication region has high field.</p>
+</div>
+
+<h3 id="ch5-iv">5.3 Current-Voltage Characteristics</h3>
+<div class="two-col">
+  <div class="fig">
+    <img src="../plots/spad/iv_characteristic.png" alt="I-V basic">
+    <p>Basic I-V: dark vs illuminated.</p>
+  </div>
+  <div class="fig">
+    <img src="../plots/spad/comprehensive_iv.png" alt="I-V comprehensive">
+    <p>Comprehensive I-V near breakdown with gain.</p>
+  </div>
+</div>
+
+<h3 id="ch5-pdp">5.4 Photodetection Performance</h3>
+<div class="two-col">
+  <div class="fig">
+    <img src="../plots/spad/pdp_spectrum.png" alt="PDP spectrum">
+    <p>PDP vs wavelength.</p>
+  </div>
+  <div class="fig">
+    <img src="../plots/spad/pdp_vs_excess_voltage.png" alt="PDP vs Vex">
+    <p>PDP vs excess bias.</p>
+  </div>
+</div>
+
+<h3 id="ch5-noise">5.5 Noise and Afterpulsing</h3>
+<div class="two-col">
+  <div class="fig">
+    <img src="../plots/spad/excess_noise.png" alt="Excess noise">
+    <p>Excess noise factor $F(M)$.</p>
+  </div>
+  <div class="fig">
+    <img src="../plots/spad/afterpulsing_vs_holdoff.png" alt="Afterpulsing">
+    <p>Afterpulsing probability vs holdoff time.</p>
+  </div>
+</div>
+
+<div class="card green" style="margin-top:3rem;">
+  <strong>Summary:</strong> This simulator models the complete physics chain from semiconductor material properties through Poisson electrostatics, impact ionization, avalanche statistics, dark current mechanisms, and photon detection probability. The SAGCM architecture provides a good balance between high PDP, low DCR, and manageable excess noise for single-photon detection at telecom wavelengths.
+</div>
+
+</main>
+</body>
+</html>
