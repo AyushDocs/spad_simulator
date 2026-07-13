@@ -74,11 +74,31 @@ def test_tunneling_model():
     model = TunnelingModel(T=300.0, N_T=1e12, Eg_mulp=1.35, mc_mulp=0.041, mh_mulp=0.4)
     E = np.full(500, 5e5)
     J_btbt = model.btbt_current(E)
-    J_tat = model.tat_current(E, Eg_mulp=1.35, mc_mulp=0.041, mh_mulp=0.4)
     assert J_btbt.shape == (500,)
-    assert J_tat.shape == (500,)
     assert np.all(J_btbt >= 0)
+
+    # Hurkx TAT enhancement factor
+    gamma = TunnelingModel.hurkx_gamma(E, m_eff=0.08, E_barrier_eV=0.334, T=300.0)
+    assert gamma.shape == (500,)
+    assert np.all(gamma >= 0)
+    assert np.all(gamma <= 1e6)
+
+    # TAT current uses the new Hurkx model
+    J_tat = model.tat_current(E, Eg_mulp=1.35, mc_mulp=0.08, mh_mulp=0.86,
+                              ni_val=1.3e10, tau_val=1e-9)
+    assert J_tat.shape == (500,)
     assert np.all(J_tat >= 0)
+
+
+def test_hurkx_gamma():
+    """Verify Hurkx enhancement factor behavior."""
+    F = np.array([0.0, 1e4, 5e5, 1e6, 2e6])
+    gamma = TunnelingModel.hurkx_gamma(F, m_eff=0.08, E_barrier_eV=0.334, T=300.0)
+    assert gamma[0] == 0.0  # Zero field → no enhancement
+    assert gamma[2] > 0.0   # Typical operating field → positive
+    assert gamma[3] > gamma[2]  # Higher field → larger enhancement
+    assert gamma[4] > gamma[3]
+    assert gamma[4] <= 1e20  # Capped
 
 
 def test_dark_current_model():

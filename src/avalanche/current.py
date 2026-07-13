@@ -83,18 +83,25 @@ class BTBTCurrentDensity(CurrentDensityComponent):
 
 @dataclass(config=dict(arbitrary_types_allowed=True))
 class TATCurrentDensity(CurrentDensityComponent):
-    """Trap-assisted tunneling current density (Hurkx model)."""
+    """Trap-assisted tunneling current density (Hurkx model).
 
-    Eg_mulp: float
-    mc_mulp: float
-    mh_mulp: float
+    Computes the field-enhanced portion of the SRH generation rate using
+    the Hurkx phonon-assisted tunneling model:
+
+        J_TAT = q * (n_i / (2*tau)) * (Gamma_e + Gamma_h)
+
+    where Gamma_e, Gamma_h are the Hurkx enhancement factors.
+
+    For InGaAs this is the field enhancement ONLY (zero-field SRH is
+    handled by SRHCurrentDensity).  For InP and grading layers this
+    provides the full SRH+TAT generation since no other component
+    accounts for zero-field SRH in those materials.
+    """
+
+    mat_name_grid: NDArray
+    materials: dict  # str -> Material
     T: float = 300.0
-    N_T: float = 1e12
-
-    _tunnel: TunnelingModel | None = None
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_tunnel", TunnelingModel(T=self.T, N_T=self.N_T))
+    a_frac: float = 0.75
 
     @property
     def name(self) -> str:
@@ -102,8 +109,35 @@ class TATCurrentDensity(CurrentDensityComponent):
 
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
-        J = self._tunnel.tat_current(
-            F, self.Eg_mulp, self.mc_mulp, self.mh_mulp, N_T=self.N_T)  # A/cm³
+        q_val = float(q.to("C").magnitude)
+        J = np.zeros_like(x)
+
+        for mat_name in self.materials:
+            mat = self.materials[mat_name]
+            mask = self.mat_name_grid == mat_name
+            if not np.any(mask):
+                continue
+
+            ni = mat.ni(self.T)
+            tau = (mat.tau_n + mat.tau_p) / 2.0
+            Eg = mat.Eg(self.T)
+            mc = mat.mc
+            mh = mat.mh
+
+            if mat_name == "InGaAs":
+                # SRHCurrentDensity handles zero-field in InGaAs,
+                # so only add the field-enhanced portion.
+                gamma_e = TunnelingModel.hurkx_gamma(F[mask], mc, (1.0 - self.a_frac) * Eg, self.T)
+                gamma_h = TunnelingModel.hurkx_gamma(F[mask], mh, self.a_frac * Eg, self.T)
+                Gamma_total = gamma_e + gamma_h
+            else:
+                # Full SRH + TAT generation for materials not covered by SRH
+                gamma_e = TunnelingModel.hurkx_gamma(F[mask], mc, (1.0 - self.a_frac) * Eg, self.T)
+                gamma_h = TunnelingModel.hurkx_gamma(F[mask], mh, self.a_frac * Eg, self.T)
+                Gamma_total = 1.0 + gamma_e + gamma_h
+
+            J[mask] = q_val * (ni / (2.0 * tau)) * Gamma_total
+
         return J
 
 

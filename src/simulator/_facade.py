@@ -167,6 +167,25 @@ class SPADSimulator:
 
     # -- Dark current ------------------------------------------------------------
 
+    def _compute_multiplication(self, E: np.ndarray) -> float:
+        """Avalanche multiplication factor via the McIntyre integral."""
+        alpha = self.ionization.effective_alpha_n(np.abs(E), Eg=self._dead_space_Eg)
+        beta = self.ionization.effective_alpha_p(np.abs(E), Eg=self._dead_space_Eg)
+        x = self.grid.x
+        active = np.abs(E) > 1e5
+        if not np.any(active):
+            return 1.0
+        dx = np.diff(x)
+        diff = alpha - beta
+        cum = np.zeros_like(x)
+        for i in range(len(x) - 2, -1, -1):
+            cum[i] = cum[i + 1] + diff[i] * dx[i]
+        integrand = beta * np.exp(cum)
+        denom = 1.0 - float(np.trapezoid(integrand, x))
+        if denom <= 0.01:
+            return 1e6
+        return min(1.0 / denom, 1e6)
+
     def compute_dark_current(self, Vbias: float, E: np.ndarray | None = None) -> dict:
         if E is None:
             _, E, Pe, Ph, _, _ = self.get_fields(Vbias)
@@ -179,10 +198,13 @@ class SPADSimulator:
         J_total = np.zeros_like(x)
         for comp in self.current.components:
             J_total += comp.compute(x, np.abs(E))
-        I_dark = float(np.trapezoid(J_total, x) * self.detector_area)
+        I_primary = float(np.trapezoid(J_total, x) * self.detector_area)
+
+        M = self._compute_multiplication(E)
+        I_dark = I_primary * M
 
         return {"J_total": J_total, "I_dark": I_dark, "DCR": abs(I_dark),
-                "Pe": Pe, "Ph": Ph, "E": E}
+                "Pe": Pe, "Ph": Ph, "E": E, "M": M}
 
     # -- Self-consistent PIC -----------------------------------------------------
 

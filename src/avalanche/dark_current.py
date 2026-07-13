@@ -79,7 +79,7 @@ class DarkCurrentModel:
         self.mc_mulp = mc_mulp
         self.mh_mulp = mh_mulp
 
-        from .current import CompositeCurrentDensity, BTBTCurrentDensity, TATCurrentDensity, SRHCurrentDensity
+        from .current import CompositeCurrentDensity, BTBTCurrentDensity, SRHCurrentDensity
         self.current = CompositeCurrentDensity()
         self.current.add(SRHCurrentDensity(
             tau_n_absorber=tau_n_absorber,
@@ -88,9 +88,6 @@ class DarkCurrentModel:
             ni_absorber=ni_absorber,
         ))
         self.current.add(BTBTCurrentDensity(
-            Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp, T=T, N_T=N_T
-        ))
-        self.current.add(TATCurrentDensity(
             Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp, T=T, N_T=N_T
         ))
 

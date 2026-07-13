@@ -104,35 +104,36 @@ class IVCharacteristicPlotter(BasePlotter):
              optical_power: float | None = None,
              Vbr: float | None = None) -> None:
         plt = self._import()
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.set_title("I-V Characteristic", fontsize=12, pad=12)
-        ax.semilogy(Vbias, np.abs(I_dark) + 1e-20, "b-",
-                    label="Dark", lw=2)
+        fig, (ax_log, ax_lin) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
+
+        eps = 1e-20
+        ax_log.semilogy(Vbias, np.abs(I_dark) + eps, "b-", label="Dark", lw=2)
         if I_light is not None:
             label = "Illuminated"
             if optical_power is not None:
                 label += f" ({optical_power*1e6:.0f} µW)"
-            ax.semilogy(Vbias, np.abs(I_light) + 1e-20, "r--",
-                        label=label, lw=2)
+            ax_log.semilogy(Vbias, np.abs(I_light) + eps, "r--", label=label, lw=2)
         if Vbr is not None:
-            ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5,
-                        label=f"Vbr = {Vbr:.1f} V")
-        # Transition from linear to exponential growth:
-        # find the first point where d(log I)/dV exceeds the low-bias
-        # median by a significant margin
-        eps = 1e-20
-        logI = np.log(np.abs(I_dark) + eps)
-        dlogI_dV = np.gradient(logI, Vbias)
-        baseline = np.median(dlogI_dV[:len(Vbias)//4])
-        threshold = baseline + 2.0 * np.std(dlogI_dV[:len(Vbias)//4])
-        above = np.where(dlogI_dV > threshold)[0]
-        V_trans = float(Vbias[above[0]]) if len(above) > 0 else float(Vbias[-1])
-        ax.axvline(x=V_trans, color="orange", ls="--", lw=2, alpha=0.9,
-                    label=f"Transition ≈ {V_trans:.1f} V", zorder=5)
-        ax.set_xlabel("Bias (V)")
-        ax.set_ylabel("log I (A)")
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=8)
+            ax_log.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax_log.set_ylabel("log I (A)")
+        ax_log.legend(fontsize=8)
+        ax_log.grid(True, alpha=0.3)
+        ax_log.set_title("I-V Characteristic — Log Scale", fontsize=11, pad=10)
+
+        mask_lin = Vbias < Vbr if Vbr is not None else slice(None)
+        ax_lin.plot(Vbias[mask_lin], np.abs(I_dark[mask_lin]) * 1e9, "b-", label="Dark", lw=2)
+        if I_light is not None:
+            ax_lin.plot(Vbias[mask_lin], np.abs(I_light[mask_lin]) * 1e9, "r--",
+                        label=label if I_light is not None else "", lw=2)
+        if Vbr is not None:
+            ax_lin.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax_lin.set_xlabel("Bias (V)")
+        ax_lin.set_ylabel("I (nA)")
+        ax_lin.legend(fontsize=8)
+        ax_lin.grid(True, alpha=0.3)
+        ax_lin.set_title("I-V Characteristic — Linear Scale (pre-breakdown)", fontsize=11, pad=10)
+
+        fig.suptitle("I-V Characteristic", fontsize=13, y=1.01)
         plt.tight_layout()
         self._save("iv_characteristic.png", plt)
 
@@ -146,30 +147,27 @@ class ComprehensiveIVPlotter(BasePlotter):
              gain: np.ndarray | None = None,
              Vbr: float | None = None) -> None:
         plt = self._import()
-        fig, ax = plt.subplots(figsize=(8, 5))
+        fig, (ax_log, ax_lin) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
         eps = 1e-20
-        ax.semilogy(Vbias, np.abs(I_dark) + eps, "b-",
-                     label="Dark", lw=2)
-        # Transition from linear to exponential growth:
-        # first point where d(log I)/dV exceeds low-bias baseline
-        logI = np.log(np.abs(I_dark) + eps)
-        dlogI_dV = np.gradient(logI, Vbias)
-        baseline = np.median(dlogI_dV[:len(Vbias)//4])
-        threshold = baseline + 2.0 * np.std(dlogI_dV[:len(Vbias)//4])
-        above = np.where(dlogI_dV > threshold)[0]
-        V_trans = float(Vbias[above[0]]) if len(above) > 0 else float(Vbias[-1])
-        ax.axvline(x=V_trans, color="orange", ls="--", lw=2, alpha=0.9,
-                    label=f"Transition ≈ {V_trans:.1f} V", zorder=5)
+        ax_log.semilogy(Vbias, np.abs(I_dark) + eps, "b-", label="Dark", lw=2)
         if Vbr is not None:
-            ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5,
-                        label=f"Vbr = {Vbr:.1f} V")
+            ax_log.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax_log.set_ylabel("log I (A)")
+        ax_log.legend(fontsize=8)
+        ax_log.grid(True, alpha=0.3)
+        ax_log.set_title("Comprehensive I-V — Log Scale", fontsize=11, pad=10)
 
-        ax.set_xlabel("Bias (V)")
-        ax.set_ylabel("log I (A)")
-        ax.legend(fontsize=8)
-        ax.grid(True, alpha=0.3)
+        mask_lin = Vbias < Vbr if Vbr is not None else slice(None)
+        ax_lin.plot(Vbias[mask_lin], np.abs(I_dark[mask_lin]) * 1e9, "b-", label="Dark", lw=2)
+        if Vbr is not None:
+            ax_lin.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax_lin.set_xlabel("Bias (V)")
+        ax_lin.set_ylabel("I (nA)")
+        ax_lin.legend(fontsize=8)
+        ax_lin.grid(True, alpha=0.3)
+        ax_lin.set_title("Comprehensive I-V — Linear Scale (pre-breakdown)", fontsize=11, pad=10)
 
-        fig.suptitle("Comprehensive I-V Characteristic", fontsize=12)
+        fig.suptitle("Comprehensive I-V Characteristic", fontsize=13, y=1.01)
         plt.tight_layout()
         self._save("comprehensive_iv.png", plt)

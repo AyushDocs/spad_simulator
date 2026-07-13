@@ -77,7 +77,7 @@ def build_subsystems(
     current.add(BTBTCurrentDensity(
         Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp))
     current.add(TATCurrentDensity(
-        Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp))
+        mat_name_grid=device.material.mat_name, materials=materials))
 
     # PDP model - compute absorber layer position from device layers
     x_start_acc = 0.0
