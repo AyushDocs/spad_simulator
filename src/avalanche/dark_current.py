@@ -4,64 +4,9 @@ from __future__ import annotations
 
 
 import numpy as np
-from pydantic.dataclasses import dataclass
 
-from ..core.constants import q, kB
-from ..utils.pydantic_types import NDArray
+from ..core.constants import q
 from .current import CurrentDensityComponent
-
-
-@dataclass(config=dict(arbitrary_types_allowed=True))
-class DiffusionCurrentDensity(CurrentDensityComponent):
-    """Diffusion current density from minority carriers.
-
-    J_diff ~ q * (Dn/tau_n + Dp/tau_p) * ni² / N_A
-    Only active in the InGaAs absorption region.
-    """
-
-    T: float
-    tau_n_absorber: float
-    tau_p_absorber: float
-    mat_name_grid: NDArray
-    ni_absorber: float
-
-    @property
-    def name(self) -> str:
-        return "Diffusion"
-
-    def compute(self, x: np.ndarray, F: np.ndarray, **kwargs) -> np.ndarray:
-        vth = float((q * kB * T / q**2).magnitude)  # rough thermal velocity
-        Dn = 26.0  # cm²/s typical for InGaAs
-        Dp = 10.0  # cm²/s typical for InGaAs
-        J = float(q.to("C").magnitude) * self.ni_absorber**2 * (
-            Dn / self.tau_n_absorber + Dp / self.tau_p_absorber) / 1e16
-        in_absorber = self.mat_name_grid == "InGaAs"
-        return J * in_absorber
-
-
-@dataclass(config=dict(arbitrary_types_allowed=True))
-class GenerationCurrentDensity(CurrentDensityComponent):
-    """Thermal generation current density (SRH).
-
-    J_gen ~ q * ni * W / (2 * tau)
-    """
-
-    T: float
-    tau_n_absorber: float
-    tau_p_absorber: float
-    mat_name_grid: NDArray
-    ni_absorber: float
-
-    @property
-    def name(self) -> str:
-        return "Generation"
-
-    def compute(self, x: np.ndarray, F: np.ndarray, **kwargs) -> np.ndarray:
-        tau = (self.tau_n_absorber + self.tau_p_absorber) / 2.0
-        G = self.ni_absorber / (2.0 * tau)
-        J = float(q.to("C").magnitude) * G
-        in_absorber = self.mat_name_grid == "InGaAs"
-        return J * in_absorber
 
 
 class DarkCurrentModel:

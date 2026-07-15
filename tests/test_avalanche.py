@@ -12,7 +12,7 @@ from src.avalanche.ionization import OkutoCrowellModel, IonizationCoefficients
 from src.avalanche.trigger import TriggerSolver
 from src.avalanche.tunneling import TunnelingModel
 from src.avalanche.dark_current import DarkCurrentModel
-from src.avalanche.pdp import PDPModel
+from src.avalanche.pde import PDEModel
 from src.avalanche.afterpulsing import AfterpulsingModel
 from src.avalanche.excess_noise import ExcessNoiseFactor
 
@@ -136,7 +136,7 @@ def test_dark_current_model():
 def test_pdp_model(inp_material):
     mat_inp = inp_material
     materials = {"InGaAs": mat_inp, "InP": mat_inp, "InGaAsP": mat_inp}
-    pdp = PDPModel(materials=materials, reflectivity=0.1)
+    pde = PDEModel(materials=materials, reflectivity=0.1)
     layers = [
         Layer(thickness=2.5e-4, doping_type="acceptor", doping_A=2e18, doping_m=0, material="InP"),
         Layer(thickness=0.5e-4, doping_type="donor", doping_A=0, doping_m=0, material="InP"),
@@ -144,15 +144,15 @@ def test_pdp_model(inp_material):
         Layer(thickness=0.12e-4, doping_type="donor", doping_A=0, doping_m=0, material="InGaAsP"),
         Layer(thickness=1.5e-4, doping_type="donor", doping_A=0, doping_m=0, material="InGaAs"),
     ]
-    dead_zone, absorber = pdp.find_absorber(layers, "InGaAs")
+    dead_zone, absorber = pde.find_absorber(layers, "InGaAs")
     assert len(dead_zone) == 4
     assert absorber.thickness == 1.5e-4
 
     x = np.linspace(0, absorber.thickness, 100)
     Ptr = np.ones(100) * 0.9
-    pdp_val = pdp.pdp_integral(1550e-9, x, Ptr, x[1] - x[0])
-    assert pdp_val >= 0
-    assert pdp_val <= 1
+    pde_val = pde.pde_integral(1550e-9, x, Ptr, x[1] - x[0])
+    assert pde_val >= 0
+    assert pde_val <= 1
 
 
 def test_afterpulsing():

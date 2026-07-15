@@ -23,6 +23,22 @@ class DepletionWidth:
         x = self.grid.x
         if not np.any(mask):
             return 0.0, 0.0, 0.0
-        xl = float(x[np.argmax(mask)])
-        xr = float(x[len(x) - 1 - np.argmax(mask[::-1])])
+
+        # Find contiguous depleted regions
+        edges = np.diff(mask.astype(np.int8))
+        rises = np.where(edges == 1)[0] + 1
+        falls = np.where(edges == -1)[0] + 1
+
+        if mask[0]:
+            rises = np.concatenate([[0], rises])
+        if mask[-1]:
+            falls = np.concatenate([falls, [len(mask)]])
+
+        if len(rises) == 0:
+            return 0.0, 0.0, 0.0
+
+        # First contiguous depletion region from the left
+        xl = float(x[rises[0]])
+        i_end = min(falls[0], len(x) - 1)
+        xr = float(x[i_end - 1]) if i_end > rises[0] else xl
         return xl, xr, xr - xl

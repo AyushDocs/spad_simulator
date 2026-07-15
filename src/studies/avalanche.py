@@ -9,6 +9,7 @@ from ..avalanche.excess_noise import ExcessNoiseModel
 from ..transport.jitter import JitterModel
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from . import _config as _cfg
 from ._config import PLOT_DIR
 
 log = get_logger()
@@ -55,7 +56,32 @@ def run_dead_space_distribution(sim: SPADSimulator, Vbr: float,
 
 def run_breakdown_prob_vs_vex(sim: SPADSimulator, Vbr: float,
                                N_sim: int = 20) -> None:
-    log.info("  Breakdown prob: skipped (MC not available)")
+    """Breakdown probability vs excess bias.
+
+    Uses the McIntyre trigger probability averaged over the multiplication
+    region (same physics as ``run_trigger_vs_vex`` but reported as a single
+    breakdown-probability curve suitable for Figure 7).
+    """
+    Vex_arr = np.linspace(-10, 10, 41)
+    BrP = np.full(len(Vex_arr), float("nan"))
+
+    for j, Vex in enumerate(Vex_arr):
+        Vbias = Vbr + Vex
+        if Vbias <= 0:
+            continue
+        try:
+            _, E, _, _, _, _ = sim.get_fields(Vbias)
+            BrP[j] = _cfg.absorption_weighted_trigger(sim, E)
+        except Exception as e:
+            log.info(f"  breakdown prob Vex={Vex:.1f}V failed: {e}")
+        except Exception as e:
+            log.info(f"  breakdown prob Vex={Vex:.1f}V failed: {e}")
+
+    valid = np.isfinite(BrP)
+    if np.any(valid):
+        log.info(f"  Breakdown prob range: {np.nanmin(BrP):.4f} – {np.nanmax(BrP):.4f}")
+        get_plotter("breakdown_prob_vs_vex", plot_dir=PLOT_DIR).plot(
+            Vex_arr[valid], BrP[valid], N_sim=N_sim)
 
 
 def run_avalanche_current_pulse(sim: SPADSimulator, Vbr: float) -> None:

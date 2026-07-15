@@ -16,8 +16,6 @@
   Total thickness = 5.94 um, 500 grid nodes.
   A deep semicircular Zn diffusion defines the active-area perimeter
   through the intrinsic cap down to the charge layer.
-
-  All thicknesses in cm, doping in cm^-3.
 -->
 <device version="1.0" date="2026-07-08">
   <meta>

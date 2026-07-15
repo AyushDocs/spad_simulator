@@ -11,11 +11,15 @@ _BUILTIN_PLOTTERS: dict[str, type[Plotter]] = {}
 def _register_builtins() -> None:
     from .structure import DeviceStructurePlotter, DopingPlotter
     from .fields import (PotentialProfilePlotter, ElectricFieldPlotter,
-                         BreakdownSweepPlotter, PeakFieldVsBiasPlotter)
+                          BreakdownSweepPlotter, PeakFieldVsBiasPlotter,
+                          EFieldVsAbsorptionPlotter,
+                          EFieldVsMultiplicationPlotter,
+                          BandDiagramPlotter)
     from .current import (DarkCurrentPlotter, DarkCurrentComponentsPlotter,
-                          DCRPlotter, IVCharacteristicPlotter, ComprehensiveIVPlotter)
-    from .pdp import (PDPPlotter, PDPVsExcessVoltagePlotter,
-                      AbsorptionProfilePlotter, PDP3DPlotter)
+                          DCRPlotter, IVCharacteristicPlotter, ComprehensiveIVPlotter,
+                          TrapDensityIVPlotter)
+    from .pde import (PDEPlotter, PDEVsExcessVoltagePlotter,
+                      AbsorptionProfilePlotter, PDE3DPlotter)
     from .avalanche import (TriggerProbabilityPlotter, TriggerVsVexPlotter,
                             AfterpulsingPlotter,
                             ExcessNoisePlotter, IonizationCoefficientsVsFieldPlotter,
@@ -23,13 +27,18 @@ def _register_builtins() -> None:
                             MultiplicationVsExcessBiasPlotter,
                             AvalancheProbabilityMapPlotter,
                             BreakdownProbVsExcessBiasPlotter,
-                            ATPPlotter)
+                            ATPPlotter,
+                            TriggerBackCalculatePlotter)
+    from .param_sweep import (IVSweepPlotter, ParamSweepPlotter,
+                               ParamSweepIVPlotter,
+                               PunchBreakdownSweepPlotter,
+                               DCRvsPDEPlotter)
     from .temporal import (TrajectoryPlotter, JitterPlotter,
                            JitterHistogramPlotter, PopulationPlotter,
                            AvalancheCurrentPulsePlotter,
                            DeadSpaceDistributionPlotter,
                            QuenchingWaveformPlotter)
-    from .temperature import (DCRvsTempPlotter, PDPvsTempPlotter,
+    from .temperature import (DCRvsTempPlotter, PDEvsTempPlotter,
                               DarkCurrentComponentsVsTempPlotter,
                               BreakdownVoltageVsTempPlotter)
 
@@ -45,10 +54,10 @@ def _register_builtins() -> None:
         "dcr": DCRPlotter,
         "iv_characteristic": IVCharacteristicPlotter,
         "comprehensive_iv": ComprehensiveIVPlotter,
-        "pdp": PDPPlotter,
-        "pdp_vs_vex": PDPVsExcessVoltagePlotter,
+        "pde": PDEPlotter,
+        "pde_vs_vex": PDEVsExcessVoltagePlotter,
         "absorption_profile": AbsorptionProfilePlotter,
-        "pdp_3d": PDP3DPlotter,
+        "pde_3d": PDE3DPlotter,
         "trigger_probability": TriggerProbabilityPlotter,
         "trigger_vs_vex": TriggerVsVexPlotter,
         "afterpulsing": AfterpulsingPlotter,
@@ -59,6 +68,7 @@ def _register_builtins() -> None:
         "avalanche_map": AvalancheProbabilityMapPlotter,
         "breakdown_prob_vs_vex": BreakdownProbVsExcessBiasPlotter,
         "atp": ATPPlotter,
+        "trigger_back_calculate": TriggerBackCalculatePlotter,
         "trajectory": TrajectoryPlotter,
         "jitter": JitterPlotter,
         "jitter_histogram": JitterHistogramPlotter,
@@ -67,9 +77,18 @@ def _register_builtins() -> None:
         "dead_space_dist": DeadSpaceDistributionPlotter,
         "quenching_waveform": QuenchingWaveformPlotter,
         "dcr_vs_temp": DCRvsTempPlotter,
-        "pdp_vs_temp": PDPvsTempPlotter,
+        "pde_vs_temp": PDEvsTempPlotter,
         "dark_current_vs_temp_components": DarkCurrentComponentsVsTempPlotter,
         "breakdown_voltage_vs_temp": BreakdownVoltageVsTempPlotter,
+        "efield_vs_absorption": EFieldVsAbsorptionPlotter,
+        "efield_vs_multiplication": EFieldVsMultiplicationPlotter,
+        "band_diagram": BandDiagramPlotter,
+        "iv_sweep": IVSweepPlotter,
+        "param_sweep": ParamSweepPlotter,
+        "param_sweep_iv": ParamSweepIVPlotter,
+        "trap_density_iv": TrapDensityIVPlotter,
+        "punch_breakdown_sweep": PunchBreakdownSweepPlotter,
+        "dcr_vs_pde": DCRvsPDEPlotter,
     })
 
 

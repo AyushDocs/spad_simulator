@@ -10,12 +10,13 @@ from ..poisson.service import PoissonService
 from ..avalanche.ionization import OkutoCrowellCoefficients
 
 from ..avalanche.current import (
-    CompositeCurrentDensity,
+    CurrentDecompositionManager,
     BTBTCurrentDensity,
     TATCurrentDensity,
     SRHCurrentDensity,
 )
-from ..avalanche.pdp import PDPModel
+from ..avalanche.pde import PDEModel
+from ..transport.continuum import ContinuumSolver
 
 if TYPE_CHECKING:
     from ..core.grid import Grid1D
@@ -67,7 +68,7 @@ def build_subsystems(
     else:
         raise ValueError("InGaAs material data required for absorption layer")
 
-    current = CompositeCurrentDensity()
+    current = CurrentDecompositionManager()
     current.add(SRHCurrentDensity(
         tau_n_absorber=tau_n_absorber,
         tau_p_absorber=tau_p_absorber,
@@ -75,11 +76,12 @@ def build_subsystems(
         ni_absorber=ni_absorber,
     ))
     current.add(BTBTCurrentDensity(
-        Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp))
+        Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp, T=T))
     current.add(TATCurrentDensity(
-        mat_name_grid=device.material.mat_name, materials=materials))
+        mat_name_grid=device.material.mat_name, materials=materials,
+        N_T=1e12, T=T))
 
-    # PDP model - compute absorber layer position from device layers
+    # PDE model - compute absorber layer position from device layers
     x_start_acc = 0.0
     x_abs_start, x_abs_stop = 0.0, 0.0
     for lyr in device.layers:
@@ -89,7 +91,7 @@ def build_subsystems(
             break
         x_start_acc += lyr.thickness
 
-    pdp_model = PDPModel(
+    pde_model = PDEModel(
         grid=grid.x,
         x_abs_start=x_abs_start,
         x_abs_stop=x_abs_stop,
@@ -97,9 +99,16 @@ def build_subsystems(
     )
 
 
+    # Continuum drift-diffusion solver (built on demand; can be None)
+    continuum = ContinuumSolver(
+        grid=grid, doping=device.doping,
+        material=device.material, T=T,
+    )
+
     return {
         "poisson_service": poisson_service,
         "ionization": ionization,
         "current": current,
-        "pdp_model": pdp_model,
+        "pde_model": pde_model,
+        "continuum": continuum,
     }

@@ -5,7 +5,8 @@ from .current import SRHCurrentDensity as SRHCurrentDensity
 from .current import BTBTCurrentDensity as BTBTCurrentDensity
 from .current import TATCurrentDensity as TATCurrentDensity
 from .current import CompositeCurrentDensity as CompositeCurrentDensity
-from .pdp import PDPModel as PDPModel
+from .current import CurrentDecompositionManager as CurrentDecompositionManager
+from .pde import PDEModel as PDEModel
 from .breakdown import BreakdownVoltage as BreakdownVoltage
 from .breakdown import BreakdownCriterion as BreakdownCriterion
 from .breakdown import CurrentRiseCriterion as CurrentRiseCriterion

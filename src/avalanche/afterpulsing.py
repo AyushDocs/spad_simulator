@@ -45,7 +45,7 @@ class AfterpulsingModel(BaseModel):
             return self.afterpulsing_probability(holdoff)
         total = 0.0
         for count, tau, prob in zip(self.trap_counts, self.trap_lifetimes, self.trap_probs):
-            total += count * prob * np.exp(-holdoff / tau)
+            total += prob * np.exp(-holdoff / tau)
         return total
 
     # Compatibility methods

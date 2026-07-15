@@ -106,3 +106,89 @@ class PeakFieldVsBiasPlotter(BasePlotter):
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
         self._save("peak_field_vs_bias.png", plt)
+
+
+class EFieldVsAbsorptionPlotter(BasePlotter):
+    """Plot E-field profiles for varying absorption-layer widths."""
+
+    @property
+    def name(self) -> str:
+        return "efield_vs_absorption"
+
+    def plot(self, results: list[tuple[float, np.ndarray, np.ndarray]]) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.set_title("Electric Field vs Absorption Layer Width", fontsize=12, pad=12)
+        colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+        for i, (w_um, x, E) in enumerate(results):
+            x_um = x * 1e4
+            ax.plot(x_um, -E / 1e4, lw=2, color=colors[i % len(colors)],
+                    label=f"W_abs = {w_um:.1f} µm")
+        ax.set_xlabel("Depth (µm)")
+        ax.set_ylabel("Electric Field (V/µm)")
+        ax.legend(fontsize=9)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("efield_vs_absorption.png", plt)
+
+
+class EFieldVsMultiplicationPlotter(BasePlotter):
+    """Plot E-field profiles for varying multiplication-layer widths."""
+
+    @property
+    def name(self) -> str:
+        return "efield_vs_multiplication"
+
+    def plot(self, results: list[tuple[float, np.ndarray, np.ndarray]]) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.set_title("Electric Field vs Multiplication Layer Width", fontsize=12, pad=12)
+        colors = ["#d62728", "#9467bd", "#8c564b"]
+        for i, (w_um, x, E) in enumerate(results):
+            x_um = x * 1e4
+            ax.plot(x_um, -E / 1e4, lw=2, color=colors[i % len(colors)],
+                    label=f"W_mult = {w_um:.1f} µm")
+        ax.set_xlabel("Depth (µm)")
+        ax.set_ylabel("Electric Field (V/µm)")
+        ax.legend(fontsize=9)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("efield_vs_multiplication.png", plt)
+
+
+class BandDiagramPlotter(BasePlotter):
+    """Plot conduction band (Ec), valence band (Ev), and Fermi level vs depth."""
+
+    @property
+    def name(self) -> str:
+        return "band_diagram"
+
+    def plot(self, x: np.ndarray, Ec: np.ndarray, Ev: np.ndarray,
+             Eg: np.ndarray,
+             Ef: float | None = None,
+             layer_bounds_um: list[float] | None = None) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.set_title("Equilibrium Energy Band Diagram", fontsize=12, pad=12)
+        x_um = x * 1e4
+
+        ax.plot(x_um, Ec, lw=2, color="#1f77b4", label="$E_C$")
+        ax.plot(x_um, Ev, lw=2, color="#d62728", label="$E_V$")
+
+        if Ef is not None:
+            ax.axhline(y=Ef, color="#2ca02c", ls="--", lw=1.5, label=f"$E_F$ = {Ef:.3f} eV")
+
+        eg_mid = Eg[len(Eg) // 2]
+        ax.fill_between(x_um, Ev, Ec, alpha=0.08, color="gray",
+                        label=f"$E_g$ = {eg_mid:.2f} eV")
+
+        if layer_bounds_um is not None:
+            for xb in layer_bounds_um:
+                ax.axvline(x=xb, color="k", ls=":", alpha=0.3)
+
+        ax.set_xlabel("Depth (µm)")
+        ax.set_ylabel("Energy (eV)")
+        ax.legend(fontsize=9, loc="best")
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("band_diagram.png", plt)

@@ -45,14 +45,22 @@ def test_dcr_function():
 
 
 def test_cost_function_evaluate():
-    mock_sim = type("MockSim", (), {
-        "set_doping": lambda self, p: None,
-        "find_breakdown": lambda self: (20.0, {}),
-        "solve_trigger": lambda self, V: (np.full(100, 0.8), np.full(100, 0.4), np.zeros(100)),
-    })()
+    from unittest.mock import MagicMock
+    from src.core.layer import Layer
+    mock_layer = Layer(thickness=1e-4, doping_type="donor", doping_A=1e16,
+                       doping_m=0, doping_x0=0, material="InP")
+    mock_mat = MagicMock()
+    mock_mat.absorption_coefficient.return_value = 7500.0
+    mock_sim = MagicMock()
+    mock_sim.device.layers = [mock_layer]
+    mock_sim.grid.x = np.linspace(0, 4e-4, 100)
+    mock_sim.materials = {"InGaAs": mock_mat}
+    mock_sim.find_breakdown.return_value = (20.0, {})
+    mock_sim.solve_trigger.return_value = (
+        np.full(100, 0.8), np.full(100, 0.4), np.zeros(100))
 
     cost = CostFunction(BV_target=20.0)
-    J, details = cost.evaluate(mock_sim, {"peak": 1e16})
+    J, details = cost.evaluate(mock_sim, {"0": 1e16})
     assert "PDE" in details
     assert "DCR" in details
     assert "BV" in details
@@ -61,18 +69,24 @@ def test_cost_function_evaluate():
 
 
 def test_cost_function_bv_penalty():
-    mock_sim_ok = type("MockSim", (), {
-        "set_doping": lambda self, p: None,
-        "find_breakdown": lambda self: (20.0, {}),
-        "solve_trigger": lambda self, V: (np.full(10, 0.8), np.full(10, 0.4), np.zeros(10)),
-    })()
-    mock_sim_bad = type("MockSim", (), {
-        "set_doping": lambda self, p: None,
-        "find_breakdown": lambda self: (50.0, {}),
-        "solve_trigger": lambda self, V: (np.full(10, 0.8), np.full(10, 0.4), np.zeros(10)),
-    })()
+    from unittest.mock import MagicMock
+    from src.core.layer import Layer
+    mock_layer = Layer(thickness=1e-4, doping_type="donor", doping_A=1e16,
+                       doping_m=0, doping_x0=0, material="InP")
+    mock_mat = MagicMock()
+    mock_mat.absorption_coefficient.return_value = 7500.0
+
+    def _make_sim(Vbr_val):
+        m = MagicMock()
+        m.device.layers = [mock_layer]
+        m.grid.x = np.linspace(0, 4e-4, 10)
+        m.materials = {"InGaAs": mock_mat}
+        m.find_breakdown.return_value = (Vbr_val, {})
+        m.solve_trigger.return_value = (
+            np.full(10, 0.8), np.full(10, 0.4), np.zeros(10))
+        return m
 
     cost = CostFunction(BV_target=20.0)
-    J_ok, _ = cost.evaluate(mock_sim_ok, {})
-    J_bad, _ = cost.evaluate(mock_sim_bad, {})
+    J_ok, _ = cost.evaluate(_make_sim(20.0), {})
+    J_bad, _ = cost.evaluate(_make_sim(50.0), {})
     assert J_bad < J_ok

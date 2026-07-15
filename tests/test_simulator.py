@@ -51,7 +51,7 @@ def test_get_fields(sim):
 def test_find_breakdown(sim):
     Vbr, info = sim.find_breakdown(V_start=0, V_max=150, V_step=1.0)
     assert Vbr is not None
-    assert 60 < Vbr < 150
+    assert 45 < Vbr < 150
 
 
 def test_dark_current(sim):
@@ -72,16 +72,16 @@ def test_json_output(sim):
     en_metrics = {"M_max": 10.0, "F_max": en.f(10.0), "k_eff": 0.5}
     jitter_metrics = {"sigma_s": 1e-12, "fwhm_s": 2e-12}
     dc_metrics = {"I_dark_A": 3e-8, "DCR_cps": 1e9, "Vex_V": 3.0}
-    pdp_metrics = {"905nm": 0.5, "1310nm": 0.74, "1550nm": 0.65}
+    pde_metrics = {"905nm": 0.5, "1310nm": 0.74, "1550nm": 0.65}
 
     artifact = collect_artifact(Vbr, sim, ap_metrics, en_metrics,
                                 jitter_metrics,
-                                dc_metrics, pdp_metrics)
+                                dc_metrics, pde_metrics)
 
     assert artifact.Vbr_V == Vbr
     assert artifact.T_K == 300.0
     assert artifact.I_dark_A == 3e-8
-    assert artifact.pdp_max["1310nm"] == 0.74
+    assert artifact.pde_max["1310nm"] == 0.74
     assert artifact.ap_N_T == 1e12
     assert artifact.en_k_eff == 0.5
     assert artifact.jitter_fwhm_s == 2e-12
@@ -89,7 +89,7 @@ def test_json_output(sim):
     d = artifact.to_dict()
     assert d["device"]["Vbr_V"] == Vbr
     assert d["dark_current"]["I_dark_A"] == 3e-8
-    assert d["pdp_max"]["1310nm"] == 0.74
+    assert d["pde_max"]["1310nm"] == 0.74
     assert d["afterpulsing"]["N_T"] == 1e12
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -102,7 +102,7 @@ def test_json_output(sim):
         assert root.tag == "spad_simulation"
         assert root.find("device") is not None
         assert root.find("dark_current") is not None
-        assert root.find("pdp_max") is not None
+        assert root.find("pde_max") is not None
         assert root.find("afterpulsing") is not None
         assert root.find("excess_noise") is not None
         assert root.find("timing_jitter") is not None

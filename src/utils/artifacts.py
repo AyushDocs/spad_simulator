@@ -28,8 +28,8 @@ class SimulationArtifact:
     I_dark_A: float = 0.0
     DCR_cps: float = 0.0
 
-    # PDP max at key wavelengths
-    pdp_max: Dict[str, float] = field(default_factory=dict)
+    # PDE max at key wavelengths
+    pde_max: Dict[str, float] = field(default_factory=dict)
 
     # Afterpulsing
     ap_N_T: float = 1e12
@@ -48,7 +48,7 @@ class SimulationArtifact:
 
     # Temperature sweeps
     dcr_vs_temp: Dict[str, Any] = field(default_factory=dict)
-    pdp_vs_temp: Dict[str, Any] = field(default_factory=dict)
+    pde_vs_temp: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -66,7 +66,7 @@ class SimulationArtifact:
                 "DCR_cps": self.DCR_cps,
                 "Vex_V": 3.0,
             },
-            "pdp_max": self.pdp_max,
+            "pde_max": self.pde_max,
             "afterpulsing": {
                 "N_T": self.ap_N_T,
                 "tau_c": self.ap_tau_c_s,
@@ -83,16 +83,16 @@ class SimulationArtifact:
                 "fwhm_s": self.jitter_fwhm_s,
             },
             "dcr_vs_temperature": self.dcr_vs_temp,
-            "pdp_vs_temperature": self.pdp_vs_temp,
+            "pde_vs_temperature": self.pde_vs_temp,
         }
 
 
 def collect_artifact(Vbr: float, sim: Any, afterpulsing: dict,
                      excess_noise: dict, jitter: dict,
                      dark_current: dict | None = None,
-                     pdp_max: dict | None = None,
-                     dcr_temp: dict | None = None,
-                     pdp_temp: dict | None = None) -> SimulationArtifact:
+                      pde_max: dict | None = None,
+                      dcr_temp: dict | None = None,
+                      pde_temp: dict | None = None) -> SimulationArtifact:
     """Collect all simulation metrics into a SimulationArtifact."""
     dc = dark_current or {}
     return SimulationArtifact(
@@ -105,7 +105,7 @@ def collect_artifact(Vbr: float, sim: Any, afterpulsing: dict,
         n_layers=len(sim.device.layers),
         I_dark_A=dc.get("I_dark_A", 0.0),
         DCR_cps=dc.get("DCR_cps", 0.0),
-        pdp_max=pdp_max or {},
+        pde_max=pde_max or {},
         ap_N_T=afterpulsing.get("N_T", 1e12),
         ap_tau_c_s=afterpulsing.get("tau_c", 1e-6),
         ap_P_ap_1us=afterpulsing.get("P_ap_1us", 0.0),
@@ -116,7 +116,7 @@ def collect_artifact(Vbr: float, sim: Any, afterpulsing: dict,
         jitter_sigma_s=jitter.get("sigma_s", 0.0),
         jitter_fwhm_s=jitter.get("fwhm_s", 0.0),
         dcr_vs_temp=dcr_temp or {},
-        pdp_vs_temp=pdp_temp or {},
+        pde_vs_temp=pde_temp or {},
     )
 
 
@@ -153,9 +153,9 @@ class ArtifactWriter:
         self._add_element(dc_el, "DCR_cps", f"{artifact.DCR_cps:.6e}")
         self._add_element(dc_el, "excess_voltage_V", "3.0")
 
-        pdp_el = self._add_element(root, "pdp_max")
-        for wl_key, val in artifact.pdp_max.items():
-            self._add_element(pdp_el, f"PDP_{wl_key}", f"{val:.6f}",
+        pde_el = self._add_element(root, "pde_max")
+        for wl_key, val in artifact.pde_max.items():
+            self._add_element(pde_el, f"PDE_{wl_key}", f"{val:.6f}",
                               attrib={"wavelength": wl_key})
 
         ap_el = self._add_element(root, "afterpulsing")
@@ -182,17 +182,17 @@ class ArtifactWriter:
                                   attrib={"temperature_K": str(t),
                                           "DCR_cps": str(d)})
 
-        if artifact.pdp_vs_temp:
-            pdpT_el = self._add_element(root, "pdp_vs_temperature")
-            temps = artifact.pdp_vs_temp.get("temperatures_K", [])
-            pdp_data = artifact.pdp_vs_temp.get("pdp", {})
-            for wl, vals in pdp_data.items():
-                wl_el = self._add_element(pdpT_el, "wavelength",
+        if artifact.pde_vs_temp:
+            pdeT_el = self._add_element(root, "pde_vs_temperature")
+            temps = artifact.pde_vs_temp.get("temperatures_K", [])
+            pde_data = artifact.pde_vs_temp.get("pde", {})
+            for wl, vals in pde_data.items():
+                wl_el = self._add_element(pdeT_el, "wavelength",
                                           attrib={"nm": str(wl)})
                 for t, v in zip(temps, vals):
                     self._add_element(wl_el, "data_point",
                                       attrib={"temperature_K": str(t),
-                                              "PDP": str(v)})
+                                              "PDE": str(v)})
 
         tree = ET.ElementTree(root)
         ET.indent(tree, space="  ")

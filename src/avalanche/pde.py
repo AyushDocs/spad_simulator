@@ -1,4 +1,4 @@
-"""Photon detection probability model."""
+"""Photon detection efficiency model."""
 
 from __future__ import annotations
 
@@ -14,13 +14,13 @@ from ..core.layer import Layer
 from ..utils._logging import get_logger
 from ..utils.pydantic_types import NDArray
 
-log = get_logger("avalanche.pdp")
+log = get_logger("avalanche.pde")
 
 
-class PDPModel(BaseModel):
-    """Photon detection probability (PDP).
+class PDEModel(BaseModel):
+    """Photon detection efficiency (PDE).
 
-    PDP(λ, V) = η_abs(λ) × P_trigger(V)
+    PDE(λ, V) = η_abs(λ) × P_trigger(V)
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -51,7 +51,7 @@ class PDPModel(BaseModel):
         return self.QE * (1.0 - np.exp(-abs_coeff * (self.x_abs_stop - self.x_abs_start))) * self.PCE
 
     def compute(self, abs_coeff: float, trigger_prob: float) -> float:
-        """Compute PDP."""
+        """Compute PDE."""
         return self.absorption_efficiency(abs_coeff) * trigger_prob
 
     # Original methods for test/photocurrent compatibility
@@ -82,7 +82,7 @@ class PDPModel(BaseModel):
             trans *= np.exp(-alpha * lyr.thickness)
         return trans
 
-    def pdp_integral(self, lam: float,
+    def pde_integral(self, lam: float,
                      xx: np.ndarray,
                      P_trigger_slice: np.ndarray,
                      dead_zone_trans_or_dx: float,
@@ -97,7 +97,7 @@ class PDPModel(BaseModel):
         alpha = mat.absorption_coefficient(lam)
         integrand = alpha * np.exp(-alpha * xx) * P_trigger_slice
         apt = float(np.trapezoid(integrand, dx=dx))
-        return (1.0 - self.reflectivity) * dead_zone_trans * apt
+        return self.QE * self.PCE * (1.0 - self.reflectivity) * dead_zone_trans * apt
 
     def absorption_probability(self, lam: float,
                                 L_abs: float,
@@ -106,7 +106,7 @@ class PDPModel(BaseModel):
         alpha = mat.absorption_coefficient(lam)
         return 1.0 - np.exp(-alpha * L_abs)
 
-    def pdp(self, lam: float, L_abs: float,
+    def pde(self, lam: float, L_abs: float,
             P_trigger: float,
             material_name: str = "Si",
             dead_zone: float = 0.0) -> float:

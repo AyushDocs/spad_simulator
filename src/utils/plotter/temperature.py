@@ -1,4 +1,4 @@
-"""Temperature-dependent plotters: DCR, PDP, dark current components, breakdown voltage."""
+"""Temperature-dependent plotters: DCR, PDE, dark current components, breakdown voltage."""
 from __future__ import annotations
 
 import numpy as np
@@ -14,40 +14,67 @@ class DCRvsTempPlotter(BasePlotter):
     def plot(self, temperatures: np.ndarray, DCR: np.ndarray,
              Vex: float | None = None) -> None:
         plt = self._import()
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.semilogy(temperatures, DCR + 1e-10, "o-", lw=2)
-        ax.set_xlabel("Temperature (K)")
-        ax.set_ylabel("DCR (cps)")
-        title = "Dark Count Rate vs Temperature"
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+        # Left: DCR vs T (log scale)
+        eps = 1e-10
+        ax1.semilogy(temperatures, np.abs(DCR) + eps, "o-", lw=2)
+        ax1.set_xlabel("Temperature (K)")
+        ax1.set_ylabel("DCR (cps)")
+        title = "DCR vs Temperature"
         if Vex is not None:
             title += f" (Vex = {Vex:.1f} V)"
-        ax.set_title(title, fontsize=12, pad=12)
-        ax.grid(True, alpha=0.3)
+        ax1.set_title(title, fontsize=12, pad=12)
+        ax1.grid(True, alpha=0.3)
+
+        # Right: Arrhenius plot — ln(DCR) vs 1000/T
+        valid = np.abs(DCR) > eps
+        if np.sum(valid) >= 2:
+            T_valid = temperatures[valid]
+            DCR_valid = np.abs(DCR[valid])
+            inv_T = 1000.0 / T_valid  # 1000/T (K⁻¹)
+            ln_DCR = np.log(DCR_valid)
+            ax2.plot(inv_T, ln_DCR, "s-", lw=2, color="#d62728")
+            # Linear fit to extract activation energy
+            if len(inv_T) >= 2:
+                coeffs = np.polyfit(inv_T, ln_DCR, 1)
+                E_a = -coeffs[0] * 8.617e-5  # convert from K to eV (k_B = 8.617e-5 eV/K)
+                fit_line = np.polyval(coeffs, inv_T)
+                ax2.plot(inv_T, fit_line, "--", color="gray", alpha=0.6,
+                         label=f"E_a = {E_a:.2f} eV")
+                ax2.legend(fontsize=9)
+        ax2.set_xlabel("1000 / T (K⁻¹)")
+        ax2.set_ylabel("ln(DCR)")
+        ax2.set_title("Arrhenius Plot", fontsize=12, pad=12)
+        ax2.grid(True, alpha=0.3)
+
+        fig.suptitle("Dark Count Rate vs Temperature" + (f"  (Vex = {Vex:.1f} V)" if Vex else ""),
+                     fontsize=13, y=1.02)
         plt.tight_layout()
         self._save("dcr_vs_temperature.png", plt)
 
 
-class PDPvsTempPlotter(BasePlotter):
+class PDEvsTempPlotter(BasePlotter):
     @property
     def name(self) -> str:
-        return "pdp_vs_temp"
+        return "pde_vs_temp"
 
-    def plot(self, temperatures: np.ndarray, pdp_dict: dict,
+    def plot(self, temperatures: np.ndarray, pde_dict: dict,
              wavelengths_nm: np.ndarray | None = None) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(8, 5))
-        colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(pdp_dict)))
-        for (lam, pdp), c in zip(sorted(pdp_dict.items()), colors):
-            ax.plot(temperatures, pdp * 100, "o-", lw=2, color=c,
+        colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(pde_dict)))
+        for (lam, pde), c in zip(sorted(pde_dict.items()), colors):
+            ax.plot(temperatures, pde * 100, "o-", lw=2, color=c,
                     label=f"{lam:.0f} nm")
         ax.set_xlabel("Temperature (K)")
-        ax.set_ylabel("PDP (%)")
-        ax.set_title("Photon Detection Probability (PDP) vs Temperature", fontsize=12, pad=12)
+        ax.set_ylabel("PDE (%)")
+        ax.set_title("Photon Detection Efficiency (PDE) vs Temperature", fontsize=12, pad=12)
         ax.legend(fontsize=8, title="Wavelength")
         ax.grid(True, alpha=0.3)
         ax.set_ylim(0, 100)
         plt.tight_layout()
-        self._save("pdp_vs_temperature.png", plt)
+        self._save("pde_vs_temperature.png", plt)
 
 
 class DarkCurrentComponentsVsTempPlotter(BasePlotter):

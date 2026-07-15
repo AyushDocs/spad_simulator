@@ -6,6 +6,7 @@ import numpy as np
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from . import _config as _cfg
 from ._config import PLOT_DIR
 
 log = get_logger()
@@ -50,12 +51,13 @@ def run_field_sweep(sim: SPADSimulator, Vbr: float) -> None:
 
 def run_trigger_profiles(sim: SPADSimulator, Vbr: float) -> None:
     Vex_list = [-10, -5, -2, 0.5, 1, 2, 3, 5]
-    Pe_list, Ph_list, V_list = [], [], []
+    Pe_list, Ph_list, E_list, V_list = [], [], [], []
     for Vex in Vex_list:
         try:
             Pe, Ph, E = sim.solve_trigger(Vbr + Vex)
             Pe_list.append(Pe)
             Ph_list.append(Ph)
+            E_list.append(E)
             V_list.append(Vbr + Vex)
             log.info(f"  Trigger Vex={Vex}V  Pe_max={np.max(Pe):.4f}  "
                      f"Ph_max={np.max(Ph):.4f}")
@@ -73,25 +75,28 @@ def run_trigger_profiles(sim: SPADSimulator, Vbr: float) -> None:
         if sub_br_idx:
             pe_sub = np.array([Pe_list[i] for i in sub_br_idx])
             ph_sub = np.array([Ph_list[i] for i in sub_br_idx])
+            E_sub = np.array([E_list[i] for i in sub_br_idx])
             v_sub = [V_list[i] for i in sub_br_idx]
             plotter.plot(sim.grid.x, pe_sub, ph_sub, v_sub, Vbr=Vbr,
-                         doping=sim.device.net_doping_on_grid,
+                         E_field=E_sub,
                          filename="trigger_probability_sub_breakdown.png")
 
         if geiger_low_idx:
             pe_low = np.array([Pe_list[i] for i in geiger_low_idx])
             ph_low = np.array([Ph_list[i] for i in geiger_low_idx])
+            E_low = np.array([E_list[i] for i in geiger_low_idx])
             v_low = [V_list[i] for i in geiger_low_idx]
             plotter.plot(sim.grid.x, pe_low, ph_low, v_low, Vbr=Vbr,
-                         doping=sim.device.net_doping_on_grid,
+                         E_field=E_low,
                          filename="trigger_probability_geiger_low.png")
 
         if geiger_high_idx:
             pe_high = np.array([Pe_list[i] for i in geiger_high_idx])
             ph_high = np.array([Ph_list[i] for i in geiger_high_idx])
+            E_high = np.array([E_list[i] for i in geiger_high_idx])
             v_high = [V_list[i] for i in geiger_high_idx]
             plotter.plot(sim.grid.x, pe_high, ph_high, v_high, Vbr=Vbr,
-                         doping=sim.device.net_doping_on_grid,
+                         E_field=E_high,
                          filename="trigger_probability_geiger_high.png")
 
         # Calculate succeeded Vex and ATP list, then plot
@@ -147,20 +152,24 @@ def run_avalanche_probability_map(sim: SPADSimulator, Vbr: float) -> None:
 def run_trigger_vs_vex(sim: SPADSimulator, Vbr: float,
                        Vex_min: float = -20.0, Vex_max: float = 10.0,
                        n_pts: int = 61) -> None:
-    """Plot spatially-averaged Pe and Ph vs excess voltage.
+    """Plot absorption-weighted spatially-averaged Pe and Ph vs excess voltage.
 
     Sweeps Vex from Vex_min (sub-breakdown) to Vex_max (Geiger regime).
-    Averages over the InP multiplication layer only (x < 4 µm) to exclude
-    the heterojunction field spike at the absorber/buffer interface.
+    Averages over the InP multiplication layer only (x < 4 µm) using
+    absorption-weighted averaging so that the reported trigger probability
+    reflects the contribution of carriers generated at each depth in the
+    absorber.  The weight is  α_opt · exp(-α_opt · x), where α_opt is the
+    InGaAs absorption coefficient at 1550 nm.
     """
     Vex_arr = np.linspace(Vex_min, Vex_max, n_pts)
     Pe_mean_arr = np.full(n_pts, float("nan"))
     Ph_mean_arr = np.full(n_pts, float("nan"))
     Ptr_mean_arr = np.full(n_pts, float("nan"))
 
-    # InP multiplication layer ends at ~3.5–4 µm from top surface
-    x_mult_max = 4e-4  # cm  (4 µm)
     x = sim.grid.x
+
+    # Absorption-weighting: α_opt for InGaAs at 1550 nm
+    alpha_opt = sim.materials["InGaAs"].absorption_coefficient(1550e-9)  # cm⁻¹
 
     for j, Vex in enumerate(Vex_arr):
         Vbias = Vbr + Vex
@@ -170,11 +179,14 @@ def run_trigger_vs_vex(sim: SPADSimulator, Vbr: float,
             Pe, Ph, E = sim.solve_trigger(Vbias)
             Ptr = Pe + Ph - Pe * Ph
             # Restrict to multiplication layer, exclude heterojunction spike
-            mult_mask = (np.abs(E) > 1e4) & (x < x_mult_max)
+            mult_mask = (np.abs(E) > _cfg.FIELD_THRESHOLD) & (x < _cfg.X_MULT_MAX)
             if np.any(mult_mask):
-                Pe_mean_arr[j] = float(np.mean(Pe[mult_mask]))
-                Ph_mean_arr[j] = float(np.mean(Ph[mult_mask]))
-                Ptr_mean_arr[j] = float(np.mean(Ptr[mult_mask]))
+                # Absorption-weighted average over multiplication region
+                w = alpha_opt * np.exp(-alpha_opt * x[mult_mask])
+                w_sum = float(np.sum(w))
+                Pe_mean_arr[j] = float(np.sum(Pe[mult_mask] * w) / w_sum)
+                Ph_mean_arr[j] = float(np.sum(Ph[mult_mask] * w) / w_sum)
+                Ptr_mean_arr[j] = float(np.sum(Ptr[mult_mask] * w) / w_sum)
             else:
                 Pe_mean_arr[j] = 0.0
                 Ph_mean_arr[j] = 0.0
@@ -211,3 +223,43 @@ def run_breakdown_vs_temp(svc, Vbr_room: float) -> dict:
             temps[mask], Vbr_np[mask])
 
     return {"temperatures_K": temps.tolist(), "Vbr_V": Vbr_np.tolist()}
+
+
+def run_band_diagram(sim: SPADSimulator, Vbr: float) -> None:
+    """Plot equilibrium energy band diagram (Ec, Ev, Ef) vs depth."""
+    from ..core.constants import q as q_eV, kB
+
+    x = sim.grid.x
+    Eg_grid = sim.device.material.Eg
+    Nc_grid = sim.device.material.Nc
+    Nv_grid = sim.device.material.Nv
+    net_doping = sim.device.net_doping_on_grid
+
+    phi, E, _ = sim.solve_poisson(0.0)
+    Ec = Eg_grid / 2.0 - phi
+    Ev = -Eg_grid / 2.0 - phi
+
+    # Fermi level at equilibrium is flat — compute from right contact (ground)
+    vth = float(kB.magnitude) * sim.T / float(q_eV.magnitude)
+    Nc_ref = max(float(Nc_grid[-1]), 1e10)
+    Nv_ref = max(float(Nv_grid[-1]), 1e10)
+    nd_ref = float(net_doping[-1])
+
+    if nd_ref > 1e10:
+        Ef = float(Ec[-1]) - vth * np.log(Nc_ref / nd_ref)
+    elif nd_ref < -1e10:
+        Ef = float(Ev[-1]) + vth * np.log(Nv_ref / (-nd_ref))
+    else:
+        Ef = (float(Ec[-1]) + float(Ev[-1])) / 2.0
+
+    layer_bounds = []
+    x_acc = 0.0
+    for lyr in sim.device.layers[:-1]:
+        x_acc += lyr.thickness
+        layer_bounds.append(x_acc * 1e4)
+
+    log.info(f"  Band diagram V=0V  Ec range=[{Ec.min():.3f}, {Ec.max():.3f}] eV  "
+             f"Ev range=[{Ev.min():.3f}, {Ev.max():.3f}] eV  Ef={Ef:.3f} eV")
+
+    get_plotter("band_diagram", plot_dir=PLOT_DIR).plot(
+        x, Ec, Ev, Eg_grid, Ef=Ef, layer_bounds_um=layer_bounds)

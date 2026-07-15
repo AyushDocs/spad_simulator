@@ -36,11 +36,11 @@ The repo root contains a thin wrapper package (`__init__.py`, `__main__.py`) tha
 src/
   core/           Grid, layers, materials, doping, device
   poisson/        Nonlinear Poisson solver, depletion width
-  avalanche/      Impact ionization, trigger, breakdown, dark current, PDP
+  avalanche/      Impact ionization, trigger, breakdown, dark current, PDE
   transport/      Drift-diffusion, Monte Carlo, timing jitter
   self_consistent/ PIC loop, particle-mesh, circuit quenching
   optimization/   PSO optimizer
-  studies/        High-level simulation workflows (fields, dark current, PDP, etc.)
+  studies/        High-level simulation workflows (fields, dark current, PDE, etc.)
   utils/          Exceptions, logging, XML loaders, plotters, ingestion, artifacts
   main.py         Orchestration entrypoint
   ui.py           GUI mode

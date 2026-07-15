@@ -7,9 +7,12 @@ from ..simulator import SPADSimulator
 from ..utils.ingestion import DataIngestionService
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from . import _config as _cfg
 from ._config import PLOT_DIR
 
 log = get_logger()
+
+Q_E = 1.602e-19  # elementary charge (C)
 
 
 def run_dark_current_sweep(sim: SPADSimulator, Vbr: float) -> None:
@@ -21,7 +24,10 @@ def run_dark_current_sweep(sim: SPADSimulator, Vbr: float) -> None:
             _, E, _, _, _, _ = sim.get_fields(float(Vbr + Vex))
             dc = sim.compute_dark_current(float(Vbr + Vex), E=E)
             i_dark_val = dc["I_dark"]
-            dcr_val = dc["DCR"]
+            # DCR = primary generation rate × trigger probability
+            I_primary = dc["I_dark"] / dc["M"] if dc["M"] > 0 else dc["I_dark"]
+            P_trig = _cfg.absorption_weighted_trigger(sim, E)
+            dcr_val = abs(I_primary / Q_E) * P_trig  # cps
         except Exception:
             i_dark_val = np.nan
             dcr_val = np.nan
@@ -36,25 +42,30 @@ def run_dark_current_sweep(sim: SPADSimulator, Vbr: float) -> None:
         log.info(f"DCR:    {np.nanmin(dcr_arr):.2e} - {np.nanmax(dcr_arr):.2e} cps")
         get_plotter("dark_current", plot_dir=PLOT_DIR).plot(
             Vex_range[mask], I_dark_arr[mask], Vbr=Vbr)
-        get_plotter("dcr", plot_dir=PLOT_DIR).plot(Vex_range[mask], dcr_arr[mask])
+        get_plotter("dcr", plot_dir=PLOT_DIR).plot(
+            Vex_range[mask], dcr_arr[mask], Vbr=Vbr)
 
 
 def run_dcr_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:
     temps = np.array([250, 275, 300, 325, 350])
     Vex = 3.0
     DCR_vals = []
+    Vbr_vals = []
 
     for T in temps:
         try:
-            sim_T = svc.build_simulator(T)
-            dVbr = (T - 300.0) * 0.002
-            Vbr_T = Vbr + dVbr
+            sim_T, Vbr_T = svc.build_simulator_at_temp(T)
             dc = sim_T.compute_dark_current(Vbr_T + Vex)
-            DCR_vals.append(dc["DCR"])
-            log.info(f"  T={T}K  Vbr={Vbr_T:.1f}V  DCR={dc['DCR']:.2e} cps")
+            I_primary = dc["I_dark"] / dc["M"] if dc["M"] > 0 else dc["I_dark"]
+            P_trig = _cfg.absorption_weighted_trigger(sim_T, dc["E"])
+            dcr = abs(I_primary / Q_E) * P_trig  # cps
+            DCR_vals.append(dcr)
+            Vbr_vals.append(Vbr_T)
+            log.info(f"  T={T}K  Vbr={Vbr_T:.1f}V  DCR={dcr:.2e} cps")
         except Exception as e:
             log.info(f"  T={T}K failed: {e}")
             DCR_vals.append(np.nan)
+            Vbr_vals.append(np.nan)
 
     DCR_arr = np.array(DCR_vals)
     mask = np.isfinite(DCR_arr)
@@ -116,9 +127,7 @@ def run_dark_current_components_vs_temp(svc: DataIngestionService, Vbr: float) -
 
     for T in temps:
         try:
-            sim_T = svc.build_simulator(T)
-            dVbr = (T - 300.0) * 0.002
-            Vbr_T = Vbr + dVbr
+            sim_T, Vbr_T = svc.build_simulator_at_temp(T)
             dc = sim_T.compute_dark_current(Vbr_T + Vex)
             J_total_vals.append(dc["I_dark"])
         except Exception as e:

@@ -50,10 +50,10 @@ J_total = J_SRH + J_BTBT + J_TAT
 DCR = A_det * int G(x) * P_trigger(x) dx
 ```
 
-### PDP Spectrum
+### PDE Spectrum
 
 ```
-PDP(lambda) = (1-r) * T_dead(lambda) * int alpha_abs * exp(-alpha_abs * x) * P_trigger(x) dx
+PDE(lambda) = (1-r) * T_dead(lambda) * int alpha_abs * exp(-alpha_abs * x) * P_trigger(x) dx
 ```
 
 ### Drift-Diffusion Transport
@@ -110,10 +110,10 @@ sim = SPADSimulator(device)
 Vbr, info = sim.find_breakdown(V_start=0, V_max=80, V_step=1.0)
 print(f"Breakdown voltage: {Vbr:.1f} V")
 
-# PDP spectrum
+# PDE spectrum
 import numpy as np
 wavelengths = np.linspace(900, 1700, 41) * 1e-9
-pdp = sim.compute_pdp_spectrum(wavelengths, Vex=3.0)
+pde = sim.compute_pde_spectrum(wavelengths, Vex=3.0)
 ```
 
 ## Running Tests
@@ -128,7 +128,7 @@ pytest
 src/
   core/           Grid, layers, materials, doping, device
   poisson/        Nonlinear Poisson solver, depletion width
-  avalanche/      Impact ionization, trigger, breakdown, dark current, PDP
+  avalanche/      Impact ionization, trigger, breakdown, dark current, PDE
   transport/      Drift-diffusion, Monte Carlo, timing jitter
   self_consistent/ PIC loop, particle-mesh, circuit quenching
   optimization/   PSO optimizer
@@ -185,17 +185,17 @@ All plots are saved to `plots/spad/`. The simulator generates **15 diagnostic pl
 
 **Figure 6 — Current–Voltage Characteristic.** Dark and illuminated I-V curves. The illuminated curve (1 µW at 1310 nm) shows the photocurrent contribution. The sharp current rise at Vbr marks avalanche breakdown. Below Vbr, the device operates as a conventional APD; above Vbr, it enters Geiger mode.
 
-### PDP Spectrum
+### PDE Spectrum
 
-![PDP Spectrum](plots/spad/pdp_spectrum.png)
+![PDE Spectrum](plots/spad/pde_spectrum.png)
 
-**Figure 7 — PDP vs Wavelength.** Photon detection probability across 900–1700 nm at multiple excess voltages. PDP peaks at ~74% near 1310 nm (InGaAs absorber bandgap) and drops at shorter wavelengths due to dead-zone absorption and at longer wavelengths due to sub-bandgap transparency. The PDP saturates for Vex ≥ 3 V.
+**Figure 7 — PDE vs Wavelength.** Photon detection efficiency across 900–1700 nm at multiple excess voltages. PDE peaks at ~74% near 1310 nm (InGaAs absorber bandgap) and drops at shorter wavelengths due to dead-zone absorption and at longer wavelengths due to sub-bandgap transparency. The PDE saturates for Vex ≥ 3 V.
 
-### PDP vs Excess Voltage
+### PDE vs Excess Voltage
 
-![PDP vs Vex](plots/spad/pdp_vs_excess_voltage.png)
+![PDE vs Vex](plots/spad/pde_vs_excess_voltage.png)
 
-**Figure 8 — PDP vs Excess Voltage at Fixed Wavelengths.** PDP at 1100, 1310, 1550, and 1610 nm as a function of Vex. PDP increases with Vex as the trigger probability rises, then saturates when P_trigger ≈ 1. Shorter wavelengths show lower PDP due to absorption in the dead zone before the active absorber.
+**Figure 8 — PDE vs Excess Voltage at Fixed Wavelengths.** PDE at 1100, 1310, 1550, and 1610 nm as a function of Vex. PDE increases with Vex as the trigger probability rises, then saturates when P_trigger ≈ 1. Shorter wavelengths show lower PDE due to absorption in the dead zone before the active absorber.
 
 ### Comprehensive I-V
 
@@ -260,11 +260,11 @@ A structured XML file (`sim_results.xml`) is written to the plots directory cont
     <DCR_cps>1.953613e+09</DCR_cps>
     <excess_voltage_V>3.0</excess_voltage_V>
   </dark_current>
-  <pdp_max>
-    <PDP_905nm wavelength="905nm">0.142939</PDP_905nm>
-    <PDP_1310nm wavelength="1310nm">0.679438</PDP_1310nm>
-    <PDP_1550nm wavelength="1550nm">0.400826</PDP_1550nm>
-  </pdp_max>
+  <pde_max>
+    <PDE_905nm wavelength="905nm">0.142939</PDE_905nm>
+    <PDE_1310nm wavelength="1310nm">0.679438</PDE_1310nm>
+    <PDE_1550nm wavelength="1550nm">0.400826</PDE_1550nm>
+  </pde_max>
   <afterpulsing>
     <trap_density_cm3>1.000e+12</trap_density_cm3>
     <emission_time_constant_s>1.000e-06</emission_time_constant_s>
@@ -288,12 +288,12 @@ A structured XML file (`sim_results.xml`) is written to the plots directory cont
     <data_point temperature_K="285" DCR_cps="..." />
     <data_point temperature_K="315" DCR_cps="..." />
   </dcr_vs_temperature>
-  <pdp_vs_temperature>
+  <pde_vs_temperature>
     <wavelength nm="1310">
-      <data_point temperature_K="285" PDP="..." />
-      <data_point temperature_K="315" PDP="..." />
+      <data_point temperature_K="285" PDE="..." />
+      <data_point temperature_K="315" PDE="..." />
     </wavelength>
-  </pdp_vs_temperature>
+  </pde_vs_temperature>
 </spad_simulation>
 ```
 

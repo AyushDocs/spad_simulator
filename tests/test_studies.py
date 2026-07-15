@@ -14,8 +14,8 @@ from src.studies.dark_current import (
     run_dark_current_sweep, collect_dark_current_metrics,
 )
 from src.studies.iv import run_iv_characteristic, run_comprehensive_iv
-from src.studies.pdp import (
-    run_pdp_spectrum, run_pdp_vs_vex, collect_pdp_max_metrics,
+from src.studies.pde import (
+    run_pde_spectrum, run_pde_vs_vex, collect_pde_max_metrics,
 )
 from src.studies.avalanche import (
     run_afterpulsing, run_excess_noise, run_jitter,
@@ -33,7 +33,9 @@ def _mock_sim():
     sim.device.layers = []
     sim.device.material.mat_name = "InP"
     sim.device.net_doping_on_grid = np.zeros(500)
-    sim.materials = {}
+    mock_ingaas = MagicMock()
+    mock_ingaas.absorption_coefficient.return_value = 7500.0  # cm⁻¹ at 1550 nm
+    sim.materials = {"InGaAs": mock_ingaas}
 
     phi = np.linspace(0, 75.0, 500)
     E = np.zeros(500)
@@ -49,12 +51,12 @@ def _mock_sim():
         "I_dark": 1e-8, "DCR": 1e9, "Pe": Pe, "Ph": Ph, "E": E,
     }
     sim.compute_photocurrent.return_value = 5e-6
-    sim.compute_pdp_spectrum.return_value = np.array([0.74])
+    sim.compute_pde_spectrum.return_value = np.array([0.74])
 
-    sim.pdp_model.find_absorber.return_value = (
+    sim.pde_model.find_absorber.return_value = (
         [MagicMock(thickness=0.5e-4)], MagicMock(thickness=1.5e-4))
-    sim.pdp_model.pdp_integral.return_value = 0.7
-    sim.pdp_model.photocurrent_density.return_value = np.full(500, 1e2)
+    sim.pde_model.pde_integral.return_value = 0.7
+    sim.pde_model.photocurrent_density.return_value = np.full(500, 1e2)
 
     sim.ionization.alpha.return_value = np.full(500, 1e4)
     sim.ionization.beta.return_value = np.full(500, 5e3)
@@ -114,23 +116,23 @@ def test_run_iv_characteristic(mock_plotter):
     assert sim.get_fields.call_count > 0
 
 
-@patch("src.studies.pdp.get_plotter")
-def test_run_pdp_spectrum(mock_plotter):
+@patch("src.studies.pde.get_plotter")
+def test_run_pde_spectrum(mock_plotter):
     sim = _mock_sim()
-    run_pdp_spectrum(sim, 75.0)
+    run_pde_spectrum(sim, 75.0)
     assert sim.get_fields.call_count > 0
 
 
-@patch("src.studies.pdp.get_plotter")
-def test_run_pdp_vs_vex(mock_plotter):
+@patch("src.studies.pde.get_plotter")
+def test_run_pde_vs_vex(mock_plotter):
     sim = _mock_sim()
-    run_pdp_vs_vex(sim, 75.0)
+    run_pde_vs_vex(sim, 75.0)
     assert sim.get_fields.call_count > 0
 
 
-def test_collect_pdp_max_metrics():
+def test_collect_pde_max_metrics():
     sim = _mock_sim()
-    result = collect_pdp_max_metrics(sim, [1310, 1550])
+    result = collect_pde_max_metrics(sim, [1310, 1550])
     assert "1310nm" in result
     assert "1550nm" in result
 

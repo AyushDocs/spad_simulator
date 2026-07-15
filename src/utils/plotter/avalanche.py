@@ -16,6 +16,7 @@ class TriggerProbabilityPlotter(BasePlotter):
              V_list: list[float] | None = None,
              Vbr: float | None = None,
              doping: np.ndarray | None = None,
+             E_field: np.ndarray | None = None,
              filename: str = "trigger_probability.png") -> None:
         plt = self._import()
         x_um = x * 1e4
@@ -36,6 +37,7 @@ class TriggerProbabilityPlotter(BasePlotter):
             ax = axes[i]
             pe_i = Pe[i] if Pe.ndim > 1 else Pe
             ph_i = Ph[i] if (Ph is not None and Ph.ndim > 1) else Ph
+            E_i = E_field[i] if (E_field is not None and E_field.ndim > 1) else E_field
             Vex = (V_list[i] - Vbr) if (Vbr is not None and V_list) else (V_list[i] if V_list else i)
 
             # Plot trigger probabilities
@@ -65,8 +67,19 @@ class TriggerProbabilityPlotter(BasePlotter):
             ax.grid(True, alpha=0.3)
             ax.set_ylim(-0.02, 1.02)
 
-            # Plot doping on a twin right y-axis
-            if doping is not None:
+            # Overlay electric field on a twin y-axis (right side)
+            if E_i is not None:
+                ax2 = ax.twinx()
+                ax2.plot(x_um, np.abs(E_i) / 1e5, color="purple", ls="-", lw=1.2, alpha=0.7, label="|E| field")
+                ax2.set_ylabel("|E| (×10⁵ V/cm)", color="purple", fontsize=9)
+                ax2.tick_params(axis="y", labelcolor="purple", labelsize=8)
+                e_max = float(np.max(np.abs(E_i))) / 1e5
+                ax2.set_ylim(0, e_max * 1.15)
+                lines, labels = ax.get_legend_handles_labels()
+                lines2, labels2 = ax2.get_legend_handles_labels()
+                ax.legend(lines + lines2, labels + labels2, fontsize=7, loc="lower left")
+            elif doping is not None:
+                # Fallback: plot doping on twin y-axis when no E-field
                 ax2 = ax.twinx()
                 ax2.semilogy(x_um, np.abs(doping) + 1e10, color="green", ls=":", lw=1.5, label="Doping")
                 ax2.set_ylabel("Doping ($cm^{-3}$)", color="green", fontsize=9)
@@ -241,7 +254,8 @@ class IonizationRatioVsFieldPlotter(BasePlotter):
         return "ionization_ratio"
 
     def plot(self, E_arr: np.ndarray, k_ratio: dict[str, np.ndarray],
-             material_name: str = "InP") -> None:
+             material_name: str = "InP",
+             peak_field: float | None = None) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(8, 5))
         linestyles = ["-", "--", ":"]
@@ -253,6 +267,11 @@ class IonizationRatioVsFieldPlotter(BasePlotter):
                       ls=linestyles[i % len(linestyles)],
                       color=colors[i % len(colors)], lw=2, label=model_name)
         ax.axhline(y=1.0, color="gray", ls="--", alpha=0.5, label="k = 1")
+
+        if peak_field is not None:
+            ax.axvline(x=peak_field / 1e6, color="purple", ls="--", lw=1.5,
+                       alpha=0.7, label=f"Peak field = {peak_field:.2e} V/cm")
+
         ax.set_xlabel("Electric Field (×10⁶ V/m)")
         ax.set_ylabel("Ionization Ratio k = β / α")
         ax.set_title(f"Ionization Ratio vs Field — {material_name}", fontsize=12, pad=12)
@@ -358,3 +377,55 @@ class ATPPlotter(BasePlotter):
         ax.set_ylim(-0.05, 1.05)
         plt.tight_layout()
         self._save("atp_vs_position.png", plt)
+
+
+class TriggerBackCalculatePlotter(BasePlotter):
+    """Validate trigger probability: spatial profiles + absorption-weighted Ptr(Vex)."""
+
+    @property
+    def name(self) -> str:
+        return "trigger_back_calculate"
+
+    def plot(self, x_um: np.ndarray,
+             Pe_spatial: list[np.ndarray], Ph_spatial: list[np.ndarray],
+             Ptr_spatial: list[np.ndarray], E_spatial: list[np.ndarray],
+             labels: list[str],
+             Vex_arr: np.ndarray, Pe_mean: np.ndarray,
+             Ph_mean: np.ndarray, Ptr_mean: np.ndarray,
+             Vbr: float = 0.0) -> None:
+        plt = self._import()
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+        # Left: spatial profiles
+        ax1 = axes[0]
+        cmap = plt.cm.tab10
+        for i, (pe, ph, ptr, lbl) in enumerate(zip(Pe_spatial, Ph_spatial, Ptr_spatial, labels)):
+            c = cmap(i)
+            ax1.plot(x_um, pe, "-", color=c, lw=1.5, label=f"Pe {lbl}")
+            ax1.plot(x_um, ph, "--", color=c, lw=1.5, label=f"Ph {lbl}")
+            ax1.plot(x_um, ptr, ":", color=c, lw=2.0, label=f"Ptr {lbl}")
+        ax1.set_xlabel("Depth (µm)", fontsize=11)
+        ax1.set_ylabel("Probability", fontsize=11)
+        ax1.set_title("Spatial Trigger Profiles", fontsize=12, pad=10)
+        ax1.legend(fontsize=8, ncol=2)
+        ax1.grid(True, alpha=0.3)
+        ax1.set_ylim(-0.05, 1.05)
+
+        # Right: absorption-weighted Ptr vs Vex
+        ax2 = axes[1]
+        mask_pe = np.isfinite(Pe_mean)
+        mask_ph = np.isfinite(Ph_mean)
+        mask_ptr = np.isfinite(Ptr_mean)
+        ax2.plot(Vex_arr[mask_pe], Pe_mean[mask_pe], "r-", lw=2, label="Pe (abs-weighted)")
+        ax2.plot(Vex_arr[mask_ph], Ph_mean[mask_ph], "b--", lw=2, label="Ph (abs-weighted)")
+        ax2.plot(Vex_arr[mask_ptr], Ptr_mean[mask_ptr], "k-", lw=2.5, label="Ptr (abs-weighted)")
+        ax2.axvline(x=0, color="gray", ls=":", alpha=0.5)
+        ax2.set_xlabel("Excess Voltage Vex (V)", fontsize=11)
+        ax2.set_ylabel("Trigger Probability", fontsize=11)
+        ax2.set_title("Absorption-Weighted Ptr vs Vex", fontsize=12, pad=10)
+        ax2.legend(fontsize=9)
+        ax2.grid(True, alpha=0.3)
+        ax2.set_ylim(-0.05, 1.05)
+
+        plt.tight_layout()
+        self._save("trigger_back_calculate.png", plt)

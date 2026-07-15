@@ -3,7 +3,7 @@ PYTHON = .venv/bin/python
 # the root __init__.py at spad_simulator/__init__.py
 ROOT = ..
 
-.PHONY: run clean clean-plots clean-pyc check typecheck help
+.PHONY: run run-iv run-ui run-quick clean clean-plots clean-pyc check typecheck help
 
 run:   ## Run the full SPAD simulation
 	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator
@@ -13,6 +13,9 @@ run-ui:  ## Launch the SPAD simulation GUI
 
 run-quick:  ## Run with minimal output (WARNING level only)
 	PYTHONPATH=$(ROOT) $(PYTHON) -c "import logging; from spad_simulator.src.utils._logging import set_log_level; set_log_level(logging.WARNING); from spad_simulator.src.main import main; main()"
+
+run-iv:  ## Run IV characteristic plot only (quick iteration)
+	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --iv-only
 
 check:   ## Check for import / syntax errors without running
 	PYTHONPATH=$(ROOT) $(PYTHON) -c "import spad_simulator; print('Package OK')"

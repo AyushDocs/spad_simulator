@@ -1,4 +1,4 @@
-"""PDP spectrum, PDP vs excess voltage, and PDP 3D plotters."""
+"""PDE spectrum, PDE vs excess voltage, and PDE 3D plotters."""
 from __future__ import annotations
 
 import numpy as np
@@ -6,45 +6,45 @@ import numpy as np
 from ._base import BasePlotter
 
 
-class PDPPlotter(BasePlotter):
+class PDEPlotter(BasePlotter):
     @property
     def name(self) -> str:
-        return "pdp"
+        return "pde"
 
-    def plot(self, wavelengths: np.ndarray, pdp: np.ndarray,
+    def plot(self, wavelengths: np.ndarray, pde: np.ndarray,
              Vex_list: list[float] | None = None) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(10, 5))
-        ax.set_title("Photon Detection Probability (PDP) Spectrum", fontsize=12, pad=12)
-        if Vex_list is not None and pdp.ndim > 1:
-            for i, (pdp_i, Vex) in enumerate(zip(pdp, Vex_list)):
-                ax.plot(wavelengths, pdp_i * 100,
+        ax.set_title("Photon Detection Efficiency (PDE) Spectrum", fontsize=12, pad=12)
+        if Vex_list is not None and pde.ndim > 1:
+            for i, (pde_i, Vex) in enumerate(zip(pde, Vex_list)):
+                ax.plot(wavelengths, pde_i * 100,
                         label=f"Vex={Vex:.1f}V",
-                        lw=2, color=plt.cm.viridis(i / len(pdp)))
+                        lw=2, color=plt.cm.viridis(i / len(pde)))
         else:
-            ax.plot(wavelengths, np.atleast_1d(pdp) * 100, lw=2)
+            ax.plot(wavelengths, np.atleast_1d(pde) * 100, lw=2)
         ax.set_xlabel("Wavelength (nm)")
-        ax.set_ylabel("PDP (%)")
+        ax.set_ylabel("PDE (%)")
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         ax.set_ylim(0, 100)
         plt.tight_layout()
-        self._save("pdp_spectrum.png", plt)
+        self._save("pde_spectrum.png", plt)
 
 
-class PDPVsExcessVoltagePlotter(BasePlotter):
+class PDEVsExcessVoltagePlotter(BasePlotter):
     @property
     def name(self) -> str:
-        return "pdp_vs_vex"
+        return "pde_vs_vex"
 
-    def plot(self, Vex: np.ndarray, pdp_dict: dict,
+    def plot(self, Vex: np.ndarray, pde_dict: dict,
              wavelengths_nm: np.ndarray | None = None) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(10, 5))
-        ax.set_title("PDP vs Excess Voltage", fontsize=12, pad=12)
-        colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(pdp_dict)))
-        for (lam, pdp), c in zip(sorted(pdp_dict.items()), colors):
-            ax.plot(Vex, pdp * 100, "o-", lw=2, color=c,
+        ax.set_title("PDE vs Excess Voltage", fontsize=12, pad=12)
+        colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(pde_dict)))
+        for (lam, pde), c in zip(sorted(pde_dict.items()), colors):
+            ax.plot(Vex, pde * 100, "o-", lw=2, color=c,
                     label=f"{lam:.0f} nm")
 
         # Add vertical line at breakdown Vex = 0
@@ -54,13 +54,13 @@ class PDPVsExcessVoltagePlotter(BasePlotter):
         ax.axvspan(0, max(Vex) + 1, alpha=0.04, color="green", label="Geiger mode")
 
         ax.set_xlabel("Excess Voltage (V)")
-        ax.set_ylabel("PDP (%)")
+        ax.set_ylabel("PDE (%)")
         ax.legend(fontsize=8, title="Wavelength")
         ax.grid(True, alpha=0.3)
         ax.set_ylim(-5, 105)
         ax.set_xlim(min(Vex), max(Vex))
         plt.tight_layout()
-        self._save("pdp_vs_excess_voltage.png", plt)
+        self._save("pde_vs_excess_voltage.png", plt)
 
 
 class AbsorptionProfilePlotter(BasePlotter):
@@ -88,26 +88,26 @@ class AbsorptionProfilePlotter(BasePlotter):
         self._save("absorption_profile.png", plt)
 
 
-class PDP3DPlotter(BasePlotter):
-    """3D surface plot: wavelength × excess voltage × PDP."""
+class PDE3DPlotter(BasePlotter):
+    """3D surface plot: wavelength × excess voltage × PDE."""
 
     @property
     def name(self) -> str:
-        return "pdp_3d"
+        return "pde_3d"
 
     def plot(self, wavelengths_nm: np.ndarray, Vex_arr: np.ndarray,
-             pdp_2d: np.ndarray) -> None:
+             pde_2d: np.ndarray) -> None:
         plt = self._import()
         fig = plt.figure(figsize=(12, 7))
         ax = fig.add_subplot(111, projection="3d")
         WL, VEX = np.meshgrid(wavelengths_nm, Vex_arr)
-        surf = ax.plot_surface(WL, VEX, pdp_2d * 100, cmap="viridis",
+        surf = ax.plot_surface(WL, VEX, pde_2d * 100, cmap="viridis",
                                edgecolor="none", alpha=0.85)
-        fig.colorbar(surf, ax=ax, shrink=0.5, label="PDP (%)")
+        fig.colorbar(surf, ax=ax, shrink=0.5, label="PDE (%)")
         ax.set_xlabel("Wavelength (nm)", labelpad=10)
         ax.set_ylabel("Excess Voltage (V)", labelpad=10)
-        ax.set_zlabel("PDP (%)", labelpad=10)
-        ax.set_title("Photon Detection Probability", fontsize=12, pad=15)
+        ax.set_zlabel("PDE (%)", labelpad=10)
+        ax.set_title("Photon Detection Efficiency", fontsize=12, pad=15)
         ax.view_init(elev=25, azim=135)
         plt.tight_layout()
-        self._save("pdp_3d_surface.png", plt)
+        self._save("pde_3d_surface.png", plt)

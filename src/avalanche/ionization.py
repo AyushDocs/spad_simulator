@@ -106,21 +106,32 @@ class OkutoCrowellCoefficients:
         return self.alpha_p(np.abs(E))
 
     def dead_space_length(self, E: float | np.ndarray, carrier: str = "electron",
-                          Eg: float = 1.35) -> float | np.ndarray:
+                          Eg: float = 1.35,
+                          Eth: float | None = None) -> float | np.ndarray:
+        """Dead-space length using material threshold energies."""
         E_abs = np.abs(np.asarray(E, dtype=float))
-        E_th = (1.5 * Eg) if carrier == "electron" else (1.0 * Eg)
+        if Eth is not None:
+            E_th = Eth
+        else:
+            E_th = (1.5 * Eg) if carrier == "electron" else (1.0 * Eg)
         with np.errstate(divide="ignore", invalid="ignore"):
             l_dead = np.where(E_abs > 1e4, E_th / E_abs, 0.0)
         return float(l_dead) if np.ndim(E) == 0 else l_dead
 
     def effective_alpha_n(self, F: np.ndarray, Eg: float = 1.35) -> np.ndarray:
+        """Effective electron ionization coefficient with material Eth."""
         alpha = self.alpha_n(np.abs(F))
-        ld = self.dead_space_length(F, "electron", Eg)
+        params = self._mat.ionization_params("electron")
+        Eth = params.get("Eth", 1.5 * Eg)
+        ld = self.dead_space_length(F, "electron", Eg, Eth=Eth)
         return np.where(ld > 0, alpha / (1.0 + alpha * ld), alpha)
 
     def effective_alpha_p(self, F: np.ndarray, Eg: float = 1.35) -> np.ndarray:
+        """Effective hole ionization coefficient with material Eth."""
         alpha = self.alpha_p(np.abs(F))
-        ld = self.dead_space_length(F, "hole", Eg)
+        params = self._mat.ionization_params("hole")
+        Eth = params.get("Eth", 1.0 * Eg)
+        ld = self.dead_space_length(F, "hole", Eg, Eth=Eth)
         return np.where(ld > 0, alpha / (1.0 + alpha * ld), alpha)
 
 
@@ -211,9 +222,13 @@ class IonizationCoefficients:
             return self.alpha_p(np.abs(E))
 
     def dead_space_length(self, E: float | np.ndarray, carrier: str = "electron",
-                          Eg: float = 1.35) -> float | np.ndarray:
+                          Eg: float = 1.35,
+                          Eth: float | None = None) -> float | np.ndarray:
         E_abs = np.abs(np.asarray(E, dtype=float))
-        E_th = (1.5 * Eg) if carrier == "electron" else (1.0 * Eg)
+        if Eth is not None:
+            E_th = Eth
+        else:
+            E_th = (1.5 * Eg) if carrier == "electron" else (1.0 * Eg)
         with np.errstate(divide="ignore", invalid="ignore"):
             l_dead = np.where(E_abs > 1e4, E_th / E_abs, 0.0)
         return float(l_dead) if np.ndim(E) == 0 else l_dead
