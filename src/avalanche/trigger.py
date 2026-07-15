@@ -47,30 +47,16 @@ class TriggerSolver:
         alpha: np.ndarray,
         beta: np.ndarray,
         x: np.ndarray,
+        l_e: np.ndarray | None = None,
+        l_h: np.ndarray | None = None,
         field_threshold: float = 1e4,
         max_iter: int = 500,
         tol: float = 1e-8,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Solve the coupled McIntyre trigger-probability ODEs.
+        """Solve the non-local trigger-probability equations with dead space.
 
-        Parameters
-        ----------
-        E : array
-            Electric field profile (V/cm).
-        alpha : array
-            Effective electron ionization coefficient α(x) (cm⁻¹).
-        beta : array
-            Effective hole ionization coefficient β(x) (cm⁻¹).
-        x : array
-            Spatial grid (cm), length N.
-        field_threshold : float
-            Minimum |E| for meaningful ionization (V/cm).
-        max_iter, tol : int, float
-            BVP solver controls.
-
-        Returns
-        -------
-        Pe, Ph : arrays of length N
+        Uses an iterative fixed-point algorithm to solve the integral form
+        of the history-dependent trigger probability equations.
         """
         N = len(x)
 
@@ -78,67 +64,64 @@ class TriggerSolver:
         if not np.any(np.abs(E) > field_threshold):
             return np.zeros(N), np.zeros(N)
 
-        # Build interpolators for α(x) and β(x) on the grid
-        alpha_interp = interp1d(x, alpha, kind="linear",
-                                fill_value=0.0, bounds_error=False)
-        beta_interp = interp1d(x, beta, kind="linear",
-                               fill_value=0.0, bounds_error=False)
-
-        # --- Define the ODE system (Oldham/Hayat form) ---
-        # y[0] = Pe(x),  y[1] = Ph(x)
-        #
-        # dPe/dx = −α(x) · (1 − Pe) · (Pe + Ph − Pe·Ph)
-        # dPh/dx = +β(x) · (1 − Ph) · (Pe + Ph − Pe·Ph)
-        #
-        # The factor (Pe + Ph − Pe·Ph) = 1 − (1−Pe)(1−Ph) is the probability
-        # that at least one of the secondary carriers triggers an avalanche.
-        def ode_rhs(xi, y):
-            a = alpha_interp(xi)
-            b = beta_interp(xi)
-            Pe = y[0]
-            Ph = y[1]
-            # Trigger probability of at least one carrier
-            Ptr = Pe + Ph - Pe * Ph
-            dPe = -a * (1.0 - Pe) * Ptr
-            dPh = b * (1.0 - Ph) * Ptr
-            return np.vstack([dPe, dPh])
-
-        # --- Boundary conditions ---
-        # Pe(W) = 0  (electron exiting at right edge can't trigger)
-        # Ph(0) = 0  (hole exiting at left edge can't trigger)
-        def bc(ya, yb):
-            return np.array([ya[1], yb[0]])  # Ph(0) = 0, Pe(W) = 0
+        if l_e is None:
+            l_e = np.zeros(N)
+        if l_h is None:
+            l_h = np.zeros(N)
 
         # --- Initial guess ---
-        # Use a shaped guess that respects BCs and nudges the solver
-        # toward the nontrivial branch (if it exists above breakdown).
+        # Nudge the solver toward the nontrivial branch (if it exists)
         x_norm = (x - x[0]) / (x[-1] - x[0])
-        # Pe should be nonzero near x=0, zero at x=W
-        Pe_guess = 0.3 * (1.0 - x_norm)
-        # Ph should be zero at x=0, nonzero near x=W
-        Ph_guess = 0.3 * x_norm
-        y_init = np.vstack([Pe_guess, Ph_guess])
+        Pe = 0.3 * (1.0 - x_norm)
+        Ph = 0.3 * x_norm
 
-        # --- Solve the BVP ---
-        sol = solve_bvp(
-            ode_rhs, bc, x, y_init,
-            tol=tol, max_nodes=max(5 * N, 5000),
-        )
+        for iteration in range(max_iter):
+            # Probability that at least one carrier triggers
+            Ptr = Pe + Ph - Pe * Ph
+            Ptr_interp = interp1d(x, Ptr, kind="linear", fill_value=0.0, bounds_error=False)
 
-        if sol.success:
-            Pe_sol = sol.sol(x)[0]
-            Ph_sol = sol.sol(x)[1]
-        else:
-            # Below breakdown the solver may fail to find a nontrivial
-            # solution — that's correct, Pe = Ph = 0 is the answer.
-            Pe_sol = np.zeros(N)
-            Ph_sol = np.zeros(N)
+            # Evaluate delayed terms (dead space shift)
+            Ptr_e = Ptr_interp(x + l_e)
+            Ptr_h = Ptr_interp(x - l_h)
 
-        # Clamp to physical range [0, 1]
-        Pe_sol = np.clip(Pe_sol, 0.0, 1.0)
-        Ph_sol = np.clip(Ph_sol, 0.0, 1.0)
+            # Integrate backwards for Pe: Pe(x) = 1 - exp(-int_x^W alpha * Ptr_e dx)
+            integrand_e = alpha * Ptr_e
+            int_e = np.zeros(N)
+            for i in range(N - 2, -1, -1):
+                dx = x[i + 1] - x[i]
+                int_e[i] = int_e[i + 1] + 0.5 * (integrand_e[i] + integrand_e[i + 1]) * dx
+            
+            Pe_new = 1.0 - np.exp(-int_e)
 
-        return Pe_sol, Ph_sol
+            # Integrate forwards for Ph: Ph(x) = 1 - exp(-int_0^x beta * Ptr_h dx)
+            integrand_h = beta * Ptr_h
+            int_h = np.zeros(N)
+            for i in range(1, N):
+                dx = x[i] - x[i - 1]
+                int_h[i] = int_h[i - 1] + 0.5 * (integrand_h[i] + integrand_h[i - 1]) * dx
+            
+            Ph_new = 1.0 - np.exp(-int_h)
+
+            # Clamp and damp to ensure stable convergence
+            Pe_new = np.clip(Pe_new, 0.0, 1.0)
+            Ph_new = np.clip(Ph_new, 0.0, 1.0)
+
+            err = np.max(np.abs(Pe_new - Pe)) + np.max(np.abs(Ph_new - Ph))
+
+            # Damping factor: heavy damping helps convergence near breakdown
+            alpha_damp = 0.2
+            Pe = alpha_damp * Pe_new + (1.0 - alpha_damp) * Pe
+            Ph = alpha_damp * Ph_new + (1.0 - alpha_damp) * Ph
+
+            if err < tol:
+                break
+        
+        # If converged to 0, it means we are below breakdown
+        if np.max(Pe) < 1e-4:
+            Pe = np.zeros(N)
+            Ph = np.zeros(N)
+
+        return Pe, Ph
 
 
 class MultiplicationSolver:
