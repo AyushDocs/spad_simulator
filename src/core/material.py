@@ -96,6 +96,7 @@ class Material:
 
     @property
     def E_trap(self) -> float:
+        assert self._data.E_trap is not None
         return float(self._data.E_trap.to("eV").magnitude)
 
     @property

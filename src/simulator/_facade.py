@@ -105,11 +105,11 @@ class SPADSimulator:
 
         alpha = self.ionization.alpha_n(np.abs(E))
         beta = self.ionization.alpha_p(np.abs(E))
-        
+
         # We compute the raw dead space lengths to pass to the non-local trigger solver
         l_e = self.ionization.dead_space_length(E, "electron", self._dead_space_Eg)
         l_h = self.ionization.dead_space_length(E, "hole", self._dead_space_Eg)
-        
+
         Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x, l_e=l_e, l_h=l_h)
 
         result = (phi, E, Pe, Ph, xl, xr)

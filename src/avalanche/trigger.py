@@ -90,7 +90,7 @@ class TriggerSolver:
             for i in range(N - 2, -1, -1):
                 dx = x[i + 1] - x[i]
                 int_e[i] = int_e[i + 1] + 0.5 * (integrand_e[i] + integrand_e[i + 1]) * dx
-            
+
             Pe_new = 1.0 - np.exp(-int_e)
 
             # Integrate forwards for Ph: Ph(x) = 1 - exp(-int_0^x beta * Ptr_h dx)
@@ -99,7 +99,7 @@ class TriggerSolver:
             for i in range(1, N):
                 dx = x[i] - x[i - 1]
                 int_h[i] = int_h[i - 1] + 0.5 * (integrand_h[i] + integrand_h[i - 1]) * dx
-            
+
             Ph_new = 1.0 - np.exp(-int_h)
 
             # Clamp and damp to ensure stable convergence
@@ -115,7 +115,7 @@ class TriggerSolver:
 
             if err < tol:
                 break
-        
+
         # If converged to 0, it means we are below breakdown
         if np.max(Pe) < 1e-4:
             Pe = np.zeros(N)
