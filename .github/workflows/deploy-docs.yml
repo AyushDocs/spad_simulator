@@ -23,6 +23,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Copy config XMLs into docs
+        run: mkdir -p docs/data && cp data/device_sagcm.xml data/materials.xml data/plots_config.xml docs/data/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

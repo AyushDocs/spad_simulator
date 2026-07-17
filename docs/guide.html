@@ -88,6 +88,7 @@
   <a href="#ch4-transport" class="sub">4.6 Transport</a>
   <a href="#ch4-pic" class="sub">4.7 Self-Consistent PIC</a>
   <a href="#ch5">Ch 5: Results</a>
+  <a href="#ch5-config" class="sub">5.0 Config Files</a>
   <a href="#ch5-structure" class="sub">5.1 Field Profile</a>
   <a href="#ch5-trigger" class="sub">5.2 Trigger Profiles</a>
   <a href="#ch5-atp" class="sub">5.3 ATP</a>
@@ -559,7 +560,15 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 <!-- ============================================================ -->
 <h2 id="ch5">Chapter 5: Simulation Results</h2>
 
-<p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>. The set of enabled plots is controlled by <code>data/plots_config.xml</code>.</p>
+<h3 id="ch5-config">5.0 Configuration Files</h3>
+<p>The simulator is driven by three XML configuration files, also available from this site:</p>
+<ul>
+  <li><a href="data/device_sagcm.xml"><code>data/device_sagcm.xml</code></a> — Layer stack, doping, thickness, grid</li>
+  <li><a href="data/materials.xml"><code>data/materials.xml</code></a> — Material parameters (bandgap, mobility, DOS, lifetime, Auger, etc.) with source citations</li>
+  <li><a href="data/plots_config.xml"><code>data/plots_config.xml</code></a> — Which diagnostic plots to generate (7 enabled by default)</li>
+</ul>
+
+<p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>.</p>
 
 <h3 id="ch5-structure">5.1 Electric Field Profile</h3>
 <div class="fig">
