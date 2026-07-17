@@ -89,13 +89,12 @@
   <a href="#ch4-pic" class="sub">4.7 Self-Consistent PIC</a>
   <a href="#ch5">Ch 5: Results</a>
   <a href="#ch5-config" class="sub">5.0 Config Files</a>
-  <a href="#ch5-structure" class="sub">5.1 Field Profile</a>
-  <a href="#ch5-trigger" class="sub">5.2 Trigger Profiles</a>
-  <a href="#ch5-atp" class="sub">5.3 ATP</a>
-  <a href="#ch5-iv" class="sub">5.4 I-V</a>
-  <a href="#ch5-dcr-pde" class="sub">5.5 DCR &amp; PDE</a>
-  <a href="#ch5-dcr-temp" class="sub">5.6 DCR vs Temp</a>
-  <a href="#ch5-mult" class="sub">5.7 M vs Vex</a>
+  <a href="#ch5-fields" class="sub">5.1 Field Profile</a>
+  <a href="#ch5-atp" class="sub">5.2 ATP</a>
+  <a href="#ch5-iv" class="sub">5.3 I-V</a>
+  <a href="#ch5-dcr-pde" class="sub">5.4 DCR &amp; PDE</a>
+  <a href="#ch5-dcr-temp" class="sub">5.5 DCR vs Temp</a>
+  <a href="#ch5-mult" class="sub">5.6 M vs Vex</a>
 </nav>
 
 <main>
@@ -165,11 +164,6 @@ $$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}
 <strong>Key insight:</strong> The InGaAs/InP system lets us <em>absorb</em> at telecom wavelengths in InGaAs while <em>multiplying</em> in InP. This separation is the foundation of SACM SPADs.
 </div>
 
-<div class="fig">
-  <img src="../plots/spad/device_structure.png" alt="Device structure">
-  <p>Figure 1: Layer structure of our InGaAs/InP SAGCM SPAD. Top panel shows material regions, bottom shows the net doping profile.</p>
-</div>
-
 <!-- ============================================================ -->
 <!-- CHAPTER 2                                                     -->
 <!-- ============================================================ -->
@@ -179,7 +173,7 @@ $$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}
 <p>An APD is a p-n junction operated in <strong>reverse bias</strong>. The current has several regimes:</p>
 
 <div class="fig">
-  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <img src="plots/spad/iv_characteristic.png" alt="I-V characteristic">
   <p>Figure 2: I-V characteristic showing dark current (blue) and illuminated current (orange) vs reverse bias.</p>
 </div>
 
@@ -208,11 +202,6 @@ $$M = \frac{1}{1 - \displaystyle\int \alpha(x)\,\exp\!\left(\int_x^W [\beta(s) -
 $$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int_x^W [\alpha(s) - \beta(s)]\, ds\right) dx}$$</div>
 <p>Both formulas give identical results by integration by parts.</p>
 
-<div class="fig">
-  <img src="../plots/spad/comprehensive_iv.png" alt="Comprehensive I-V">
-  <p>Figure 3: Comprehensive I-V showing dark current, primary photocurrent, total illuminated current, and gain vs bias near breakdown.</p>
-</div>
-
 <h3 id="ch2-noise">2.3 Excess Noise Factor</h3>
 <p>Avalanche multiplication is a <strong>statistical process</strong> — the gain fluctuates from event to event. The excess noise factor $F(M)$ quantifies this:</p>
 <div class="card blue">
@@ -226,11 +215,6 @@ $$k_{\text{eff}} = \frac{\beta}{\alpha} \quad \text{(ionization rate ratio)}$$
 <tr><td>$k = 0$</td><td>Best: $F = 2$</td><td>Asymmetric ionization</td></tr>
 <tr><td>$k \approx 0.4$</td><td>Moderate</td><td>InP (our material)</td></tr>
 </table>
-
-<div class="fig">
-  <img src="../plots/spad/excess_noise.png" alt="Excess noise">
-  <p>Figure 4: Excess noise factor $F(M)$ vs gain $M$ for different $k_{\text{eff}}$ values.</p>
-</div>
 
 <h3 id="ch2-efficiency">2.4 Quantum Efficiency</h3>
 <p>The <strong>external quantum efficiency</strong> (EQE) is the probability that an incident photon produces a measurable electron-hole pair:</p>
@@ -393,11 +377,6 @@ d_{l1} & d_1 & d_{u1} &        & \\
   <li>The previous bias-step solution serves as the guess for the next step (voltage ramp).</li>
 </ul>
 
-<div class="fig">
-  <img src="../plots/spad/potential_profile.png" alt="Potential profile">
-  <p>Figure 5: Electrostatic potential $\phi(x)$ at different reverse biases (0V to $V_{BR}+5$V).</p>
-</div>
-
 <h3 id="ch4-ionization">4.2 Impact Ionization</h3>
 <p>Two classes of model are available. The <strong>Van Overstraeten–de Man</strong> model is the default for InP based on user-provided parameters fitted to experimental data. The <strong>Okuto-Crowell</strong> model is available as an alternative (commented out in materials XML).</p>
 
@@ -475,11 +454,6 @@ $$\frac{dM_p}{dx} = +\beta(x)\,(M_n + M_p), \quad M_p(0) = 1$$</div>
 $$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int [\alpha - \beta]\, dx'\right) dx}$$</div>
 <p>Breakdown is declared at the first bias where $M$ exceeds a threshold ($M > 100$, equivalent to the gain at which a single carrier produces a detectable current pulse). The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
 
-<div class="fig">
-  <img src="../plots/spad/trigger_probability.png" alt="Trigger probability">
-  <p>Figure 6: Electron trigger probability $P_e(x)$ and hole trigger probability $P_h(x)$ at different excess biases.</p>
-</div>
-
 <h3 id="ch4-dark">4.4 Dark Current Components</h3>
 <p>Dark current flows even without illumination and determines the dark count rate (DCR). Three physical mechanisms contribute:</p>
 
@@ -497,30 +471,10 @@ $$\text{DCR} = A_{\text{det}} \int \big[G_{\text{SRH}}(x) + G_{\text{BTBT}}(x) +
 
 <p>The temperature dependence enters through $n_i(T)$ (via Varshni $E_g(T) = E_{g,0} - \alpha T^2/(T+\beta)$) and through the field-dependent tunneling terms. At 300 K, the simulation yields DCR $\approx 4,\!340$ cps at $V_{ex} = 3$ V, with BTBT as the dominant component.</p>
 
-<div class="fig">
-  <img src="../plots/spad/dark_current_vs_bias.png" alt="Dark current">
-  <p>Figure 7: Dark current vs excess bias $V_{ex} = V - V_{BR}$.</p>
-</div>
-
-<div class="fig">
-  <img src="../plots/spad/dcr_vs_bias.png" alt="DCR">
-  <p>Figure 8: Dark count rate (DCR) vs excess bias.</p>
-</div>
-
 <h3 id="ch4-pdp">4.5 Photon Detection Probability</h3>
 <p>PDP combines absorption, dead-zone transmission, and trigger probability:</p>
 <div class="eq">
 $$\text{PDP}(\lambda) = (1-R) \cdot T_{\text{dead}}(\lambda) \int_{\text{absorber}} \alpha(\lambda)\, e^{-\alpha(x-x_0)} \cdot P_{\text{trigger}}(x)\, dx$$
-</div>
-
-<div class="fig">
-  <img src="../plots/spad/pdp_spectrum.png" alt="PDP spectrum">
-  <p>Figure 9: PDP vs wavelength at different excess biases. Peak PDP occurs where absorption and trigger probability are both high.</p>
-</div>
-
-<div class="fig">
-  <img src="../plots/spad/pdp_vs_excess_voltage.png" alt="PDP vs Vex">
-  <p>Figure 10: PDP at key wavelengths (1100, 1310, 1550, 1610 nm) vs excess bias.</p>
 </div>
 
 <h3 id="ch4-transport">4.6 Carrier Transport</h3>
@@ -570,46 +524,40 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 
 <p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>.</p>
 
-<h3 id="ch5-structure">5.1 Electric Field Profile</h3>
+<h3 id="ch5-fields">5.1 Electric Field Profile</h3>
 <div class="fig">
-  <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
+  <img src="plots/spad/electric_field_profile.png" alt="Electric field">
   <p>Figure 5: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) creates a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm).</p>
 </div>
 
-<h3 id="ch5-trigger">5.2 Trigger Probability Profiles</h3>
+<h3 id="ch5-atp">5.2 Average Trigger Probability</h3>
 <div class="fig">
-  <img src="../plots/spad/trigger_probability.png" alt="Trigger probability">
-  <p>Figure 6: Electron and hole trigger probabilities $P_e(x)$, $P_h(x)$ at different excess biases. $P_e$ peaks near the p-contact (electron injection side), $P_h$ near the n-contact. Both approach unity as $V_{ex}$ increases.</p>
+  <img src="plots/spad/atp_vs_position.png" alt="ATP vs position">
+  <p>Figure 6: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
 </div>
 
-<h3 id="ch5-atp">5.3 Average Trigger Probability</h3>
+<h3 id="ch5-iv">5.3 Current-Voltage Characteristic</h3>
 <div class="fig">
-  <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
-  <p>Figure 7: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
+  <img src="plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <p>Figure 7: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the transition to Geiger mode.</p>
 </div>
 
-<h3 id="ch5-iv">5.4 Current-Voltage Characteristic</h3>
+<h3 id="ch5-dcr-pde">5.4 DCR and PDE vs Excess Bias</h3>
 <div class="fig">
-  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
-  <p>Figure 8: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the transition to Geiger mode.</p>
+  <img src="plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
+  <p>Figure 8: Dark count rate and photon detection probability vs excess bias. Both increase with $V_{ex}$ as the trigger probability saturates.</p>
 </div>
 
-<h3 id="ch5-dcr-pde">5.5 DCR and PDE vs Excess Bias</h3>
+<h3 id="ch5-dcr-temp">5.5 DCR vs Temperature</h3>
 <div class="fig">
-  <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
-  <p>Figure 9: Dark count rate and photon detection probability vs excess bias. Both increase with $V_{ex}$ as the trigger probability saturates.</p>
+  <img src="plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
+  <p>Figure 9: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
 </div>
 
-<h3 id="ch5-dcr-temp">5.6 DCR vs Temperature</h3>
+<h3 id="ch5-mult">5.6 Multiplication vs Excess Bias</h3>
 <div class="fig">
-  <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
-  <p>Figure 10: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
-</div>
-
-<h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
-<div class="fig">
-  <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
-  <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
+  <img src="plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
+  <p>Figure 10: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
 </div>
 
 <div class="card green" style="margin-top:3rem;">

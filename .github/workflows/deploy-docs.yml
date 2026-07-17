@@ -20,11 +20,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run simulation to generate plots
+        run: |
+          mkdir -p plots/spad
+          python -m src
+          echo "Plots generated:"
+          ls plots/spad/
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Copy config XMLs into docs
-        run: mkdir -p docs/data && cp data/device_sagcm.xml data/materials.xml data/plots_config.xml docs/data/
+      - name: Copy artifacts into docs
+        run: |
+          mkdir -p docs/data docs/plots/spad
+          cp data/device_sagcm.xml data/materials.xml data/plots_config.xml docs/data/
+          cp plots/spad/*.png docs/plots/spad/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
