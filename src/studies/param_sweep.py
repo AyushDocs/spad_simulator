@@ -17,6 +17,7 @@ import numpy as np
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from . import _config as _cfg
 from ._config import PLOT_DIR, R_Q
 
@@ -35,6 +36,7 @@ def run_iv_sweep(
     V_step: float = 1.0,
     decompose: bool = True,
     plot: bool = True,
+    plot_cfg: PlotConfig | None = None,
 ) -> dict:
     """Sweep voltage from ``V_start`` to ``V_stop`` and compute dark current.
 
@@ -56,6 +58,8 @@ def run_iv_sweep(
     -------
     dict with keys ``V``, ``I_dark``, ``M``, and per-mechanism arrays.
     """
+    if plot_cfg and not plot_cfg.is_enabled("iv_sweep"):
+        return {}
     if V_stop is None:
         V_stop = Vbr + 30.0
 
@@ -68,18 +72,15 @@ def run_iv_sweep(
 
     for V in V_range:
         try:
-            if decompose:
-                dc = sim.decompose_dark_current(float(V))
-            else:
-                dc = sim.compute_dark_current(float(V))
-            I_dark_val = dc.get("I_dark", dc.get("total_multiplied", np.nan))
+            dc = sim.compute_dark_current(float(V))
+            I_dark_val = dc.get("I_dark", np.nan)
             if float(V) >= Vbr:
                 I_dark_val += (float(V) - Vbr) / R_Q
             I_dark.append(I_dark_val)
             M_vals.append(dc.get("M", 1.0))
-            I_srh.append(dc.get("SRH", np.nan))
-            I_btbt.append(dc.get("BTBT", np.nan))
-            I_tat.append(dc.get("TAT", np.nan))
+            I_srh.append(np.nan)
+            I_btbt.append(np.nan)
+            I_tat.append(np.nan)
         except Exception:
             I_dark.append(np.nan)
             M_vals.append(np.nan)
@@ -302,8 +303,11 @@ def sweep_voltage_and_parameter(
 #  Parameter sweeps matching the paper (Table 4)
 # ---------------------------------------------------------------------------
 
-def sweep_absorption_thickness(sim: SPADSimulator, Vbr: float) -> dict:
+def sweep_absorption_thickness(sim: SPADSimulator, Vbr: float,
+                               plot_cfg: PlotConfig | None = None) -> dict:
     """Vary InGaAs absorber thickness and report Vbr vs thickness."""
+    if plot_cfg and not plot_cfg.is_enabled("sweep_absorption_thickness"):
+        return {}
     idx = _layer_index_by_material(sim, "InGaAs")
     if idx is None:
         log.warning("No InGaAs layer found in device stack")
@@ -313,7 +317,8 @@ def sweep_absorption_thickness(sim: SPADSimulator, Vbr: float) -> dict:
                            label="Absorption thickness (µm)")
 
 
-def sweep_multiplication_thickness(sim: SPADSimulator, Vbr: float) -> dict:
+def sweep_multiplication_thickness(sim: SPADSimulator, Vbr: float,
+                                   plot_cfg: PlotConfig | None = None) -> dict:
     """Vary intrinsic InP multiplication-layer thickness.
 
     Uses finer voltage stepping (0.1 V) to reduce quantization noise in
@@ -321,6 +326,8 @@ def sweep_multiplication_thickness(sim: SPADSimulator, Vbr: float) -> dict:
     boundary snapping are an inherent limitation of the piecewise-constant
     material assignment on a fixed mesh.
     """
+    if plot_cfg and not plot_cfg.is_enabled("sweep_multiplication_thickness"):
+        return {}
     idx = _layer_index_by_material_and_doping(sim, "InP", "donor", max_doping=1e16)
     if idx is None:
         log.warning("No intrinsic InP multiplication layer found")
@@ -333,8 +340,11 @@ def sweep_multiplication_thickness(sim: SPADSimulator, Vbr: float) -> dict:
     )
 
 
-def sweep_charge_density(sim: SPADSimulator, Vbr: float) -> dict:
+def sweep_charge_density(sim: SPADSimulator, Vbr: float,
+                         plot_cfg: PlotConfig | None = None) -> dict:
     """Vary charge-sheet doping."""
+    if plot_cfg and not plot_cfg.is_enabled("sweep_charge_density"):
+        return {}
     idx = _layer_index_by_material_and_doping(sim, "InP", "donor", min_doping=1e16)
     if idx is None:
         log.warning("No charge layer found")
@@ -344,8 +354,11 @@ def sweep_charge_density(sim: SPADSimulator, Vbr: float) -> dict:
                            label="Charge-layer doping (cm⁻³)")
 
 
-def sweep_p_layer_doping(sim: SPADSimulator, Vbr: float) -> dict:
+def sweep_p_layer_doping(sim: SPADSimulator, Vbr: float,
+                         plot_cfg: PlotConfig | None = None) -> dict:
     """Vary p+ contact layer doping."""
+    if plot_cfg and not plot_cfg.is_enabled("sweep_p_layer_doping"):
+        return {}
     idx = _layer_index_by_doping_type(sim, "acceptor")
     if idx is None:
         log.warning("No p-type layer found")

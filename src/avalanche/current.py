@@ -28,14 +28,16 @@ class CurrentDensityComponent(ABC):
 class SRHCurrentDensity(CurrentDensityComponent):
     """Shockley-Read-Hall thermal generation current density.
 
-    Only active inside the InGaAs absorption region.  Uses a single
-    ni value and tau_n, tau_p for the absorption layer only.
+    Only active inside the InGaAs absorption region. Uses the full SRH formula
+    with off-center trap level.
     """
 
-    tau_n_absorber: float
-    tau_p_absorber: float
     mat_name_grid: NDArray
-    ni_absorber: float
+    materials: dict | None = None  # str -> Material
+    T: float = 300.0
+    tau_n_absorber: float | None = None
+    tau_p_absorber: float | None = None
+    ni_absorber: float | None = None
 
     @property
     def name(self) -> str:
@@ -43,11 +45,43 @@ class SRHCurrentDensity(CurrentDensityComponent):
 
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
-        tau = (self.tau_n_absorber + self.tau_p_absorber) / 2.0
-        G = self.ni_absorber / (2.0 * tau)
-        J = float(q.to("C").magnitude) * G
-        in_absorber = self.mat_name_grid == "InGaAs"
-        return J * in_absorber * (F > 5e3)
+        mat_name = "InGaAs"
+        mask = self.mat_name_grid == mat_name
+        J = np.zeros_like(x)
+        if not np.any(mask):
+            return J
+
+        if self.materials is not None:
+            mat = self.materials[mat_name]
+            tau_n = mat.tau_n
+            tau_p = mat.tau_p
+
+            # trap position below conduction band (Ec - Et) from XML property
+            dEc = mat.E_trap
+            Eg = mat.Eg(self.T)
+            Nc = mat.Nc(self.T)
+            Nv = mat.Nv(self.T)
+            ni = mat.ni(self.T)
+
+            from ..core.constants import kB
+            kB_eV = float(kB.to("eV/K").magnitude)
+
+            n1 = Nc * np.exp(-dEc / (kB_eV * self.T))
+            p1 = Nv * np.exp(-(Eg - dEc) / (kB_eV * self.T))
+
+            G = (ni ** 2) / (tau_p * n1 + tau_n * p1)
+        else:
+            # Fallback for unit tests using mock models
+            tau_n = self.tau_n_absorber if self.tau_n_absorber is not None else 1e-6
+            tau_p = self.tau_p_absorber if self.tau_p_absorber is not None else 1e-6
+            ni = self.ni_absorber if self.ni_absorber is not None else 1e10
+            tau = (tau_n + tau_p) / 2.0
+            G = ni / (2.0 * tau)
+
+        q_val = float(q.to("C").magnitude)
+
+        J[mask] = q_val * G * (F[mask] > 5e3)
+        return J
 
 
 @dataclass(config=dict(arbitrary_types_allowed=True))
@@ -88,7 +122,7 @@ class TATCurrentDensity(CurrentDensityComponent):
     Computes the field-enhanced portion of the SRH generation rate using
     the Hurkx phonon-assisted tunneling model:
 
-        J_TAT = q * (n_i / (2*tau)) * (Gamma_e + Gamma_h)
+        J_TAT = q * G_SRH * (Gamma_e + Gamma_h)
 
     where Gamma_e, Gamma_h are the Hurkx enhancement factors.
 
@@ -124,6 +158,9 @@ class TATCurrentDensity(CurrentDensityComponent):
         N_T_ref = 1e12
         nt_scale = self.N_T / N_T_ref if N_T_ref > 0 else 1.0
 
+        from ..core.constants import kB
+        kB_eV = float(kB.to("eV/K").magnitude)
+
         for mat_name in self.materials:
             mat = self.materials[mat_name]
             mask = self.mat_name_grid == mat_name
@@ -131,24 +168,35 @@ class TATCurrentDensity(CurrentDensityComponent):
                 continue
 
             ni = mat.ni(self.T)
-            tau = (mat.tau_n + mat.tau_p) / 2.0
+            tau_n = mat.tau_n
+            tau_p = mat.tau_p
             Eg = mat.Eg(self.T)
+            Nc = mat.Nc(self.T)
+            Nv = mat.Nv(self.T)
             mc = mat.mc
             mh = mat.mh
+
+            # Get dEc (trap position below conduction band) from XML property
+            dEc = mat.E_trap
+
+            n1 = Nc * np.exp(-dEc / (kB_eV * self.T))
+            p1 = Nv * np.exp(-(Eg - dEc) / (kB_eV * self.T))
+
+            G_SRH = (ni ** 2) / (tau_p * n1 + tau_n * p1)
+
+            gamma_e = TunnelingModel.hurkx_gamma(F[mask], mc, dEc, self.T)
+            gamma_h = TunnelingModel.hurkx_gamma(F[mask], mh, Eg - dEc, self.T)
 
             if mat_name == "InGaAs":
                 # SRHCurrentDensity handles zero-field in InGaAs,
                 # so only add the field-enhanced portion.
-                gamma_e = TunnelingModel.hurkx_gamma(F[mask], mc, (1.0 - self.a_frac) * Eg, self.T)
-                gamma_h = TunnelingModel.hurkx_gamma(F[mask], mh, self.a_frac * Eg, self.T)
                 Gamma_total = gamma_e + gamma_h
             else:
                 # Full SRH + TAT generation for materials not covered by SRH
-                gamma_e = TunnelingModel.hurkx_gamma(F[mask], mc, (1.0 - self.a_frac) * Eg, self.T)
-                gamma_h = TunnelingModel.hurkx_gamma(F[mask], mh, self.a_frac * Eg, self.T)
                 Gamma_total = 1.0 + gamma_e + gamma_h
 
-            J[mask] = q_val * (ni / (2.0 * tau)) * Gamma_total * nt_scale
+            # Apply depletion mask so we don't integrate bulk generation over neutral regions
+            J[mask] = q_val * G_SRH * Gamma_total * nt_scale * (F[mask] > 5e3)
 
         return J
 

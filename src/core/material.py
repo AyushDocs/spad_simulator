@@ -95,6 +95,10 @@ class Material:
         return float(self._data.tau_p.to("s").magnitude)
 
     @property
+    def E_trap(self) -> float:
+        return float(self._data.E_trap.to("eV").magnitude)
+
+    @property
     def E_ie(self) -> float:
         eth = self._data.ionization_e.get("Eth", Q_(2.16, "eV"))
         return float(eth.to("eV").magnitude) * float(q.magnitude)

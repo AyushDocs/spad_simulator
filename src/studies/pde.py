@@ -8,12 +8,16 @@ from ..simulator.photocurrent import compute_pde_spectrum
 from ..utils.ingestion import DataIngestionService
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from ._config import PLOT_DIR
 
 log = get_logger()
 
 
-def run_pde_spectrum(sim: SPADSimulator, Vbr: float) -> None:
+def run_pde_spectrum(sim: SPADSimulator, Vbr: float,
+                     plot_cfg: PlotConfig | None = None) -> None:
+    if plot_cfg and not plot_cfg.is_enabled("pde_spectrum"):
+        return
     pde_wavelengths = np.linspace(900, 1700, 41) * 1e-9
     pde_spectra, vex_list_pde = [], []
     for Vex in [-15, -10, -5, -3, -1, 1, 3, 5]:
@@ -42,7 +46,10 @@ def run_pde_spectrum(sim: SPADSimulator, Vbr: float) -> None:
             pde_wavelengths * 1e9, np.array(pde_spectra), vex_list_pde)
 
 
-def run_pde_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
+def run_pde_vs_vex(sim: SPADSimulator, Vbr: float,
+                   plot_cfg: PlotConfig | None = None) -> None:
+    if plot_cfg and not plot_cfg.is_enabled("pde_vs_vex"):
+        return
     vex_pts = np.linspace(-20, 25, 46)
     wavelengths = [905, 1310, 1550, 1610]
     pde_dict: dict[int, np.ndarray] = {wl: np.zeros(len(vex_pts)) for wl in wavelengths}
@@ -74,7 +81,10 @@ def run_pde_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
         vex_pts, pde_dict, wavelengths_nm=np.array(wavelengths))
 
 
-def run_pde_vs_temp(svc: DataIngestionService, Vbr: float) -> dict:
+def run_pde_vs_temp(svc: DataIngestionService, Vbr: float,
+                    plot_cfg: PlotConfig | None = None) -> dict:
+    if plot_cfg and not plot_cfg.is_enabled("pde_vs_temp"):
+        return {}
     temps = np.array([255, 275, 295, 315, 335])
     Vex = 3.0
     wavelengths = [1310, 1550]
@@ -132,8 +142,11 @@ def collect_pde_max_metrics(sim: SPADSimulator, wavelengths_nm: list, Vex: float
 
 
 
-def run_absorption_profile(sim: SPADSimulator, Vbr: float) -> None:
+def run_absorption_profile(sim: SPADSimulator, Vbr: float,
+                           plot_cfg: PlotConfig | None = None) -> None:
     """Plot Beer-Lambert absorption."""
+    if plot_cfg and not plot_cfg.is_enabled("absorption_profile"):
+        return
     x_abs = np.linspace(0, 1e-4, 200)
     x_um = x_abs * 1e4
 

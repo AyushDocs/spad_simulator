@@ -14,42 +14,17 @@ class DCRvsTempPlotter(BasePlotter):
     def plot(self, temperatures: np.ndarray, DCR: np.ndarray,
              Vex: float | None = None) -> None:
         plt = self._import()
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+        fig, ax = plt.subplots(figsize=(8, 5))
 
-        # Left: DCR vs T (log scale)
         eps = 1e-10
-        ax1.semilogy(temperatures, np.abs(DCR) + eps, "o-", lw=2)
-        ax1.set_xlabel("Temperature (K)")
-        ax1.set_ylabel("DCR (cps)")
+        ax.semilogy(temperatures, np.abs(DCR) + eps, "o-", lw=2)
+        ax.set_xlabel("Temperature (K)")
+        ax.set_ylabel("DCR (cps, log scale)")
         title = "DCR vs Temperature"
         if Vex is not None:
             title += f" (Vex = {Vex:.1f} V)"
-        ax1.set_title(title, fontsize=12, pad=12)
-        ax1.grid(True, alpha=0.3)
-
-        # Right: Arrhenius plot — ln(DCR) vs 1000/T
-        valid = np.abs(DCR) > eps
-        if np.sum(valid) >= 2:
-            T_valid = temperatures[valid]
-            DCR_valid = np.abs(DCR[valid])
-            inv_T = 1000.0 / T_valid  # 1000/T (K⁻¹)
-            ln_DCR = np.log(DCR_valid)
-            ax2.plot(inv_T, ln_DCR, "s-", lw=2, color="#d62728")
-            # Linear fit to extract activation energy
-            if len(inv_T) >= 2:
-                coeffs = np.polyfit(inv_T, ln_DCR, 1)
-                E_a = -coeffs[0] * 8.617e-5  # convert from K to eV (k_B = 8.617e-5 eV/K)
-                fit_line = np.polyval(coeffs, inv_T)
-                ax2.plot(inv_T, fit_line, "--", color="gray", alpha=0.6,
-                         label=f"E_a = {E_a:.2f} eV")
-                ax2.legend(fontsize=9)
-        ax2.set_xlabel("1000 / T (K⁻¹)")
-        ax2.set_ylabel("ln(DCR)")
-        ax2.set_title("Arrhenius Plot", fontsize=12, pad=12)
-        ax2.grid(True, alpha=0.3)
-
-        fig.suptitle("Dark Count Rate vs Temperature" + (f"  (Vex = {Vex:.1f} V)" if Vex else ""),
-                     fontsize=13, y=1.02)
+        ax.set_title(title, fontsize=12, pad=12)
+        ax.grid(True, alpha=0.3)
         plt.tight_layout()
         self._save("dcr_vs_temperature.png", plt)
 

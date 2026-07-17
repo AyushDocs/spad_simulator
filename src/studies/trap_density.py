@@ -7,18 +7,22 @@ from ..simulator.photocurrent import compute_photocurrent
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from ._config import PLOT_DIR, OPTICAL_POWER
 
 log = get_logger()
 
 
-def run_trap_density_iv(sim: SPADSimulator, Vbr: float) -> None:
+def run_trap_density_iv(sim: SPADSimulator, Vbr: float,
+                        plot_cfg: PlotConfig | None = None) -> None:
     """Sweep reverse bias for 4 trap densities and plot components.
 
     For each N_T in [0, 1e15, 5e15, 1e16] the total dark current,
     photocurrent, SRH, BTBT, and avalanche contribution are recorded
     vs reverse bias and rendered as a 2×2 subplot.
     """
+    if plot_cfg and not plot_cfg.is_enabled("trap_density_iv"):
+        return
     nt_values = [0.0, 1e15, 5e15, 1e16]
     V_sweep = np.arange(0.0, Vbr + 35.0, 1.0)
     subplots_data = []

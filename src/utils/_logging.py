@@ -1,6 +1,8 @@
 import logging
 import sys
 
+# Clear root logger handlers added by python -m to prevent duplicate output
+logging.root.handlers.clear()
 
 _LOG = logging.getLogger("spad")
 _LOG_HANDLER = logging.StreamHandler(sys.stdout)

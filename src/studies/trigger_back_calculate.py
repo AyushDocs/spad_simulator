@@ -6,19 +6,23 @@ import numpy as np
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from . import _config as _cfg
 from ._config import PLOT_DIR
 
 log = get_logger()
 
 
-def run_trigger_back_calculate(sim: SPADSimulator, Vbr: float) -> None:
+def run_trigger_back_calculate(sim: SPADSimulator, Vbr: float,
+                               plot_cfg: PlotConfig | None = None) -> None:
     """Validate trigger probability by showing spatial profiles and Ptr(Vex).
 
     Two panels:
       1. Spatial Pe(x), Ph(x), Ptr(x) at Vex = 1, 3, 5 V
       2. Absorption-weighted Pe_mean, Ph_mean, Ptr_mean vs Vex
     """
+    if plot_cfg and not plot_cfg.is_enabled("trigger_back_calculate"):
+        return
     x = sim.grid.x * 1e4  # convert to µm
     alpha_opt = sim.materials["InGaAs"].absorption_coefficient(1550e-9)
 

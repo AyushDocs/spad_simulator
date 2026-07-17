@@ -109,40 +109,24 @@ class IVCharacteristicPlotter(BasePlotter):
              optical_power: float | None = None,
              Vbr: float | None = None) -> None:
         plt = self._import()
-        fig, (ax_log, ax_lin) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
+        fig, ax = plt.subplots(figsize=(8, 5))
 
         eps = 1e-20
         logI_dark = np.log10(np.abs(I_dark) + eps)
-        ax_log.plot(Vbias, logI_dark, "b-", label="Dark", lw=2)
+        ax.plot(Vbias, logI_dark, "b-", label="Dark", lw=2)
         if I_light is not None:
             label = "Illuminated"
             if optical_power is not None:
                 label += f" ({optical_power*1e6:.0f} µW)"
             logI_light = np.log10(np.abs(I_light) + eps)
-            ax_log.plot(Vbias, logI_light, color="tab:orange", ls="-", label=label, lw=2.5, alpha=0.9)
+            ax.plot(Vbias, logI_light, color="tab:orange", ls="-", label=label, lw=2.5, alpha=0.9)
         if Vbr is not None:
-            ax_log.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
-        ax_log.set_ylabel("log₁₀ I (A)")
-        ax_log.legend(fontsize=8)
-        ax_log.grid(True, alpha=0.3)
-        ax_log.set_title("I-V Characteristic — Log Scale", fontsize=11, pad=10)
-
-        ax_lin.plot(Vbias, np.abs(I_dark) * 1e9, "b-", label="Dark", lw=2)
-        if I_light is not None:
-            I_light_lin = np.abs(I_light) * 1e9
-            ax_lin.fill_between(Vbias, 0, I_light_lin,
-                                color="tab:orange", alpha=0.15, label=None)
-            ax_lin.plot(Vbias, I_light_lin, color="tab:orange", ls="-",
-                        label=label if I_light is not None else "", lw=2.5, alpha=0.9)
-        if Vbr is not None:
-            ax_lin.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
-        ax_lin.set_xlabel("Bias (V)")
-        ax_lin.set_ylabel("I (nA)")
-        ax_lin.legend(fontsize=8)
-        ax_lin.grid(True, alpha=0.3)
-        ax_lin.set_title("I-V Characteristic — Linear Scale", fontsize=11, pad=10)
-
-        fig.suptitle("I-V Characteristic (passive quenching load assumed)", fontsize=13, y=1.01)
+            ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax.set_xlabel("Bias (V)")
+        ax.set_ylabel("log₁₀ I (A)")
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+        ax.set_title("I-V Characteristic", fontsize=11, pad=10)
         plt.tight_layout()
         self._save("iv_characteristic.png", plt)
 

@@ -61,19 +61,14 @@ def build_subsystems(
         raise ValueError("InP material data required for multiplication layer")
 
     mat_ingaas = materials.get("InGaAs")
-    if mat_ingaas is not None:
-        ni_absorber = mat_ingaas.ni()
-        tau_n_absorber = mat_ingaas.tau_n
-        tau_p_absorber = mat_ingaas.tau_p
-    else:
+    if mat_ingaas is None:
         raise ValueError("InGaAs material data required for absorption layer")
 
     current = CurrentDecompositionManager()
     current.add(SRHCurrentDensity(
-        tau_n_absorber=tau_n_absorber,
-        tau_p_absorber=tau_p_absorber,
         mat_name_grid=device.material.mat_name,
-        ni_absorber=ni_absorber,
+        materials=materials,
+        T=T,
     ))
     current.add(BTBTCurrentDensity(
         Eg_mulp=Eg_mulp, mc_mulp=mc_mulp, mh_mulp=mh_mulp, T=T))

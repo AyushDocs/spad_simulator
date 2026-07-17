@@ -5,15 +5,15 @@
   Layer stack (top to bottom, x=0 at top surface):
 
     idx  material    thickness  doping      role
-      0  InP          0.12 um   p+ 2e18    shallow p+ diffusion contact
-      1  InP          1.50 um   i           intrinsic cap / multiplication
-      2  InP          0.20 um   n+ 1e17    charge layer (field control)
-      3  InGaAsP      0.12 um   i           grading layer
-      4  InGaAs       1.50 um   i           absorber
-      5  InP          0.50 um   n+ 5e16    buffer
-      6  InP          2.00 um   n+ 1e18    substrate / n-contact
+      0  InP          2.77 um   p+ 4e17    shallow contacts / guard ring
+      1  InP          0.59 um   n- 1e15    intrinsic cap / multiplication
+      2  InP          0.25 um   n+ 1e17    charge layer (field control)
+      3  InGaAsP      0.06 um   n  1e16    grading layer
+      4  InGaAs       2.83 um   n- 1e15    absorber
+      5  InP          0.50 um   n+ 6.6e16  buffer
+      6  InP          2.00 um   n+ 3e18    substrate / n-contact
 
-  Total thickness = 5.94 um, 500 grid nodes.
+  Total thickness = 9.00 um, 500 grid nodes.
   A deep semicircular Zn diffusion defines the active-area perimeter
   through the intrinsic cap down to the charge layer.
 -->

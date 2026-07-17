@@ -51,13 +51,17 @@ class MaterialData:
     ionization_h: dict[str, pint.Quantity]
     tau_n: pint.Quantity
     tau_p: pint.Quantity
+    E_trap: pint.Quantity | None = None
 
     def __post_init__(self) -> None:
+        if self.E_trap is None:
+            # Default to midgap
+            self.E_trap = _to_pp(self.Eg_0K / 2.0, "eV") if hasattr(self, "Eg_0K") else Q(0.5, "eV")
         for field_name in (
             "eps_r", "Eg_0K", "varshni_alpha", "varshni_beta",
             "Nc_300K", "Nv_300K", "dos_gamma",
             "mu_n", "mu_p", "vsat_n", "vsat_p",
-            "mc", "mh", "tau_n", "tau_p",
+            "mc", "mh", "tau_n", "tau_p", "E_trap",
         ):
             val = getattr(self, field_name)
             if not isinstance(val, pint.Quantity):
@@ -80,6 +84,16 @@ class DeviceSpec:
     nx: int
     temperature: float
     layers: list[dict[str, Any]]
+
+
+@dataclass
+class PlotConfig:
+    """Which study plots are enabled (loaded from plots_config.xml)."""
+
+    enabled: dict[str, bool]
+
+    def is_enabled(self, name: str) -> bool:
+        return self.enabled.get(name, False)
 
 
 # ----------------------------------------------------------------
@@ -190,6 +204,7 @@ def load_materials(path: str) -> dict[str, MaterialData]:
             ionization_h=ion_map.get("hole", {}),
             tau_n=_get_pp(mat_el, "lifetime/tau_n"),
             tau_p=_get_pp(mat_el, "lifetime/tau_p"),
+            E_trap=_get_pp(mat_el, "property/[@name='E_trap']"),
         )
 
     return materials
@@ -256,3 +271,20 @@ def load_device(path: str) -> DeviceSpec:
         temperature=_get_float(root, "temperature"),
         layers=layers,
     )
+
+
+def load_plot_config(path: str) -> PlotConfig:
+    tree = ET.parse(_resolve(path))
+    root = tree.getroot()
+    if root.tag != "plots":
+        raise ConfigError(f"Expected <plots> root, got <{root.tag}>")
+
+    enabled: dict[str, bool] = {}
+    for plot_el in root.findall("plot"):
+        name = plot_el.attrib.get("name", "")
+        if not name:
+            raise ConfigError("Plot element missing 'name' attribute")
+        enabled_str = plot_el.attrib.get("enabled", "false")
+        enabled[name] = enabled_str.lower() == "true"
+
+    return PlotConfig(enabled=enabled)

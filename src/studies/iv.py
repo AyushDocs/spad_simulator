@@ -7,12 +7,16 @@ from ..simulator.photocurrent import compute_photocurrent
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from ._config import PLOT_DIR, OPTICAL_POWER, R_Q
 
 log = get_logger()
 
 
-def run_iv_characteristic(sim: SPADSimulator, Vbr: float) -> None:
+def run_iv_characteristic(sim: SPADSimulator, Vbr: float,
+                         plot_cfg: PlotConfig | None = None) -> None:
+    if plot_cfg and not plot_cfg.is_enabled("iv_characteristic"):
+        return
     V_sweep = np.arange(0, Vbr + 30, 1.0)
     I_dark, I_light = [], []
     I_light_floor = 0.0  # last pre-breakdown light current (ensures dI/dV ≥ 0)
@@ -67,7 +71,10 @@ def run_iv_characteristic(sim: SPADSimulator, Vbr: float) -> None:
             optical_power=OPTICAL_POWER, Vbr=Vbr)
 
 
-def run_comprehensive_iv(sim: SPADSimulator, Vbr: float) -> None:
+def run_comprehensive_iv(sim: SPADSimulator, Vbr: float,
+                        plot_cfg: PlotConfig | None = None) -> None:
+    if plot_cfg and not plot_cfg.is_enabled("comprehensive_iv"):
+        return
     V_sweep = np.arange(0, Vbr + 30, 1.0)
     I_dark = []
     for V in V_sweep:

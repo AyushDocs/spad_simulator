@@ -8,13 +8,15 @@ from ..simulator import SPADSimulator
 from ..simulator.photocurrent import compute_pde_spectrum
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from . import _config as _cfg
 from ._config import PLOT_DIR
 
 log = get_logger()
 
 
-def run_dcr_vs_pde(sim: SPADSimulator, Vbr: float) -> None:
+def run_dcr_vs_pde(sim: SPADSimulator, Vbr: float,
+                   plot_cfg: PlotConfig | None = None) -> None:
     """Sweep absorption layer width (constant multiplication) and plot DCR vs PDE.
 
     For each absorption width:
@@ -23,6 +25,8 @@ def run_dcr_vs_pde(sim: SPADSimulator, Vbr: float) -> None:
       3. Sweep excess voltage → compute DCR and PDE at 1550 nm
       4. Plot DCR (y, log, Hz/cm²) vs PDE (x, fraction) with one curve per width
     """
+    if plot_cfg and not plot_cfg.is_enabled("dcr_vs_pde"):
+        return
     idx = _cfg.layer_index_by_material(list(sim.device.layers), "InGaAs")
     if idx is None:
         log.warning("No InGaAs absorption layer found")

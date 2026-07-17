@@ -103,8 +103,8 @@ class SPADSimulator:
         phi, E, _ = self.poisson_service.solve(Vbias, guess=guess)
         xl, xr, _ = self.depletion_width(Vbias, E=E)
 
-        alpha = self.ionization.alpha_n(E)
-        beta = self.ionization.alpha_p(E)
+        alpha = self.ionization.alpha_n(np.abs(E))
+        beta = self.ionization.alpha_p(np.abs(E))
         
         # We compute the raw dead space lengths to pass to the non-local trigger solver
         l_e = self.ionization.dead_space_length(E, "electron", self._dead_space_Eg)
@@ -135,8 +135,8 @@ class SPADSimulator:
         cached_phi = self._field_cache.get(Vbias)
         if cached_phi is None:
             xl, xr, _ = self.depletion_width(Vbias, E=E)
-            alpha = self.ionization.alpha_n(E)
-            beta = self.ionization.alpha_p(E)
+            alpha = self.ionization.alpha_n(np.abs(E))
+            beta = self.ionization.alpha_p(np.abs(E))
             l_e = self.ionization.dead_space_length(E, "electron", self._dead_space_Eg)
             l_h = self.ionization.dead_space_length(E, "hole", self._dead_space_Eg)
             Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x, l_e=l_e, l_h=l_h)
@@ -148,8 +148,8 @@ class SPADSimulator:
 
     def solve_trigger(self, Vbias: float, field_threshold: float = 1e4) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         phi, E, _ = self.solve_poisson(Vbias)
-        alpha = self.ionization.alpha_n(E)
-        beta = self.ionization.alpha_p(E)
+        alpha = self.ionization.alpha_n(np.abs(E))
+        beta = self.ionization.alpha_p(np.abs(E))
         l_e = self.ionization.dead_space_length(E, "electron", self._dead_space_Eg)
         l_h = self.ionization.dead_space_length(E, "hole", self._dead_space_Eg)
         Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x, l_e=l_e, l_h=l_h, field_threshold=field_threshold)
@@ -204,8 +204,8 @@ class SPADSimulator:
         if E is None:
             _, E, Pe, Ph, _, _ = self.get_fields(Vbias)
         else:
-            alpha = self.ionization.alpha_n(E)
-            beta = self.ionization.alpha_p(E)
+            alpha = self.ionization.alpha_n(np.abs(E))
+            beta = self.ionization.alpha_p(np.abs(E))
             l_e = self.ionization.dead_space_length(E, "electron", self._dead_space_Eg)
             l_h = self.ionization.dead_space_length(E, "hole", self._dead_space_Eg)
             Pe, Ph = self.trigger.solve(E, alpha, beta, self.grid.x, l_e=l_e, l_h=l_h)

@@ -6,17 +6,21 @@ import numpy as np
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from ._config import PLOT_DIR, EG_INP
 
 log = get_logger()
 
 
-def run_ionization_vs_field(sim: SPADSimulator, Vbr: float) -> None:
+def run_ionization_vs_field(sim: SPADSimulator, Vbr: float,
+                            plot_cfg: PlotConfig | None = None) -> None:
     """Sweep E, compute raw and effective (dead-space) alpha(E) and beta(E).
 
     Also produces the ionization ratio plot (k = beta/alpha) with the
     device operating field marked.
     """
+    if plot_cfg and not plot_cfg.is_enabled("ionization_vs_field"):
+        return
     E_arr = np.logspace(5, 7, 200)  # V/cm
 
     ion = sim.ionization
@@ -52,7 +56,8 @@ def run_ionization_vs_field(sim: SPADSimulator, Vbr: float) -> None:
         peak_field=peak_field)
 
 
-def run_multiplication_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
+def run_multiplication_vs_vex(sim: SPADSimulator, Vbr: float,
+                              plot_cfg: PlotConfig | None = None) -> None:
     """Compute APD multiplication factor M vs excess voltage below breakdown.
 
     Uses the coupled McIntyre first-order ODEs for multiplication:
@@ -61,6 +66,8 @@ def run_multiplication_vs_vex(sim: SPADSimulator, Vbr: float) -> None:
     where M = Mn(0) for electron injection.  This is the standard
     below-breakdown APD gain, *not* the Geiger-mode trigger probability.
     """
+    if plot_cfg and not plot_cfg.is_enabled("multiplication_vs_vex"):
+        return
     # Sweep below breakdown: M diverges as V → Vbr⁻
     delta_range = np.linspace(0.2, 8, 30)
     Vex_arr = -delta_range  # negative excess voltage = below breakdown

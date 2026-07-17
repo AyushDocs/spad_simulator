@@ -6,6 +6,7 @@ import numpy as np
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from . import _config as _cfg
 from ._config import PLOT_DIR
 
@@ -194,8 +195,11 @@ def _panel_muldop(sim: SPADSimulator) -> dict:
 #  Orchestrator
 # ---------------------------------------------------------------------------
 
-def run_punch_breakdown_sweep(sim: SPADSimulator, Vbr: float) -> None:
+def run_punch_breakdown_sweep(sim: SPADSimulator, Vbr: float,
+                              plot_cfg: PlotConfig | None = None) -> None:
     """Run all 6 parameter sweeps and plot V_pt / V_br together."""
+    if plot_cfg and not plot_cfg.is_enabled("punch_breakdown_sweep"):
+        return
     log.info("Punch-through / breakdown voltage sweeps")
 
     panels = [

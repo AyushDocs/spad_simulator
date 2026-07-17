@@ -6,13 +6,17 @@ import numpy as np
 from ..simulator import SPADSimulator
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from ._config import PLOT_DIR
 
 log = get_logger()
 
 
-def run_efield_vs_absorption_width(sim: SPADSimulator, Vbr: float) -> None:
+def run_efield_vs_absorption_width(sim: SPADSimulator, Vbr: float,
+                                   plot_cfg: PlotConfig | None = None) -> None:
     """Plot E-field profiles for different absorption-layer (InGaAs) widths."""
+    if plot_cfg and not plot_cfg.is_enabled("efield_vs_absorption_width"):
+        return
     widths_um = [1.0, 2.5, 4.5]
     results: list[tuple[float, np.ndarray, np.ndarray]] = []
 
@@ -45,8 +49,11 @@ def run_efield_vs_absorption_width(sim: SPADSimulator, Vbr: float) -> None:
     sim.set_layers(original_layers)
 
 
-def run_efield_vs_multiplication_width(sim: SPADSimulator, Vbr: float) -> None:
+def run_efield_vs_multiplication_width(sim: SPADSimulator, Vbr: float,
+                                       plot_cfg: PlotConfig | None = None) -> None:
     """Plot E-field profiles for different multiplication-layer (InP cap) widths."""
+    if plot_cfg and not plot_cfg.is_enabled("efield_vs_multiplication_width"):
+        return
     widths_um = [0.2, 0.5, 1.0]
     results: list[tuple[float, np.ndarray, np.ndarray]] = []
 

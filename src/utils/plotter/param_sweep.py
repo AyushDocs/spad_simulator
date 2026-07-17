@@ -133,7 +133,7 @@ class DCRvsPDEPlotter(BasePlotter):
         n = max(len(curves), 1)
         for i, (label, data) in enumerate(curves.items()):
             pde = np.asarray(data["PDE"])
-            dcr = np.asarray(data["DCR"]) / detector_area_cm2  # cps → Hz/cm²
+            dcr = np.asarray(data["DCR"])  # keep in cps
             vex = np.asarray(data.get("Vex", np.linspace(0.5, 10, len(pde))))
             mask = (pde > 0) & (dcr > 0) & np.isfinite(pde) & np.isfinite(dcr)
             if not np.any(mask):
@@ -153,9 +153,40 @@ class DCRvsPDEPlotter(BasePlotter):
                         markeredgecolor="k", markeredgewidth=0.3)
 
         ax.set_xlabel("PDE", fontsize=12)
-        ax.set_ylabel("DCR (Hz/cm²)", fontsize=12)
+        ax.set_ylabel("DCR (cps)", fontsize=12)
         ax.set_title("DCR vs PDE — Absorption Layer Width Sweep (★ = Vex 3 V)", fontsize=12, pad=10)
         ax.legend(fontsize=9, loc="best")
         ax.grid(True, alpha=0.3, which="both")
         plt.tight_layout()
         self._save("dcr_vs_pde.png", plt)
+
+
+class DCRPDEVsVexPlotter(BasePlotter):
+    @property
+    def name(self) -> str:
+        return "dcr_pde_vs_vex"
+
+    def plot(self, Vex: np.ndarray, DCR: np.ndarray, PDE: np.ndarray,
+             wavelength_nm: int = 1550) -> None:
+        plt = self._import()
+        fig, ax_dcr = plt.subplots(figsize=(8, 5))
+        ax_pde = ax_dcr.twinx()
+
+        eps = 1e-10
+        ax_dcr.semilogy(Vex, np.abs(DCR) + eps, "b-o", ms=4, lw=2, label="DCR")
+        ax_pde.plot(Vex, PDE * 100, "r-s", ms=4, lw=2, label=f"PDE ({wavelength_nm} nm)")
+
+        ax_dcr.set_xlabel("Excess Voltage (V)")
+        ax_dcr.set_ylabel("DCR (cps)", color="b")
+        ax_pde.set_ylabel("PDE (%)", color="r")
+        ax_dcr.tick_params(axis="y", labelcolor="b")
+        ax_pde.tick_params(axis="y", labelcolor="r")
+
+        lines_dcr, labels_dcr = ax_dcr.get_legend_handles_labels()
+        lines_pde, labels_pde = ax_pde.get_legend_handles_labels()
+        ax_dcr.legend(lines_dcr + lines_pde, labels_dcr + labels_pde, fontsize=8, loc="upper left")
+
+        ax_dcr.set_title("DCR and PDE vs Excess Voltage", fontsize=12, pad=12)
+        ax_dcr.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("dcr_pde_vs_vex.png", plt)

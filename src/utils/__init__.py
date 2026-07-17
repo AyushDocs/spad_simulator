@@ -9,6 +9,8 @@ from .loaders import load_device as load_device
 from .loaders import MaterialData as MaterialData
 from .loaders import AbsorptionData as AbsorptionData
 from .loaders import DeviceSpec as DeviceSpec
+from .loaders import PlotConfig as PlotConfig
+from .loaders import load_plot_config as load_plot_config
 from .loaders import set_data_dir as set_data_dir
 from .plotter import Plotter as Plotter
 from .plotter import get_plotter as get_plotter

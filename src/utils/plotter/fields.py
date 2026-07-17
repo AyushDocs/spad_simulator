@@ -38,7 +38,9 @@ class ElectricFieldPlotter(BasePlotter):
 
     def plot(self, x: np.ndarray, E: np.ndarray,
              V_list: list[float] | None = None,
-             Vbr: float | None = None) -> None:
+             Vbr: float | None = None,
+             layer_bounds_um: list[float] | None = None,
+             layer_names: list[str] | None = None) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.set_title("Electric Field Profiles", fontsize=12, pad=12)
@@ -56,7 +58,28 @@ class ElectricFieldPlotter(BasePlotter):
         else:
             ax.plot(x_um, -np.atleast_1d(E) / 1e4)
 
-        ax.set_xlim(2, 5)
+        if layer_bounds_um is not None and layer_names is not None:
+            region_colors = {
+                "Absorber": "#1f77b4",
+                "Multiplication": "#d62728",
+                "Grading": "#2ca02c",
+                "Charge": "#ff7f0e",
+                "Contact": "#9467bd",
+                "Buffer": "#8c564b",
+                "Substrate": "#7f7f7f",
+            }
+            all_bounds = [x_um[0]] + list(layer_bounds_um) + [x_um[-1]]
+            for i, name in enumerate(layer_names):
+                x0 = all_bounds[i]
+                x1 = all_bounds[i + 1]
+                color = region_colors.get(name, "#aaaaaa")
+                ax.axvspan(x0, x1, alpha=0.12, color=color, zorder=0)
+                ax.axvline(x=x1, color="gray", ls="--", alpha=0.4, lw=0.8)
+                mid = (x0 + x1) / 2.0
+                ax.text(mid, ax.get_ylim()[1] * 0.95, name,
+                        ha="center", va="top", fontsize=7, fontweight="bold",
+                        bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7, ec="gray"))
+
         ax.set_xlabel("Depth (µm)")
         ax.set_ylabel("Electric Field (V/µm)")
         ax.legend(fontsize=8)

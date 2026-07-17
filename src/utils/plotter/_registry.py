@@ -32,7 +32,8 @@ def _register_builtins() -> None:
     from .param_sweep import (IVSweepPlotter, ParamSweepPlotter,
                                ParamSweepIVPlotter,
                                PunchBreakdownSweepPlotter,
-                               DCRvsPDEPlotter)
+                               DCRvsPDEPlotter,
+                               DCRPDEVsVexPlotter)
     from .temporal import (TrajectoryPlotter, JitterPlotter,
                            JitterHistogramPlotter, PopulationPlotter,
                            AvalancheCurrentPulsePlotter,
@@ -89,6 +90,7 @@ def _register_builtins() -> None:
         "trap_density_iv": TrapDensityIVPlotter,
         "punch_breakdown_sweep": PunchBreakdownSweepPlotter,
         "dcr_vs_pde": DCRvsPDEPlotter,
+        "dcr_pde_vs_vex": DCRPDEVsVexPlotter,
     })
 
 

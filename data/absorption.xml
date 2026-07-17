@@ -24,7 +24,7 @@ wavelength (nm), alpha (cm^-1).</description>
 
   <material name="Si">
     <wavelengths type="float" unit="nm">300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100</wavelengths>
-    <alphas type="float" unit="cm^-1">1500000.0 1000000.0 500000.0 250000.0 120000.0 65000.0 35000.0 20000.0 10000.0 5000.0 2500.0 1200.0 500.0 200.0 70.0 20.0 5.0</alphas>
+    <alphas type="float" unit="cm^-1">1500000.0 1000000.0 500000.0 250000.0 120000.0 6390.0 4140.0 2810.0 1900.0 1300.0 850.0 591.0 500.0 200.0 70.0 20.0 5.0</alphas>
   </material>
 
   <material name="InGaAs">

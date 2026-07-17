@@ -10,6 +10,7 @@ from ..optimization.pso import PSOOptimizer
 from ..optimization.cost import CostFunction
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
+from ..utils.loaders import PlotConfig
 from ._config import PLOT_DIR
 
 log = get_logger()
@@ -19,7 +20,8 @@ def run_optimize_device(sim: SPADSimulator, Vbr: float,
                         layer_indices: list[int] | None = None,
                         bounds_cm3: tuple[float, float] = (1e16, 1e18),
                         n_particles: int = 8, max_iter: int = 20,
-                        BV_target: float | None = None) -> dict:
+                        BV_target: float | None = None,
+                        plot_cfg: PlotConfig | None = None) -> dict:
     """Run PSO to find optimal doping profile for target breakdown voltage.
 
     Parameters
@@ -43,6 +45,8 @@ def run_optimize_device(sim: SPADSimulator, Vbr: float,
     -------
     dict with keys ``best_doping``, ``best_Vbr``, ``history``.
     """
+    if plot_cfg and not plot_cfg.is_enabled("optimization"):
+        return {}
     if BV_target is None:
         BV_target = Vbr
 

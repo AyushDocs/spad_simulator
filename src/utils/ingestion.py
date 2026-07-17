@@ -11,7 +11,8 @@ from ..core.layer import Layer
 from ..core.device import Device
 from ..simulator import SPADSimulator
 from .loaders import (load_materials, load_absorption, load_device,
-                       MaterialData, AbsorptionData, DeviceSpec)
+                       MaterialData, AbsorptionData, DeviceSpec,
+                       PlotConfig, load_plot_config)
 from ._logging import get_logger
 
 log = get_logger("ingestion")
@@ -24,11 +25,12 @@ class DataIngestionConfig:
     device_xml: str = ""
     materials_xml: str = ""
     absorption_xml: str = ""
+    plots_xml: str = ""
     output_dir: str = ""
 
     # Simulation parameters
     optical_power_W: float = 1e-6
-    detector_area_cm2: float = 1e-6
+    detector_area_cm2: float = 1e-8
     target_wavelengths_nm: List[int] = field(default_factory=lambda: [905, 1310, 1550])
     excess_voltages_V: List[float] = field(default_factory=lambda: [1, 3, 5, 8])
     temperature_K: float = 300.0
@@ -45,6 +47,7 @@ class DataIngestionConfig:
             device_xml=os.path.join(base, "device_sagcm.xml"),
             materials_xml=os.path.join(base, "materials.xml"),
             absorption_xml=os.path.join(base, "absorption.xml"),
+            plots_xml=os.path.join(base, "plots_config.xml"),
             output_dir=out,
         )
 
@@ -63,6 +66,9 @@ class DataIngestionService:
 
     def load_device_spec(self) -> DeviceSpec:
         return load_device(self.config.device_xml)
+
+    def load_plot_config(self) -> PlotConfig:
+        return load_plot_config(self.config.plots_xml)
 
     def build_device(self, T: float | None = None) -> Device:
         cfg = self.load_device_spec()
@@ -94,7 +100,7 @@ class DataIngestionService:
     def build_simulator_at_temp(self, T: float) -> Tuple[SPADSimulator, float]:
         sim = self.build_simulator(T)
         try:
-            Vbr, _ = sim.find_breakdown(V_start=50, V_max=120, V_step=1.0)
+            Vbr, _ = sim.find_breakdown(V_start=30.0, V_max=120, V_step=1.0)
             return sim, Vbr
         except Exception:
             dVbr = (T - 300.0) * 0.002
