@@ -1,0 +1,5 @@
+title: SPAD Simulator
+description: 1D Poisson–Drift–Diffusion simulator for InGaAs/InP SAGCM SPADs
+include:
+  - guide.html
+  - index.html

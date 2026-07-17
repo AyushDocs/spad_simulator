@@ -6,67 +6,68 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
   </meta>
 
   <!-- ==================================================================== -->
-  <!-- SILICON (Si)                                                         -->
+  <!-- SILICON (Si) — placeholder values only; not used in current device.  -->
+  <!-- Proper parameters to be supplied when Si SPAD support is added.     -->
   <!-- ==================================================================== -->
   <material name="Si">
-    <!-- eps_r: Source = unknown / standard reference -->
+    <!-- eps_r: https://www.ioffe.ru/SVA/NSM/Semicond/Si/basic.html -->
     <property name="eps_r" type="float" unit="1" description="Relative permittivity">11.7</property>
     
-    <!-- Eg_0K: Source = unknown / standard reference (Bludau 1974) -->
+    <!-- Eg_0K: From Varshni formula Eg(T) = 1.17 − 4.73e-4·T²/(T+636). https://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html#Basic -->
     <property name="Eg_0K" type="float" unit="eV" description="Bandgap at 0 K">1.17</property>
     
     <!-- E_trap: Source = calculated with formula (Eg_300K / 2.0 to model midgap traps) -->
     <property name="E_trap" type="float" unit="eV">0.56</property>
     
     <varshni>
-      <!-- alpha, beta: Source = unknown / standard reference (Varshni 1967) -->
+      <!-- alpha, beta: Eq(T) = 1.17 − 4.73e-4·T²/(T+636). https://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html#Basic -->
       <alpha type="float" unit="eV/K" description="Varshni alpha">4.73e-4</alpha>
       <beta type="float" unit="K" description="Varshni beta">636.0</beta>
     </varshni>
     
     <dos>
-      <!-- Nc_300K, Nv_300K, gamma: Source = unknown / standard reference -->
+      <!-- Nc_300K, Nv_300K: https://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html#Basic (standard textbook values; not SPAD-optimized — placeholder) -->
       <Nc_300K type="float" unit="cm^-3" description="Conduction band DOS at 300 K">2.8e19</Nc_300K>
       <Nv_300K type="float" unit="cm^-3" description="Valence band DOS at 300 K">1.04e19</Nv_300K>
       <gamma type="float" unit="1" description="T-exponent for DOS">1.5</gamma>
     </dos>
     
     <mobility>
-      <!-- mu_n, mu_p: Source = unknown / standard reference -->
+      <!-- mu_n, mu_p: https://www.ioffe.ru/SVA/NSM/Semicond/Si/electric.html (standard textbook values; not SPAD-optimized — placeholder) -->
       <mu_n type="float" unit="cm^2/V&#183;s" description="Electron mobility">1350.0</mu_n>
       <mu_p type="float" unit="cm^2/V&#183;s" description="Hole mobility">450.0</mu_p>
     </mobility>
     
     <saturation_velocity>
-      <!-- vsat_n, vsat_p: Source = unknown / standard reference -->
+      <!-- vsat_n, vsat_p: fitted (placeholder) -->
       <vsat_n type="float" unit="cm/s" description="Electron saturation velocity">1.0e7</vsat_n>
       <vsat_p type="float" unit="cm/s" description="Hole saturation velocity">0.8e7</vsat_p>
     </saturation_velocity>
     
     <effective_mass>
-      <!-- mc, mh: Source = unknown / standard reference -->
+      <!-- mc (conductivity), mh (heavy): https://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html#Basic (placeholder) -->
       <mc type="float" unit="m0" description="Electron effective mass">0.26</mc>
       <mh type="float" unit="m0" description="Hole effective mass">0.49</mh>
     </effective_mass>
     
+    <!--
     <ionization carrier="electron">
-      <!-- Okuto-Crowell coefficients: Source = unknown / standard reference -->
-      <lambda0 type="float" unit="cm" description="Optical phonon mean free path">5.4e-7</lambda0>
-      <ER0 type="float" unit="eV" description="Optical phonon energy parameter">3.6e-2</ER0>
-      <hw_meV type="float" unit="meV" description="Phonon energy">63.0</hw_meV>
-      <Eth type="float" unit="eV" description="Threshold energy">1.8</Eth>
+      <lambda0 type="float" unit="cm">5.4e-7</lambda0>
+      <ER0 type="float" unit="eV">3.6e-2</ER0>
+      <hw_meV type="float" unit="meV">63.0</hw_meV>
+      <Eth type="float" unit="eV">1.8</Eth>
     </ionization>
     
     <ionization carrier="hole">
-      <!-- Okuto-Crowell coefficients: Source = unknown / standard reference -->
       <lambda0 type="float" unit="cm">5.0e-7</lambda0>
       <ER0 type="float" unit="eV">3.8e-2</ER0>
       <hw_meV type="float" unit="meV">65.0</hw_meV>
       <Eth type="float" unit="eV">1.8</Eth>
     </ionization>
+    -->
     
     <lifetime>
-      <!-- tau_n, tau_p: Source = unknown / standard reference -->
+      <!-- tau_n, tau_p: fitted (placeholder) -->
       <tau_n type="float" unit="s" description="Electron trap lifetime">1e-6</tau_n>
       <tau_p type="float" unit="s" description="Hole trap lifetime">1e-6</tau_p>
     </lifetime>
@@ -76,7 +77,7 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
   <!-- INDIUM PHOSPHIDE (InP)                                               -->
   <!-- ==================================================================== -->
   <material name="InP">
-    <!-- eps_r: Source = Jiao Xu 2016 Table 2 / unknown -->
+    <!-- eps_r: https://www.ioffe.ru/SVA/NSM/Semicond/InP/basic.html -->
     <property name="eps_r" type="float" unit="1">12.5</property>
     
     <!-- Eg_0K: Source = calculated with formula (Varshni shift back-projected from 300K bandgap of 1.34 eV) -->
@@ -86,39 +87,39 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     <property name="E_trap" type="float" unit="eV">0.34</property>
     
     <varshni>
-      <!-- alpha, beta: Source = unknown / standard reference -->
-      <alpha type="float" unit="eV/K">4.5e-4</alpha>
+      <!-- alpha, beta: https://www.ioffe.ru/SVA/NSM/Semicond/InP/bandstr.html -->
+      <alpha type="float" unit="eV/K">4.9e-4</alpha>
       <beta type="float" unit="K">327.0</beta>
     </varshni>
     
     <dos>
-      <!-- Nc_300K, Nv_300K: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- Nc_300K, Nv_300K: Jiao Xu 2016 Table 2 -->
       <Nc_300K type="float" unit="cm^-3">5.66e17</Nc_300K>
       <Nv_300K type="float" unit="cm^-3">2.03e19</Nv_300K>
-      <!-- gamma: Source = unknown / standard reference -->
+      <!-- gamma: parabolic band model (standard) -->
       <gamma type="float" unit="1">1.5</gamma>
     </dos>
     
     <mobility>
-      <!-- mu_n, mu_p: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- mu_n, mu_p: Jiao Xu 2016 Table 2 -->
       <mu_n type="float" unit="cm^2/V&#183;s">4730.0</mu_n>
       <mu_p type="float" unit="cm^2/V&#183;s">151.0</mu_p>
     </mobility>
     
     <saturation_velocity>
-      <!-- vsat_n, vsat_p: Source = unknown / standard reference -->
+      <!-- vsat_n, vsat_p: https://www.ioffe.ru/SVA/NSM/Semicond/InP/electric.html (velocity-field curves, Maloney & Frey 1977, Windhorn et al. 1983) -->
       <vsat_n type="float" unit="cm/s">2.5e7</vsat_n>
       <vsat_p type="float" unit="cm/s">2.0e7</vsat_p>
     </saturation_velocity>
     
     <effective_mass>
-      <!-- mc, mh: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- mc, mh: Jiao Xu 2016 Table 2 -->
       <mc type="float" unit="m0">0.08</mc>
       <mh type="float" unit="m0">0.86</mh>
     </effective_mass>
     
+    <!--
     <ionization carrier="electron">
-      <!-- Okuto-Crowell parameters: Source = Cook et al. (1982) abrupt InP junction / Ma et al. (Temperature Dependence of Electron and Hole Ionization Coefficients in InP) -->
       <lambda0 type="float" unit="cm">4.6e-7</lambda0>
       <ER0 type="float" unit="eV">4.3e-2</ER0>
       <hw_meV type="float" unit="meV">46.0</hw_meV>
@@ -126,12 +127,12 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     </ionization>
     
     <ionization carrier="hole">
-      <!-- Okuto-Crowell parameters: Source = Cook et al. (1982) abrupt InP junction / Ma et al. (Temperature Dependence of Electron and Hole Ionization Coefficients in InP) -->
       <lambda0 type="float" unit="cm">4.13e-7</lambda0>
       <ER0 type="float" unit="eV">3.4e-2</ER0>
       <hw_meV type="float" unit="meV">36.0</hw_meV>
       <Eth type="float" unit="eV">1.4</Eth>
     </ionization>
+    -->
     
     <lifetime>
       <!-- tau_n, tau_p: Source = Kizilkan 2023 Table I (1.6 microseconds) -->
@@ -140,18 +141,18 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     </lifetime>
     
     <auger>
-      <!-- C_n, C_p: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- C_n, C_p: Jiao Xu 2016 Table 2 -->
       <C_n type="float" unit="cm^6/s" description="Auger coefficient for electron">3.7e-31</C_n>
       <C_p type="float" unit="cm^6/s" description="Auger coefficient for hole">8.7e-30</C_p>
     </auger>
     
     <radiative>
-      <!-- B: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- B: Jiao Xu 2016 Table 2 -->
       <B type="float" unit="cm^3/s" description="Radiative recombination coefficient">2e-11</B>
     </radiative>
     
     <tat_trap>
-      <!-- E_trap, N_trap: Source = Jiao Xu 2016 (Section 3.1 & references within) -->
+      <!-- E_trap, N_trap: Jiao Xu 2016 (Section 3.1 & references within) -->
       <E_trap type="float" unit="eV" description="Trap energy level relative to valence band Ev (0.75 * Eg)">0.75</E_trap>
       <N_trap type="float" unit="cm^-3" description="Trap density for trap-assisted tunneling (TAT)">1e15</N_trap>
     </tat_trap>
@@ -161,49 +162,61 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
   <!-- INDIUM GALLIUM ARSENIDE (InGaAs)                                     -->
   <!-- ==================================================================== -->
   <material name="InGaAs">
-    <!-- eps_r: Source = unknown / standard reference -->
+    <!-- eps_r: https://www.ioffe.ru/SVA/NSM/Semicond/GaInAs/basic.html -->
     <property name="eps_r" type="float" unit="1">13.9</property>
     
-    <!-- Eg_0K: Source = calculated with formula (Varshni shift back-projected from 300K bandgap of 0.78 eV) -->
+    <!-- Eg_0K: Source = calculated with formula (Varshni shift back-projected from 300K bandgap of 0.74 eV) -->
     <property name="Eg_0K" type="float" unit="eV">0.85</property>
     
     <!-- E_trap: Source = Kizilkan 2023 Table I (0.18 eV below conduction band) -->
     <property name="E_trap" type="float" unit="eV">0.18</property>
     
-    <varshni>
-      <!-- alpha, beta: Source = unknown / standard reference -->
-      <alpha type="float" unit="eV/K">4.5e-4</alpha>
-      <beta type="float" unit="K">300.0</beta>
-    </varshni>
+      <!-- 
+  alpha, beta: Source = derived (least-squares fit to Paul et al. 1991 
+  composition-dependent Eg(x,T) formula for GaxIn1-xAs, x_Ga=0.43),
+  as tabulated at:
+  https://www.ioffe.ru/SVA/NSM/Semicond/GaInAs/bandstr.html
+  (Ioffe Institute, New Semiconductor Materials - Characteristics and Properties)
+
+  NOTE: The source formula is a composition-weighted blend of separate 
+  InAs and GaAs Varshni terms with different beta denominators (271K, 300K),
+  and does not reduce to a single (alpha, beta) pair analytically.
+  The values below are a numerical fit (max residual ~2 microeV over 0-450K),
+  not a directly published single-term Varshni pair.
+-->
+<varshni>
+  <alpha type="float" unit="eV/K" description="Effective Varshni alpha (fitted, x_Ga=0.43)">4.879e-4</alpha>
+  <beta type="float" unit="K" description="Effective Varshni beta (fitted, x_Ga=0.43)">285.1</beta>
+</varshni> 
     
     <dos>
-      <!-- Nc_300K, Nv_300K: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- Nc_300K, Nv_300K: Jiao Xu 2016 Table 2 -->
       <Nc_300K type="float" unit="cm^-3">2.75e17</Nc_300K>
       <Nv_300K type="float" unit="cm^-3">7.62e18</Nv_300K>
-      <!-- gamma: Source = unknown / standard reference -->
+      <!-- gamma: https://www.ioffe.ru/SVA/NSM/Semicond/GaInAs/basic.html -->
       <gamma type="float" unit="1">1.5</gamma>
     </dos>
     
     <mobility>
-      <!-- mu_n, mu_p: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- mu_n, mu_p: Jiao Xu 2016 Table 2 -->
       <mu_n type="float" unit="cm^2/V&#183;s">12000.0</mu_n>
       <mu_p type="float" unit="cm^2/V&#183;s">450.0</mu_p>
     </mobility>
     
     <saturation_velocity>
-      <!-- vsat_n, vsat_p: Source = unknown / standard reference -->
+      <!-- vsat_n, vsat_p: https://www.ioffe.ru/SVA/NSM/Semicond/GaInAs/electric.html (Goldberg & Schmidt 1999) -->
       <vsat_n type="float" unit="cm/s">2.5e7</vsat_n>
       <vsat_p type="float" unit="cm/s">2.0e7</vsat_p>
     </saturation_velocity>
     
     <effective_mass>
-      <!-- mc, mh: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- mc, mh: Jiao Xu 2016 Table 2 -->
       <mc type="float" unit="m0">0.0489</mc>
       <mh type="float" unit="m0">0.45</mh>
     </effective_mass>
     
+    <!--
     <ionization carrier="electron">
-      <!-- Okuto-Crowell parameters: Source = unknown / standard reference -->
       <lambda0 type="float" unit="cm">4.5e-7</lambda0>
       <ER0 type="float" unit="eV">3.5e-2</ER0>
       <hw_meV type="float" unit="meV">35.0</hw_meV>
@@ -211,12 +224,12 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     </ionization>
     
     <ionization carrier="hole">
-      <!-- Okuto-Crowell parameters: Source = unknown / standard reference -->
       <lambda0 type="float" unit="cm">4.8e-7</lambda0>
       <ER0 type="float" unit="eV">3.7e-2</ER0>
       <hw_meV type="float" unit="meV">37.0</hw_meV>
       <Eth type="float" unit="eV">0.95</Eth>
     </ionization>
+    -->
     
     <lifetime>
       <!-- tau_n, tau_p: Source = Kizilkan 2023 Table I (9.6 microseconds) -->
@@ -225,64 +238,67 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     </lifetime>
     
     <auger>
-      <!-- C_n, C_p: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- C_n, C_p: Jiao Xu 2016 Table 2 -->
       <C_n type="float" unit="cm^6/s" description="Auger coefficient for electron">3.2e-28</C_n>
       <C_p type="float" unit="cm^6/s" description="Auger coefficient for hole">3.2e-28</C_p>
     </auger>
     
     <radiative>
-      <!-- B: Source = Jiao Xu 2016 Table 2 / unknown -->
+      <!-- B: Jiao Xu 2016 Table 2 -->
       <B type="float" unit="cm^3/s" description="Radiative recombination coefficient">1.43e-10</B>
     </radiative>
   </material>
 
   <!-- ==================================================================== -->
   <!-- INDIUM GALLIUM ARSENIDE PHOSPHIDE (InGaAsP)                          -->
+  <!-- Main source: https://www.ioffe.ru/SVA/NSM/Semicond/GaInAsP/basic.html -->
   <!-- ==================================================================== -->
   <material name="InGaAsP">
-    <!-- eps_r: Source = unknown / standard reference -->
-    <property name="eps_r" type="float" unit="1">12.8</property>
+    <!-- eps_r (static): formula ε_s = 12.5 + 1.44y for Ga₀.₄₇In₀.₅₃AsyP₁₋y at 300 K (y ≈ 0.52 from Eg back-calculation). Source: https://www.ioffe.ru/SVA/NSM/Semicond/GaInAsP/basic.html -->
+    <property name="eps_r" type="float" unit="1">13.25</property>
     
-    <!-- Eg_0K: Source = unknown / standard reference -->
-    <property name="Eg_0K" type="float" unit="eV">1.0</property>
+    <!-- Eg_0K: back-calculated from Eg(T) = Eg(0) − 4.3e-4 × T²/(T + 224) with Eg(300K) = 1.0 eV (Satzke et al. 1988) -->
+    <property name="Eg_0K" type="float" unit="eV">1.074</property>
     
     <!-- E_trap: Source = Kizilkan 2023 Table I (0.18 eV below conduction band) -->
     <property name="E_trap" type="float" unit="eV">0.18</property>
     
     <varshni>
-      <!-- alpha, beta: Source = unknown / standard reference -->
-      <alpha type="float" unit="eV/K">4.5e-4</alpha>
-      <beta type="float" unit="K">310.0</beta>
+      <!-- alpha, beta: Eg(T) = Eg(0) − alpha·T²/(T + β); Satzke et al. 1988 for GaInAsP lattice-matched to InP -->
+      <alpha type="float" unit="eV/K">4.3e-4</alpha>
+      <beta type="float" unit="K">224.0</beta>
     </varshni>
     
     <dos>
-      <!-- Nc_300K, Nv_300K: Source = unknown / standard reference -->
-      <Nc_300K type="float" unit="cm^-3">3.5e17</Nc_300K>
-      <Nv_300K type="float" unit="cm^-3">1.0e19</Nv_300K>
-      <!-- gamma: Source = unknown / standard reference -->
+      <!-- Nc_300K = 2.5×10¹⁹·(0.08−0.039y)^(3/2) cm⁻³, y ≈ 0.52 → Nc ≈ 3.7×10¹⁷. Formula: Goldberg & Schmidt (1999) via ioffe.ru -->
+      <Nc_300K type="float" unit="cm^-3">3.7e17</Nc_300K>
+      <!-- Nv_300K = 2.5×10¹⁹·(0.6−0.18y)^(3/2) cm⁻³, y ≈ 0.52 → Nv ≈ 9.0×10¹⁸. Formula: Goldberg & Schmidt (1999) via ioffe.ru -->
+      <Nv_300K type="float" unit="cm^-3">9.0e18</Nv_300K>
+      <!-- gamma: standard parabolic DOS model -->
       <gamma type="float" unit="1">1.5</gamma>
     </dos>
     
     <mobility>
-      <!-- mu_n, mu_p: Source = unknown / standard reference -->
+      <!-- mu_n, mu_p: fitted -->
       <mu_n type="float" unit="cm^2/V&#183;s">5000.0</mu_n>
       <mu_p type="float" unit="cm^2/V&#183;s">200.0</mu_p>
     </mobility>
     
     <saturation_velocity>
-      <!-- vsat_n, vsat_p: Source = unknown / standard reference -->
+      <!-- vsat_n, vsat_p: fitted -->
       <vsat_n type="float" unit="cm/s">2.5e7</vsat_n>
       <vsat_p type="float" unit="cm/s">2.0e7</vsat_p>
     </saturation_velocity>
     
     <effective_mass>
-      <!-- mc, mh: Source = unknown / standard reference -->
-      <mc type="float" unit="m0">0.06</mc>
-      <mh type="float" unit="m0">0.5</mh>
+      <!-- mc = 0.08 − 0.039y (y ≈ 0.52 → 0.060 m0). Goldberg & Schmidt (1999) via ioffe.ru -->
+      <mc type="float" unit="m0">0.060</mc>
+      <!-- mh = 0.6 − 0.18y (y ≈ 0.52 → 0.506 m0). Goldberg & Schmidt (1999) via ioffe.ru -->
+      <mh type="float" unit="m0">0.51</mh>
     </effective_mass>
     
+    <!--
     <ionization carrier="electron">
-      <!-- Okuto-Crowell parameters: Source = unknown / standard reference -->
       <lambda0 type="float" unit="cm">4.3e-7</lambda0>
       <ER0 type="float" unit="eV">3.4e-2</ER0>
       <hw_meV type="float" unit="meV">38.0</hw_meV>
@@ -290,12 +306,12 @@ All values in SI-cgs hybrid units (cm, eV, K, s) unless noted.</description>
     </ionization>
     
     <ionization carrier="hole">
-      <!-- Okuto-Crowell parameters: Source = unknown / standard reference -->
       <lambda0 type="float" unit="cm">3.9e-7</lambda0>
       <ER0 type="float" unit="eV">3.6e-2</ER0>
       <hw_meV type="float" unit="meV">40.0</hw_meV>
       <Eth type="float" unit="eV">1.6</Eth>
     </ionization>
+    -->
     
     <lifetime>
       <!-- tau_n, tau_p: Source = Kizilkan 2023 Table I (2.5 microseconds) -->

@@ -37,7 +37,8 @@ def plot_device_structure(sim: SPADSimulator, plot_cfg: PlotConfig | None = None
 
 def run_field_sweep(sim: SPADSimulator, Vbr: float,
                     plot_cfg: PlotConfig | None = None) -> None:
-    if plot_cfg and not plot_cfg.is_enabled("electric_field"):
+    if plot_cfg and not (plot_cfg.is_enabled("electric_field")
+                         or plot_cfg.is_enabled("potential_profile")):
         return
     Vex_list = [0, 1, 2, 3, 4, 5]
     V_list = [Vbr + vex for vex in Vex_list]
@@ -49,10 +50,39 @@ def run_field_sweep(sim: SPADSimulator, Vbr: float,
         log.info(f"Vex = {V - Vbr:.0f} V  phi_max = {phi.max():.1f}  "
                  f"|E|_max = {np.max(np.abs(E)):.2e}")
 
-    get_plotter("potential_profile", plot_dir=PLOT_DIR).plot(
-        sim.grid.x, np.array(phi_list), V_list)
-    get_plotter("electric_field", plot_dir=PLOT_DIR).plot(
-        sim.grid.x, np.array(E_list), V_list, Vbr=Vbr)
+    # Compute layer boundaries (cumulative thicknesses in µm)
+    cum = 0.0
+    layer_bounds_um = []
+    layer_names = []
+    for lyr in sim.device.layers:
+        cum += lyr.thickness
+        layer_bounds_um.append(cum * 1e4)
+        if lyr.material == "InGaAs":
+            name = "Absorber"
+        elif lyr.material == "InGaAsP":
+            name = "Grading"
+        elif lyr.doping_type == "acceptor" and lyr.doping_A > 1e16:
+            name = "p+ Contact"
+        elif lyr.doping_A >= 3e18:
+            name = "n+ Substrate\nn-Contact"
+        elif lyr.doping_A > 1e16:
+            name = "Charge Sheet" if lyr.thickness < 0.5e-4 else "n- Buffer"
+        elif lyr.doping_type == "donor":
+            name = "Multiplication"
+        else:
+            name = lyr.material
+        layer_names.append(name)
+    if layer_bounds_um:
+        layer_bounds_um.pop()
+        layer_names.pop()
+
+    if not plot_cfg or plot_cfg.is_enabled("potential_profile"):
+        get_plotter("potential_profile", plot_dir=PLOT_DIR).plot(
+            sim.grid.x, np.array(phi_list), V_list)
+    if not plot_cfg or plot_cfg.is_enabled("electric_field"):
+        get_plotter("electric_field", plot_dir=PLOT_DIR).plot(
+            sim.grid.x, np.array(E_list), V_list, Vbr=Vbr,
+            layer_bounds_um=layer_bounds_um, layer_names=layer_names)
 
 
 def run_trigger_profiles(sim: SPADSimulator, Vbr: float,
@@ -111,8 +141,11 @@ def run_trigger_profiles(sim: SPADSimulator, Vbr: float,
         # Calculate succeeded Vex and ATP list, then plot
         succeeded_vex = [V - Vbr for V in V_list]
         atp_list = [pe + ph - pe * ph for pe, ph in zip(Pe_list, Ph_list)]
-        get_plotter("atp", plot_dir=PLOT_DIR).plot(
-            sim.grid.x * 1e4, succeeded_vex, atp_list, Vbr=Vbr)
+        if plot_cfg and not plot_cfg.is_enabled("atp"):
+            pass  # skip the ATP plot
+        else:
+            get_plotter("atp", plot_dir=PLOT_DIR).plot(
+                sim.grid.x * 1e4, succeeded_vex, atp_list, Vbr=Vbr)
 
 
 def run_peak_field_vs_bias(sim: SPADSimulator, Vbr: float,

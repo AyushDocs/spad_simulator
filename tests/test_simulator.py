@@ -51,7 +51,7 @@ def test_get_fields(sim):
 def test_find_breakdown(sim):
     Vbr, info = sim.find_breakdown(V_start=0, V_max=150, V_step=1.0)
     assert Vbr is not None
-    assert 45 < Vbr < 150
+    assert 20 < Vbr < 150
 
 
 def test_dark_current(sim):

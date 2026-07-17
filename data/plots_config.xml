@@ -9,6 +9,7 @@
   <plot name="depletion_vs_bias" enabled="false"/>
   <plot name="trigger_profiles" enabled="true"/>
   <plot name="trigger_vs_vex" enabled="false"/>
+  <plot name="atp" enabled="true"/>
   <plot name="peak_field_vs_bias" enabled="false"/>
   <plot name="avalanche_probability_map" enabled="false"/>
   <plot name="breakdown_vs_temp" enabled="false"/>
@@ -23,7 +24,7 @@
   <!-- pde.py -->
   <plot name="pde_spectrum" enabled="false"/>
   <plot name="pde_vs_vex" enabled="false"/>
-  <plot name="pde_vs_temp" enabled="true"/>
+  <plot name="pde_vs_temp" enabled="false"/>
   <plot name="absorption_profile" enabled="false"/>
   <plot name="pde_3d" enabled="false"/>
 

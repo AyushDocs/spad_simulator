@@ -4,6 +4,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..simulator import SPADSimulator
+from ..avalanche.ionization import VanOverstraetenDeManCoefficients
 from ..utils._logging import get_logger
 from ..utils.plotter import get_plotter
 from ..utils.loaders import PlotConfig
@@ -16,33 +17,45 @@ def run_ionization_vs_field(sim: SPADSimulator, Vbr: float,
                             plot_cfg: PlotConfig | None = None) -> None:
     """Sweep E, compute raw and effective (dead-space) alpha(E) and beta(E).
 
-    Also produces the ionization ratio plot (k = beta/alpha) with the
-    device operating field marked.
+    Compares the simulator's default model with the Van Overstraeten–de Man
+    model and reports the ionization ratio with the operating field marked.
     """
     if plot_cfg and not plot_cfg.is_enabled("ionization_vs_field"):
         return
     E_arr = np.logspace(5, 7, 200)  # V/cm
 
+    # Default model (Okuto-Crowell or Chynoweth from simulator config)
     ion = sim.ionization
-    alpha_raw = ion.alpha_n(E_arr)
-    beta_raw = ion.alpha_p(E_arr)
-    alpha_eff = ion.effective_alpha_n(E_arr, Eg=EG_INP)
-    beta_eff = ion.effective_alpha_p(E_arr, Eg=EG_INP)
+    alpha_oc_raw = ion.alpha_n(E_arr)
+    beta_oc_raw = ion.alpha_p(E_arr)
+    alpha_oc_eff = ion.effective_alpha_n(E_arr, Eg=EG_INP)
+    beta_oc_eff = ion.effective_alpha_p(E_arr, Eg=EG_INP)
 
-    log.info(f"  alpha_max={alpha_raw.max():.2e} cm^-1  "
-             f"beta_max={beta_raw.max():.2e} cm^-1")
+    # Van Overstraeten–de Man model for comparison
+    mat = sim.materials.get("InP", next(iter(sim.materials.values())))
+    vodm = VanOverstraetenDeManCoefficients(mat, T=sim.T)
+    alpha_vodm = vodm.alpha_n(E_arr)
+    beta_vodm = vodm.alpha_p(E_arr)
+
+    log.info(f"  OC alpha_max={alpha_oc_raw.max():.2e} cm^-1  "
+             f"OC beta_max={beta_oc_raw.max():.2e} cm^-1")
+    log.info(f"  VODM alpha_max={alpha_vodm.max():.2e} cm^-1  "
+             f"VODM beta_max={beta_vodm.max():.2e} cm^-1")
 
     get_plotter("ionization_vs_field", plot_dir=PLOT_DIR).plot(
         E_arr,
-        {"Raw": alpha_raw, "Effective (dead-space)": alpha_eff},
-        {"Raw": beta_raw, "Effective (dead-space)": beta_eff},
+        {"Okuto-Crowell": alpha_oc_raw,
+         "OC (dead-space)": alpha_oc_eff,
+         "VODM": alpha_vodm},
+        {"Okuto-Crowell": beta_oc_raw,
+         "OC (dead-space)": beta_oc_eff,
+         "VODM": beta_vodm},
         material_name="InP")
 
     # Ionization ratio k = beta/alpha with peak operating field
-    k_raw = np.where(alpha_raw > 0, beta_raw / alpha_raw, np.nan)
-    k_eff = np.where(alpha_eff > 0, beta_eff / alpha_eff, np.nan)
+    k_oc = np.where(alpha_oc_raw > 0, beta_oc_raw / alpha_oc_raw, np.nan)
+    k_vodm = np.where(alpha_vodm > 0, beta_vodm / alpha_vodm, np.nan)
 
-    # Find peak field at breakdown
     try:
         _, E_peak, _, _, _, _ = sim.get_fields(Vbr)
         peak_field = float(np.max(np.abs(E_peak)))
@@ -51,7 +64,7 @@ def run_ionization_vs_field(sim: SPADSimulator, Vbr: float,
 
     get_plotter("ionization_ratio", plot_dir=PLOT_DIR).plot(
         E_arr,
-        {"Raw": k_raw, "Effective (dead-space)": k_eff},
+        {"Okuto-Crowell": k_oc, "VODM": k_vodm},
         material_name="InP",
         peak_field=peak_field)
 

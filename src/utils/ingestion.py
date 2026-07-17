@@ -104,4 +104,4 @@ class DataIngestionService:
             return sim, Vbr
         except Exception:
             dVbr = (T - 300.0) * 0.002
-            return sim, 75.0 + dVbr
+            return sim, 60.0 + dVbr

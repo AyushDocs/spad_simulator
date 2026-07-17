@@ -86,13 +86,15 @@
   <a href="#ch4-dark" class="sub">4.4 Dark Current</a>
   <a href="#ch4-pdp" class="sub">4.5 PDP</a>
   <a href="#ch4-transport" class="sub">4.6 Transport</a>
-  <a href="#ch4-mc" class="sub">4.7 Monte Carlo</a>
+  <a href="#ch4-pic" class="sub">4.7 Self-Consistent PIC</a>
   <a href="#ch5">Ch 5: Results</a>
-  <a href="#ch5-structure" class="sub">5.1 Device Structure</a>
-  <a href="#ch5-fields" class="sub">5.2 Field Profiles</a>
-  <a href="#ch5-iv" class="sub">5.3 I-V Curves</a>
-  <a href="#ch5-pdp" class="sub">5.4 PDP Spectra</a>
-  <a href="#ch5-noise" class="sub">5.5 Noise &amp; Jitter</a>
+  <a href="#ch5-structure" class="sub">5.1 Field Profile</a>
+  <a href="#ch5-trigger" class="sub">5.2 Trigger Profiles</a>
+  <a href="#ch5-atp" class="sub">5.3 ATP</a>
+  <a href="#ch5-iv" class="sub">5.4 I-V</a>
+  <a href="#ch5-dcr-pde" class="sub">5.5 DCR &amp; PDE</a>
+  <a href="#ch5-dcr-temp" class="sub">5.6 DCR vs Temp</a>
+  <a href="#ch5-mult" class="sub">5.7 M vs Vex</a>
 </nav>
 
 <main>
@@ -114,6 +116,14 @@
 <tr><td>Native oxide</td><td>$\text{SiO}_2$ (excellent)</td><td>Enables MOS technology</td></tr>
 <tr><td>Electron mobility</td><td>1350 cm²/V·s</td><td>Moderate speed</td></tr>
 </table>
+
+<h4>Indirect Bandgap</h4>
+<p>Silicon has an <strong>indirect bandgap</strong>: the conduction band minimum and valence band maximum occur at different crystal momenta ($k$-vectors). An electron transitioning across the gap requires a <strong>phonon</strong> to conserve momentum, making radiative recombination unlikely. This is:</p>
+<ul>
+  <li><strong>Not a problem for detectors</strong> — absorption still works (phonon-assisted transitions are slower but sufficient for photogeneration; Si photodiodes are ubiquitous).</li>
+  <li><strong>A fundamental limitation for emitters</strong> — light-emitting diodes and lasers need efficient radiative recombination, which the indirect gap suppresses. Si LEDs have $\ll 1\%$ efficiency.</li>
+</ul>
+<p>Despite this, detector-wise Si works well at visible/near-IR wavelengths. We move to III-V materials not because Si is a bad detector, but because we need sensitivity at <strong>telecom wavelengths (1310/1550 nm)</strong> beyond Si's band edge, and InGaAs/InP offer superior noise, speed, and bandgap engineering via heterostructures.</p>
 
 <div class="card orange">
 <strong>Limitation:</strong> Silicon is <strong>opaque above ~1100 nm</strong>. The telecom wavelengths (1310 nm, 1550 nm) used in fiber-optic communication are far beyond silicon's absorption edge. For near-infrared detection, we need a different material.
@@ -175,6 +185,7 @@ $$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}
 <ol>
   <li><strong>Low reverse bias</strong> ($V \ll V_{BR}$): Small dark current from thermal generation. Photocurrent is roughly constant (one electron-hole pair per absorbed photon).</li>
   <li><strong>Mid reverse bias</strong>: Depletion region widens. Dark current increases slowly. Still no multiplication.</li>
+  <li><strong>Punch-through</strong> ($V = V_{PT}$): The depletion region reaches through the absorber to the multiplication-region edge. Beyond this voltage, photo-generated carriers from the absorber begin to experience the high field and can impact-ionize. The photocurrent rises because collection efficiency increases — carriers that were previously recombining in the neutral absorber now get swept into the multiplication region. Punch-through is not breakdown; it is the voltage at which the absorber becomes fully depleted.</li>
   <li><strong>Near breakdown</strong> ($V \to V_{BR}$): Impact ionization begins. Carriers gain enough energy to create secondary pairs. Current starts rising exponentially.</li>
   <li><strong>At breakdown</strong> ($V = V_{BR}$): Gain $M \to \infty$. A single carrier triggers a self-sustaining avalanche. This is the <strong>Geiger mode</strong> used in SPADs.</li>
 </ol>
@@ -185,11 +196,16 @@ $$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}
 $$\alpha(E) = \text{ionization probability per cm (electrons)}$$
 $$\beta(E) = \text{ionization probability per cm (holes)}$$
 </div>
-<p>The <strong>multiplication factor</strong> $M$ is the average number of electron-hole pairs produced by one injected carrier. It diverges at breakdown:</p>
+<p>The <strong>multiplication factor</strong> $M$ is the average number of electron-hole pairs produced by one injected carrier. It is computed from the McIntyre integral:</p>
 <div class="eq">
-$$M = \frac{1}{1 - (V/V_{BR})^n}$$
+$$M = \frac{1}{1 - \displaystyle\int \alpha(x)\,\exp\!\left(\int_x^W [\beta(s) - \alpha(s)]\, ds\right) dx}$$
 </div>
-<p>where $n$ depends on the material and device structure (typically 2–6).</p>
+<p>where the inner integral runs from $x$ to $W$ (the multiplication-region edge) and the outer integral covers the full device. The denominator represents the positive feedback loop — when it approaches zero, the gain diverges and the device reaches <strong>breakdown</strong>.</p>
+
+<p>An equivalent form (used in the breakdown voltage search) swaps $\alpha$ and $\beta$:</p>
+<div class="eq">
+$$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int_x^W [\alpha(s) - \beta(s)]\, ds\right) dx}$$</div>
+<p>Both formulas give identical results by integration by parts.</p>
 
 <div class="fig">
   <img src="../plots/spad/comprehensive_iv.png" alt="Comprehensive I-V">
@@ -297,7 +313,7 @@ $$\text{PDP}(\lambda) = \eta(\lambda) \cdot P_{\text{trigger}}$$
 </table>
 
 <div class="card blue">
-<strong>Breakdown voltage:</strong> $V_{BR} = 75$ V (at 300 K). Typical operating excess bias: 2–5 V above $V_{BR}$.
+<strong>Breakdown voltage:</strong> $V_{BR} \approx 60$ V (at 300 K, Van Overstraeten–de Man model). Typical operating excess bias: 2–5 V above $V_{BR}$.
 </div>
 
 <!-- ============================================================ -->
@@ -306,12 +322,75 @@ $$\text{PDP}(\lambda) = \eta(\lambda) \cdot P_{\text{trigger}}$$
 <h2 id="ch4">Chapter 4: Physics Models in the Simulator</h2>
 
 <h3 id="ch4-poisson">4.1 Poisson Solver</h3>
-<p>Solves for electrostatic potential $\phi(x)$ and field $E(x)$:</p>
+<p>Starting from Gauss's law in differential form:</p>
 <div class="eq">
-$$\frac{d}{dx}\left[\varepsilon(x)\frac{d\phi}{dx}\right] = -q\left[p(x) - n(x) + N_D(x) - N_A(x)\right]$$
+$$\nabla \cdot \mathbf{D} = \rho$$</div>
+<p>where $\mathbf{D} = \varepsilon \mathbf{E}$ is the electric displacement field and $\mathbf{E} = -\nabla\phi$ is the electrostatic potential. Substituting:</p>
+<div class="eq">
+$$\nabla \cdot (\varepsilon \nabla\phi) = -\rho$$</div>
+<p>In 1D this simplifies to:</p>
+<div class="eq">
+$$\frac{d}{dx}\left[\varepsilon(x)\frac{d\phi}{dx}\right] = -\rho(x)$$</div>
+<p>The net charge density includes free carriers and ionized dopants:</p>
+<div class="eq">
+$$\rho(x) = q\left[p(x) - n(x) + N_D(x) - N_A(x)\right]$$</div>
+<p>Substituting gives the full nonlinear Poisson equation:</p>
+<div class="eq">
+$$\frac{d}{dx}\left[\varepsilon(x)\frac{d\phi}{dx}\right] = -q\left[p(x) - n(x) + N_D(x) - N_A(x)\right]$$</div>
+<p>Carrier densities couple to potential via <strong>Boltzmann statistics</strong>:</p>
+<div class="eq">
+$$n = n_i \, e^{(\phi - \phi_n)/V_T}, \qquad p = n_i \, e^{(\phi_p - \phi)/V_T}$$</div>
+<p>The nonlinearity (exponential $n,p$ dependence on $\phi$) is solved with <strong>Newton–Raphson iteration</strong> on a uniform 500-node grid. Voltage is ramped from 0 to $V_{\text{bias}}$ in 2V steps, using the previous solution as the initial guess for the next step.</p>
+
+<h4>Residual Discretization</h4>
+<p>At interior node $i$, the residual $F_i$ is the finite-volume discretization (cell-centre differences with dielectric averaging at interfaces):</p>
+<div class="eq">
+$$F_i = \frac{\varepsilon_{i+\frac12}(\phi_{i+1} - \phi_i) - \varepsilon_{i-\frac12}(\phi_i - \phi_{i-1})}{\Delta x^2} + \rho_i$$
 </div>
-<p>Carrier densities via Boltzmann statistics: $n = n_i e^{(\phi-\phi_n)/V_T}$, $p = n_i e^{(\phi_p-\phi)/V_T}$.</p>
-<p>Solved with Newton-Raphson iteration on a 500-node uniform grid. Voltage ramped from 0 to $V_{\text{bias}}$ in 2V steps for convergence.</p>
+<p>where $\varepsilon_{i\pm\frac12} = \frac12(\varepsilon_i + \varepsilon_{i\pm1})$ handles heterojunctions. Boundary nodes enforce Dirichlet contact potentials: $\phi(0) = \phi_0(V_{\text{bias}})$, $\phi(L) = \phi_L(V_{\text{bias}})$.</p>
+
+<h4>Newton–Raphson Linearization</h4>
+<p>At each iteration $k$, we solve $J(\phi^k) \cdot \delta = -F(\phi^k)$ for the correction $\delta$, then update $\phi^{k+1} = \phi^k + \alpha\,\delta$ (damped). The Jacobian $J = \partial F / \partial \phi$ is <strong>tridiagonal</strong>:</p>
+
+<div class="eq">
+$$\begin{aligned}
+J_{i,i-1} &= \frac{\varepsilon_{i-\frac12}}{\Delta x^2} \\[4pt]
+J_{i,i}   &= -\frac{\varepsilon_{i+\frac12} + \varepsilon_{i-\frac12}}{\Delta x^2} + \frac{\partial\rho_i}{\partial\phi_i} \\[4pt]
+J_{i,i+1} &= \frac{\varepsilon_{i+\frac12}}{\Delta x^2}
+\end{aligned}$$</div>
+
+<p>The charge derivative $\partial\rho/\partial\phi$ couples carrier statistics into the system matrix:</p>
+<div class="eq">
+$$\frac{\partial\rho}{\partial\phi} = -\frac{q}{V_T}(n + p)$$</div>
+<p>Boundary rows: $J_{0,0} = J_{N-1,N-1} = 1$.</p>
+
+<h4>Tridiagonal Solve</h4>
+<p>The Jacobian is stored as three diagonals (sub-diagonal $d_l$, main diagonal $d$, super-diagonal $d_u$) and solved with LAPACK's banded solver via <code>scipy.linalg.solve_banded</code>. The $(1,1)$ banded form packs the matrix as:</p>
+<div class="eq">
+$$\begin{pmatrix}
+d_0 & d_{u0} &        &        & \\
+d_{l1} & d_1 & d_{u1} &        & \\
+       & d_{l2} & d_2 & d_{u2} & \\
+       &        & \ddots & \ddots & \ddots
+\end{pmatrix}$$</div>
+
+<h4>Damped Iteration</h4>
+<ol>
+  <li>Assemble residual $F(\phi^k)$ and Jacobian $J(\phi^k)$</li>
+  <li>Solve $J\cdot\delta = -F$ via banded solve</li>
+  <li>Clip $\delta$ to $\pm 50\,\text{V}$ for stability</li>
+  <li>Armijo line search: try $\alpha = 1.0$, halve until $\|F(\phi + \alpha\delta)\| < \|F(\phi)\|$</li>
+  <li>Convergence when $\|F\|_\infty < 5 \times 10^{-4}$</li>
+  <li>Fail after 300 iterations → <code>ConvergenceError</code></li>
+</ol>
+
+<h4>Initial Guess</h4>
+<p>Before Newton iterations, a smooth step-like potential is constructed:</p>
+<ul>
+  <li><strong>Depletion approximation</strong> for $V_{\text{bias}} < V_{bi}$: $\phi(x) = \phi_0 + (\phi_L - \phi_0) \cdot \frac12[1 + \tanh((x - x_J)/\sigma)]$ where $x_J$ is the metallurgical junction and $\sigma \approx W_{\text{dep}}/3$.</li>
+  <li><strong>Sigmoid</strong> for $V_{\text{bias}} \ge V_{bi}$: wider transition ($\sigma = L/8$) to avoid overshoot.</li>
+  <li>The previous bias-step solution serves as the guess for the next step (voltage ramp).</li>
+</ul>
 
 <div class="fig">
   <img src="../plots/spad/potential_profile.png" alt="Potential profile">
@@ -319,36 +398,81 @@ $$\frac{d}{dx}\left[\varepsilon(x)\frac{d\phi}{dx}\right] = -q\left[p(x) - n(x) 
 </div>
 
 <h3 id="ch4-ionization">4.2 Impact Ionization</h3>
-<p>Three models available (Okuto-Crowell is default):</p>
+<p>Two classes of model are available. The <strong>Van Overstraeten–de Man</strong> model is the default for InP based on user-provided parameters fitted to experimental data. The <strong>Okuto-Crowell</strong> model is available as an alternative (commented out in materials XML).</p>
 
-<h4>Okuto-Crowell</h4>
+<h4>Van Overstraeten–de Man (Default)</h4>
 <div class="eq">
-$$\alpha(E,T) = \frac{E}{E_{th}} \exp\!\left\{A - \sqrt{A^2 + \left(\frac{E_{th}}{E\lambda}\right)^2}\right\}, \quad A = 0.217\left(\frac{E_{th}}{E_R}\right)^{1.14}$$
+$$\alpha(E) = 
+\begin{cases}
+A_{\text{low}} \exp\!\left(-\dfrac{B_{\text{low}}}{E}\right) & E < E_0\\[8pt]
+A_{\text{high}} \exp\!\left(-\dfrac{B_{\text{high}}}{E}\right) & E \ge E_0
+\end{cases}$$
 </div>
-<p>Temperature dependence via $\lambda(T) = \lambda_0 \tanh(\hbar\omega/2k_BT)$.</p>
-
-<h4>Chynoweth (simplest)</h4>
-<div class="eq">
-$$\alpha(E) = A \cdot e^{-B/E}, \quad B = E_{th}/\lambda$$
-</div>
-
-<h4>Wolff (semi-physical)</h4>
-<div class="eq">
-$$\alpha(E) = \frac{E}{E_{th}} \exp\!\left(-\frac{\pi}{2}\left(\frac{E_{th}}{E\lambda}\right)^2\right)$$
-</div>
-
-<h3 id="ch4-trigger">4.3 Trigger Probability (McIntyre)</h3>
-<p>Given $\alpha(x)$ and $\beta(x)$, the trigger probability for electron injection at $x$:</p>
-<div class="eq">
-$$\mu(x) = \exp\!\left(\int_x^W [\alpha - \beta]\,ds\right), \quad M(x) = \frac{\mu(x)}{1 - \int_x^W \beta\mu\,ds}, \quad P_e(x) = 1 - \frac{1}{M(x)}$$
-</div>
-
-<h4>What are $\mu$ and $M$?</h4>
+<p>Two-regime Chynoweth form. Parameters (300 K reference, InP):</p>
 <table>
-<tr><th>Symbol</th><th>Meaning</th></tr>
-<tr><td>$\mu(x)$</td><td><strong>Net multiplication integral</strong> — captures the asymmetry between electron and hole ionization. When $\alpha > \beta$, electrons multiply faster; $\mu$ quantifies this directional bias.</td></tr>
-<tr><td>$M(x)$</td><td><strong>Mean avalanche gain</strong> — average number of e-h pairs produced by one carrier at $x$. Diverges at breakdown when the positive-feedback denominator $\to 0$.</td></tr>
+<tr><th>Carrier</th><th>$A_{\text{low}}$</th><th>$B_{\text{low}}$</th><th>$A_{\text{high}}$</th><th>$B_{\text{high}}$</th><th>$E_0$</th><th>$\hbar\omega$</th></tr>
+<tr><td>Electron</td><td>$1.12\times10^7$</td><td>$3.11\times10^6$</td><td>$2.93\times10^6$</td><td>$2.64\times10^6$</td><td rowspan="2">$3.85\times10^5$</td><td rowspan="2">0.063 eV</td></tr>
+<tr><td>Hole</td><td>$4.79\times10^6$</td><td>$2.55\times10^6$</td><td>$1.62\times10^6$</td><td>$2.11\times10^6$</td></tr>
 </table>
+<p>Temperature dependence via optical phonon scaling:</p>
+<div class="eq">
+$$\gamma(T) = \frac{\tanh(\hbar\omega / 2k_B T_{\text{ref}})}{\tanh(\hbar\omega / 2k_B T)}, \quad
+A(T) = A(T_{\text{ref}})\cdot\gamma(T), \quad
+B(T) = B(T_{\text{ref}})\cdot\gamma(T)$$
+</div>
+<p>This ensures $dV_{BR}/dT > 0$: higher temperature → shorter mean free path → higher field needed for ionization.</p>
+
+<h4>Effective Ionization with Dead Space</h4>
+<p>A newly born carrier needs a distance $l_d = E_{th} / q|E|$ to gain threshold energy before it can ionize. The effective ionization coefficient accounts for this:</p>
+<div class="eq">
+$$\alpha_{\text{eff}} = \frac{\alpha}{1 + \alpha \cdot l_d}, \qquad
+\beta_{\text{eff}} = \frac{\beta}{1 + \beta \cdot l_d}$$</div>
+<p>These enter the trigger and multiplication integrals, suppressing ionization in the first few mean-free-paths after each impact.</p>
+
+<h4>Okuto-Crowell (Alternative)</h4>
+<div class="eq">
+$$\alpha(E,T) = \frac{qE}{E_{th}} \exp\!\left\{A - \sqrt{A^2 + \left(\frac{E_{th}}{qE\lambda}\right)^2}\right\}, \quad A = 0.217\left(\frac{E_{th}}{E_R}\right)^{1.14}$$
+</div>
+<p>Temperature enters via $\lambda(T) = \lambda_0 \tanh(\hbar\omega / 2k_BT)$. Available by uncommenting the OC blocks in <code>data/materials.xml</code>.</p>
+
+<h3 id="ch4-trigger">4.3 Trigger Probability (McIntyre–Oldham–Hayat)</h3>
+<p>Given $\alpha(x)$ and $\beta(x)$, the <strong>trigger probability</strong> is the chance that a single carrier initiates a self-sustaining avalanche. The simulator solves the coupled McIntyre ODEs (Oldham–Hayat formulation):</p>
+
+<div class="eq">
+$$\frac{dP_e}{dx} = -\alpha(x)\,(1-P_e)\,[P_e + P_h - P_e P_h], \quad P_e(W) = 0$$
+$$\frac{dP_h}{dx} = +\beta(x)\,(1-P_h)\,[P_e + P_h - P_e P_h], \quad P_h(0) = 0$$
+</div>
+
+<p>The term $P_{\text{tr}} = P_e + P_h - P_e P_h$ is the <strong>joint probability</strong> that at least one secondary carrier triggers — it captures the positive feedback loop: holes create electrons, which create more holes.</p>
+
+<h4>Numerical Solution</h4>
+<p>The ODEs are not integrated directly. Instead, they are transformed to integral form and solved via <strong>fixed-point iteration</strong> with damping ($\alpha_{\text{damp}} = 0.2$):</p>
+<div class="eq">
+$$P_e(x) = 1 - \exp\!\left(-\int_x^W \alpha(x')\, P_{\text{tr}}(x')\, dx'\right)$$
+$$P_h(x) = 1 - \exp\!\left(-\int_0^x \beta(x')\, P_{\text{tr}}(x')\, dx'\right)$$
+</div>
+<p>Starting from a linear ramp guess, each iteration recomputes $P_{\text{tr}}$ from the latest $P_e, P_h$, then updates via the integral formulas. Convergence to $10^{-8}$ tolerance typically takes ~50 iterations.</p>
+
+<h4>Dead-Space Correction</h4>
+<p>A newly ionized carrier cannot re-ionize until it travels a distance $l_{\text{dead}}(x) = E_{th} / q|E(x)|$ to gain threshold energy. This is incorporated by <strong>shifting the trigger probability in the integrand</strong> by the dead-space length:</p>
+<div class="eq">
+$$P_e(x) = 1 - \exp\!\left(-\int_x^W \alpha(x')\, P_{\text{tr}}(x' + l_e(x'))\, dx'\right)$$
+$$P_h(x) = 1 - \exp\!\left(-\int_0^x \beta(x')\, P_{\text{tr}}(x' - l_h(x'))\, dx'\right)$$
+</div>
+<p>Physically: a secondary electron born at $x'$ can only contribute to the feedback loop after drifting $l_e(x')$ downstream. The <code>interp1d</code> evaluation of $P_{\text{tr}}$ at the shifted position $(x' \pm l_{\text{dead}})$ implements this delay. If the dead space pushes the evaluation beyond the device boundary, it returns 0 (no contribution).</p>
+
+<h4>Multiplication Solver</h4>
+<p>In addition to trigger probabilities, the simulator computes the <strong>mean multiplication factor</strong> $M$ via a separate coupled-ODE system (electrons $M_n$, holes $M_p$):</p>
+<div class="eq">
+$$\frac{dM_n}{dx} = -\alpha(x)\,(M_n + M_p), \quad M_n(W) = 1$$
+$$\frac{dM_p}{dx} = +\beta(x)\,(M_n + M_p), \quad M_p(0) = 1$$</div>
+<p>This is a linear two-point boundary value problem solved with <code>scipy.integrate.solve_bvp</code>.  $M = M_n(0)$ is the net gain for electron injection from the left contact, capped at $10^6$ near exact breakdown.</p>
+
+<h4>Breakdown Detection</h4>
+<p>The trigger solver itself only computes probabilities — it does <em>not</em> detect breakdown. The breakdown voltage is found by sweeping bias and evaluating the McIntyre integral for $M$:</p>
+<div class="eq">
+$$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int [\alpha - \beta]\, dx'\right) dx}$$</div>
+<p>Breakdown is declared at the first bias where $M$ exceeds a threshold ($M > 100$, equivalent to the gain at which a single carrier produces a detectable current pulse). The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
 
 <div class="fig">
   <img src="../plots/spad/trigger_probability.png" alt="Trigger probability">
@@ -356,19 +480,21 @@ $$\mu(x) = \exp\!\left(\int_x^W [\alpha - \beta]\,ds\right), \quad M(x) = \frac{
 </div>
 
 <h3 id="ch4-dark">4.4 Dark Current Components</h3>
-<p>Three physical mechanisms contribute to dark current:</p>
+<p>Dark current flows even without illumination and determines the dark count rate (DCR). Three physical mechanisms contribute:</p>
 
 <table>
 <tr><th>Component</th><th>Formula</th><th>Physics</th></tr>
-<tr><td><strong>SRH</strong></td><td>$J = q \cdot n_i / (2\tau)$</td><td>Thermal generation via mid-gap traps in depletion region</td></tr>
-<tr><td><strong>BTBT</strong></td><td>$J = A F^2 e^{-B E_g^{3/2}/F}$</td><td>Band-to-band tunneling at high field</td></tr>
-<tr><td><strong>TAT</strong></td><td>Hurkx model</td><td>Trap-assisted tunneling — intermediate between SRH and BTBT</td></tr>
+<tr><td><strong>SRH</strong></td><td>$J_{\text{SRH}} = q \cdot n_i / (2\tau)$</td><td>Thermal generation via mid-gap traps in the depletion region. The intrinsic carrier density $n_i(T) = \sqrt{N_c N_v}\, e^{-E_g/2k_BT}$ depends exponentially on temperature via the Varshni bandgap.</td></tr>
+<tr><td><strong>BTBT</strong></td><td>$J_{\text{BTBT}} = A F^2 e^{-B E_g^{3/2}/F}$</td><td>Band-to-band tunneling at high field (Kane model). Dominant in the multiplication region near breakdown.</td></tr>
+<tr><td><strong>TAT</strong></td><td>$J_{\text{TAT}} = \dfrac{A F^2 N_T e^{-(B_1 E_{B1}^{3/2} + B_2 E_{B2}^{3/2})/F}}{N_v e^{-B_1 E_{B1}^{3/2}/F} + N_c e^{-B_2 E_{B2}^{3/2}/F}}$</td><td>Trap-assisted tunneling (Hurkx model) — an intermediate mechanism: a carrier thermally emits to a trap, then tunnels through the remaining barrier.</td></tr>
 </table>
 
-<p><strong>DCR</strong> (dark count rate) only counts carriers that <em>trigger</em> an avalanche:</p>
+<p>Each generation rate is integrated over the device volume and multiplied by the trigger probability to get the DCR:</p>
 <div class="eq">
-$$\text{DCR} = A_{\text{det}} \int G_{\text{dark}}(x) \cdot P_{\text{trigger}}(x)\, dx$$
-</div>
+$$\text{DCR} = A_{\text{det}} \int \big[G_{\text{SRH}}(x) + G_{\text{BTBT}}(x) + G_{\text{TAT}}(x)\big] \cdot P_{\text{trigger}}(x)\, dx$$</div>
+<p>where $P_{\text{trigger}} = P_e + P_h - P_e P_h$ is the combined trigger probability. Carriers generated in the dead zone (where $P_{\text{trigger}} \approx 0$) do not contribute.</p>
+
+<p>The temperature dependence enters through $n_i(T)$ (via Varshni $E_g(T) = E_{g,0} - \alpha T^2/(T+\beta)$) and through the field-dependent tunneling terms. At 300 K, the simulation yields DCR $\approx 4,\!340$ cps at $V_{ex} = 3$ V, with BTBT as the dominant component.</p>
 
 <div class="fig">
   <img src="../plots/spad/dark_current_vs_bias.png" alt="Dark current">
@@ -397,79 +523,88 @@ $$\text{PDP}(\lambda) = (1-R) \cdot T_{\text{dead}}(\lambda) \int_{\text{absorbe
 </div>
 
 <h3 id="ch4-transport">4.6 Carrier Transport</h3>
-<p>Drift-diffusion with velocity saturation:</p>
+<p>Drift-diffusion with field-dependent mobility (Caughey–Thomas) and velocity saturation:</p>
 <div class="eq">
-$$v_d = \frac{\mu E}{1 + |E|/E_{\text{sat}}}, \quad D = \mu V_T \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\right)^2\right)$$
-</div>
-<p>Position update: $x_{\text{new}} = x + v_d\,dt + \sqrt{2D\,dt}\cdot\xi$ (stochastic Wiener process).</p>
+$$\mu(N,T) = \left[\mu_{\min} + \frac{\mu_{\max} - \mu_{\min}}{1 + (N/N_{\text{ref}})^\gamma}\right] \cdot \left(\frac{T}{300}\right)^{-\alpha_T}, \qquad
+v_d = \frac{\mu E}{1 + |E|/E_{\text{sat}}}$$</div>
+<p>Diffusion follows the Einstein relation with a high-field enhancement:</p>
+<div class="eq">
+$$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\right)^2\right)$$</div>
+<p>Carrier position is updated via a stochastic Wiener process: $x_{\text{new}} = x + v_d\,dt + \sqrt{2D\,dt}\cdot\xi$ where $\xi \sim \mathcal{N}(0,1)$.</p>
 
-<h3 id="ch4-mc">4.7 Monte Carlo Avalanche</h3>
-<p>Simulates individual carrier histories:</p>
+<h3 id="ch4-pic">4.7 Self-Consistent PIC Loop</h3>
+<p>The particle-in-cell (PIC) loop couples carrier dynamics, the Poisson field, and the external quench circuit to simulate a complete avalanche event from seed to quench:</p>
+
+<h4>Components</h4>
+<table>
+<tr><th>Component</th><th>Role</th></tr>
+<tr><td><strong>ParticleMesh</strong></td><td>Deposits carrier charges onto the grid via cloud-in-cell (CIC) weighting, and interpolates the field back to particle positions.</td></tr>
+<tr><td><strong>CircuitSolver</strong></td><td>Models the SPAD bias circuit: $V_{\text{spad}} = V_{\text{supply}} - I \cdot R_q$, where $R_q$ is the quench resistor. As avalanche current grows, the voltage drop across $R_q$ reduces $V_{\text{spad}}$ below $V_{BR}$, quenching the avalanche.</td></tr>
+</table>
+
+<h4>Loop</h4>
 <ol>
-  <li>Inject seed carrier at $x_0$</li>
-  <li>Drift-diffuse each carrier</li>
-  <li>After dead space: sample ionization with $P_{\text{ion}} = 1 - e^{-\alpha \cdot dx}$</li>
-  <li>On ionization: spawn new e-h pair</li>
-  <li>Stop when carrier count $\geq N_{\text{threshold}}$</li>
+  <li>Deposit carrier charges onto grid (CIC weighting) → add to Poisson RHS as $\rho_{\text{ext}}$</li>
+  <li>Solve Poisson with $\rho_{\text{ext}}$ → updated $\phi(x)$, $E(x)$</li>
+  <li>Move each carrier via drift-diffusion using the local field</li>
+  <li>Sample impact ionization: $P_{\text{ion}} = 1 - e^{-\alpha_{\text{eff}} \cdot \Delta x}$ for each carrier after its dead space</li>
+  <li>On ionization: spawn new e-h pair at the same position</li>
+  <li>Update circuit: $V_{\text{bias}}^{k+1} = V_{\text{supply}} - I^k R_q$</li>
+  <li>Repeat until $V_{\text{spad}} < V_{BR}$ (quenched) or carrier count drops to zero</li>
 </ol>
-
-<p>This captures the <strong>stochastic nature</strong> of avalanche build-up and gives timing jitter.</p>
+<p>The PIC loop captures the full self-limiting dynamics missed by steady-state models — how the avalanche builds up, fills the multiplication region with plasma, and extinguishes as the bias collapses.</p>
 
 <!-- ============================================================ -->
 <!-- CHAPTER 5                                                     -->
 <!-- ============================================================ -->
 <h2 id="ch5">Chapter 5: Simulation Results</h2>
 
-<h3 id="ch5-structure">5.1 Device Structure</h3>
-<div class="fig">
-  <img src="../plots/spad/device_structure.png" alt="Device structure">
-  <p>Figure 1: Complete device structure showing material regions and doping profile.</p>
-</div>
+<p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>. The set of enabled plots is controlled by <code>data/plots_config.xml</code>.</p>
 
-<h3 id="ch5-fields">5.2 Electric Field Profile</h3>
+<h3 id="ch5-structure">5.1 Electric Field Profile</h3>
 <div class="fig">
   <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
-  <p>Figure 11: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) creates a sharp field drop, keeping the absorber field low while the multiplication region has high field.</p>
+  <p>Figure 5: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) creates a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm).</p>
 </div>
 
-<h3 id="ch5-iv">5.3 Current-Voltage Characteristics</h3>
-<div class="two-col">
-  <div class="fig">
-    <img src="../plots/spad/iv_characteristic.png" alt="I-V basic">
-    <p>Basic I-V: dark vs illuminated.</p>
-  </div>
-  <div class="fig">
-    <img src="../plots/spad/comprehensive_iv.png" alt="I-V comprehensive">
-    <p>Comprehensive I-V near breakdown with gain.</p>
-  </div>
+<h3 id="ch5-trigger">5.2 Trigger Probability Profiles</h3>
+<div class="fig">
+  <img src="../plots/spad/trigger_probability.png" alt="Trigger probability">
+  <p>Figure 6: Electron and hole trigger probabilities $P_e(x)$, $P_h(x)$ at different excess biases. $P_e$ peaks near the p-contact (electron injection side), $P_h$ near the n-contact. Both approach unity as $V_{ex}$ increases.</p>
 </div>
 
-<h3 id="ch5-pdp">5.4 Photodetection Performance</h3>
-<div class="two-col">
-  <div class="fig">
-    <img src="../plots/spad/pdp_spectrum.png" alt="PDP spectrum">
-    <p>PDP vs wavelength.</p>
-  </div>
-  <div class="fig">
-    <img src="../plots/spad/pdp_vs_excess_voltage.png" alt="PDP vs Vex">
-    <p>PDP vs excess bias.</p>
-  </div>
+<h3 id="ch5-atp">5.3 Average Trigger Probability</h3>
+<div class="fig">
+  <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
+  <p>Figure 7: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
 </div>
 
-<h3 id="ch5-noise">5.5 Noise and Afterpulsing</h3>
-<div class="two-col">
-  <div class="fig">
-    <img src="../plots/spad/excess_noise.png" alt="Excess noise">
-    <p>Excess noise factor $F(M)$.</p>
-  </div>
-  <div class="fig">
-    <img src="../plots/spad/afterpulsing_vs_holdoff.png" alt="Afterpulsing">
-    <p>Afterpulsing probability vs holdoff time.</p>
-  </div>
+<h3 id="ch5-iv">5.4 Current-Voltage Characteristic</h3>
+<div class="fig">
+  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <p>Figure 8: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the transition to Geiger mode.</p>
+</div>
+
+<h3 id="ch5-dcr-pde">5.5 DCR and PDE vs Excess Bias</h3>
+<div class="fig">
+  <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
+  <p>Figure 9: Dark count rate and photon detection probability vs excess bias. Both increase with $V_{ex}$ as the trigger probability saturates.</p>
+</div>
+
+<h3 id="ch5-dcr-temp">5.6 DCR vs Temperature</h3>
+<div class="fig">
+  <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
+  <p>Figure 10: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
+</div>
+
+<h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
+<div class="fig">
+  <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
+  <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
 </div>
 
 <div class="card green" style="margin-top:3rem;">
-  <strong>Summary:</strong> This simulator models the complete physics chain from semiconductor material properties through Poisson electrostatics, impact ionization, avalanche statistics, dark current mechanisms, and photon detection probability. The SAGCM architecture provides a good balance between high PDP, low DCR, and manageable excess noise for single-photon detection at telecom wavelengths.
+  <strong>Summary:</strong> This simulator models the complete physics chain from semiconductor material properties (Varshni bandgap, Caughey–Thomas mobility, composition-dependent dielectrics) through nonlinear Poisson electrostatics (Newton–Raphson on a tridiagonal system), impact ionization (Van Overstraeten–de Man with temperature-scaling and dead-space correction), avalanche statistics (coupled McIntyre ODEs for trigger probability + BVP solver for mean multiplication), dark current mechanisms (SRH, BTBT, TAT), photon detection probability, drift-diffusion transport, and a self-consistent PIC loop with circuit quenching. The SAGCM architecture provides a good balance between high PDP, low DCR, and manageable excess noise for single-photon detection at telecom wavelengths.
 </div>
 
 </main>

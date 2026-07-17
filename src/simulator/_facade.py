@@ -182,7 +182,11 @@ class SPADSimulator:
     # -- Dark current ------------------------------------------------------------
 
     def _compute_multiplication(self, E: np.ndarray) -> float:
-        """Avalanche multiplication factor via the McIntyre integral."""
+        """Avalanche multiplication factor via the McIntyre integral.
+
+        Electron injection from the absorber (right side, x=W):
+            M = 1 / [1 − ∫α(x)·exp(∫_x^W (β−α) dx′) dx]
+        """
         alpha = self.ionization.effective_alpha_n(np.abs(E), Eg=self._dead_space_Eg)
         beta = self.ionization.effective_alpha_p(np.abs(E), Eg=self._dead_space_Eg)
         x = self.grid.x
@@ -190,11 +194,11 @@ class SPADSimulator:
         if not np.any(active):
             return 1.0
         dx = np.diff(x)
-        diff = alpha - beta
+        diff = beta - alpha
         cum = np.zeros_like(x)
         for i in range(len(x) - 2, -1, -1):
             cum[i] = cum[i + 1] + diff[i] * dx[i]
-        integrand = beta * np.exp(cum)
+        integrand = alpha * np.exp(cum)
         denom = 1.0 - float(np.trapezoid(integrand, x))
         if denom <= 0.01:
             return 1e6

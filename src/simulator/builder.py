@@ -7,7 +7,7 @@ from ..core.device import Device
 from ..poisson.solver import PoissonSolver
 from ..poisson.field import DepletionWidth
 from ..poisson.service import PoissonService
-from ..avalanche.ionization import OkutoCrowellCoefficients
+from ..avalanche.ionization import VanOverstraetenDeManCoefficients
 
 from ..avalanche.current import (
     CurrentDecompositionManager,
@@ -55,8 +55,8 @@ def build_subsystems(
         Eg_mulp = mat_inp.Eg()
         mc_mulp = mat_inp.mc
         mh_mulp = mat_inp.mh
-        # Build ionization with Okuto-Crowell using InP XML parameters
-        ionization = OkutoCrowellCoefficients(mat_inp, T=T)
+        # Build ionization with Van Overstraeten–de Man using InP parameters
+        ionization = VanOverstraetenDeManCoefficients(mat_inp, T=T)
     else:
         raise ValueError("InP material data required for multiplication layer")
 
