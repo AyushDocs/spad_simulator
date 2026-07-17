@@ -2,6 +2,8 @@
 
 1D Poisson–Drift–Diffusion simulator for Separate Absorption, Grading, Charge-sheet, and Multiplication (SAGCM) InGaAs/InP Single-Photon Avalanche Diodes.
 
+> 📖 **Full documentation:** [https://ayushdocs.github.io/spad_simulator/](https://ayushdocs.github.io/spad_simulator/)
+
 ## Physics
 
 ### Poisson Equation
