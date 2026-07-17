@@ -339,7 +339,7 @@ def run_depletion_vs_bias(sim: SPADSimulator, Vbr: float,
         layer_ends.append(current_x)
         layer_names.append(lyr.material)
 
-    depleted_widths = {i: [] for i in range(len(sim.device.layers))}
+    depleted_widths: dict = {i: [] for i in range(len(sim.device.layers))}
 
     for V in V_list:
         xl, xr, _ = sim.depletion_width(float(V))

@@ -116,20 +116,20 @@ def run_iv_sweep(
 #  Device parameter sweep helpers
 # ---------------------------------------------------------------------------
 
-_LayerMutator = Callable[[list, int, float], None]
+_LayerMutator = Callable[[list, int, float | str], None]
 
 
-def _mutate_thickness(layers: list, idx: int, value: float) -> None:
+def _mutate_thickness(layers: list, idx: int, value: float | str) -> None:
     """Set layer ``idx`` thickness to ``value`` (cm)."""
     _cfg.mutate_thickness(layers, idx, value)
 
 
-def _mutate_doping(layers: list, idx: int, value: float) -> None:
+def _mutate_doping(layers: list, idx: int, value: float | str) -> None:
     """Set layer ``idx`` ``doping_A`` to ``value`` (cm⁻³)."""
     _cfg.mutate_doping(layers, idx, value)
 
 
-def _mutate_doping_type(layers: list, idx: int, value: str) -> None:
+def _mutate_doping_type(layers: list, idx: int, value: float | str) -> None:
     """Set layer ``idx`` ``doping_type`` to ``value`` (donor/acceptor)."""
     from copy import deepcopy
     old = layers[idx]

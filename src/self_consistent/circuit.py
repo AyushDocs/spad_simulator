@@ -34,7 +34,6 @@ class CircuitSolver(BaseModel):
         return self
 
     @computed_field
-    @property
     def tau(self) -> float:
         return self.Rq * self.Cspad
 

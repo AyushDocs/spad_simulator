@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from typing import Any, Callable
 
 from .utils._logging import set_log_level
@@ -208,7 +208,7 @@ class SPADSimulatorUI:
         menubar.add_cascade(label="Help", menu=help_menu)
 
     def _show_about(self) -> None:
-        tk.messagebox.showinfo(
+        messagebox.showinfo(
             "SPAD Simulator",
             "InGaAs/InP SAGCM SPAD Simulator (1D center-axis)\n\n"
             "Select studies via checkboxes and click Run.",
@@ -226,7 +226,7 @@ class SPADSimulatorUI:
 
         for name in PRESETS:
             btn = ttk.Button(preset_frame, text=name,
-                             command=lambda n=name: self._apply_preset(n))
+                             command=lambda n=name: self._apply_preset(n))  # type: ignore[misc]
             btn.pack(side=tk.LEFT, padx=3)
 
         # -- Left: checkboxes | Right: Run + Log --
@@ -266,7 +266,7 @@ class SPADSimulatorUI:
             row.pack(fill=tk.X)
             ttk.Checkbutton(row, text=f"All {group_name}",
                             variable=all_var,
-                            command=lambda g=group_name, av=all_var: self._toggle_group(g, av)).pack(side=tk.LEFT)
+                            command=lambda g=group_name, av=all_var: self._toggle_group(g, av)).pack(side=tk.LEFT)  # type: ignore[misc]
 
             for s in items:
                 key = s["key"]

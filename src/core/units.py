@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pint
 
-ureg = pint.UnitRegistry(cache_folder=":auto:")
+ureg: pint.UnitRegistry = pint.UnitRegistry(cache_folder=":auto:")
 
 # Custom unit: electron rest mass (ratio to kg)
 ureg.define("electron_rest_mass = 9.1093837015e-31 kilogram = m0")

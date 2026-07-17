@@ -52,7 +52,7 @@ class SPADSimulator:
         self.pde_model = subs["pde_model"]
         self.trigger = TriggerSolver(self.grid)
 
-        self.transport: DriftDiffusionSolver | None = None
+        self.transport: DriftDiffusion | None = None
         self.mc_sim: MonteCarloTransport | None = None
         self.mesh: ParticleMesh | None = None
         self.circuit: CircuitSolver | None = None

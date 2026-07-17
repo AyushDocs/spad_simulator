@@ -8,7 +8,7 @@ from ..core.doping import DopingProfile
 from ..core.constants import q
 from ..poisson.solver import PoissonSolver
 from ..avalanche.ionization import IonizationCoefficients
-from ..transport.drift_diffusion import DriftDiffusionSolver
+from ..transport.drift_diffusion import DriftDiffusion
 from .particle_mesh import ParticleMesh, Carrier
 from .circuit import CircuitSolver
 from ..utils._logging import get_logger
@@ -32,7 +32,7 @@ class SelfConsistentLoop:
                  doping: DopingProfile,
                  poisson_solver: PoissonSolver,
                  particle_mesh: ParticleMesh,
-                 transport: DriftDiffusionSolver,
+                 transport: DriftDiffusion,
                  ionization: IonizationCoefficients,
                  circuit: CircuitSolver,
                  dt: float = 1e-15) -> None:

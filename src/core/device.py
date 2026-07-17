@@ -23,12 +23,12 @@ class Device(BaseModel):
     materials: Dict[str, Material]
     no_of_nodes: int = 200
 
-    grid: Grid1D = None
-    doping: DopingProfile = None
-    material: MaterialGrid = None
-    nd_on_grid: np.ndarray = None
-    na_on_grid: np.ndarray = None
-    net_doping_on_grid: np.ndarray = None
+    grid: Grid1D = None  # type: ignore[assignment]
+    doping: DopingProfile = None  # type: ignore[assignment]
+    material: MaterialGrid = None  # type: ignore[assignment]
+    nd_on_grid: np.ndarray = None  # type: ignore[assignment]
+    na_on_grid: np.ndarray = None  # type: ignore[assignment]
+    net_doping_on_grid: np.ndarray = None  # type: ignore[assignment]
 
     _total_L: float = 0.0
 

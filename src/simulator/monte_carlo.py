@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..transport.drift_diffusion import DriftDiffusion
-from ..transport.monte_carlo import MonteCarloSimulator
+from ..transport.monte_carlo import MonteCarloTransport
 from ..transport.jitter import TimingJitter
 
 from .field_cache import FieldCache

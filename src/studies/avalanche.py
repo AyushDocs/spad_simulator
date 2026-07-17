@@ -137,6 +137,6 @@ def run_quenching_waveform(sim: SPADSimulator, Vbr: float,
         get_plotter("quenching_waveform", plot_dir=PLOT_DIR).plot(
             t_arr, Vspad_arr, I_arr, Vbr=Vbr, Vbias=Vbias)
         log.info(f"  Quenching: V_drop={Vbias - Vspad_arr.min():.2f}V  "
-                 f"recharge_time~{sim.loop.circuit.tau*1e12:.1f}ps")
+                 f"recharge_time~{sim.loop.circuit.tau*1e12:.1f}ps")  # type: ignore[union-attr]
     except Exception as e:
         log.info(f"  Quenching waveform failed: {e}")

@@ -111,6 +111,7 @@ class BTBTCurrentDensity(CurrentDensityComponent):
 
     def compute(self, x: np.ndarray, F: np.ndarray,
                 **kwargs) -> np.ndarray:
+        assert self._tunnel is not None
         J = self._tunnel.btbt_current(F)  # A/cm³
         return J
 

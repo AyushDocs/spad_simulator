@@ -101,7 +101,7 @@ class DataIngestionService:
         sim = self.build_simulator(T)
         try:
             Vbr, _ = sim.find_breakdown(V_start=30.0, V_max=120, V_step=1.0)
-            return sim, Vbr
+            return sim, Vbr  # type: ignore[return-value]
         except Exception:
             dVbr = (T - 300.0) * 0.002
             return sim, 60.0 + dVbr
