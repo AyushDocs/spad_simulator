@@ -1,9 +1,13 @@
-"""Numba-accelerated Monte Carlo transport kernel."""
+"""Numba-accelerated Monte Carlo transport kernel (pure-Python fallback if numba absent)."""
 
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+
+try:
+    from numba import njit
+except ImportError:
+    njit = lambda f, **kwargs: f  # identity decorator fallback
 
 
 @njit(cache=True)

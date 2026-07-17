@@ -1,9 +1,13 @@
-"""Numba-accelerated inner Newton loop."""
+"""Numba-accelerated inner Newton loop (pure-Python fallback if numba absent)."""
 
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+
+try:
+    from numba import njit
+except ImportError:
+    njit = lambda f, **kwargs: f  # identity decorator fallback
 
 
 @njit(cache=True)
