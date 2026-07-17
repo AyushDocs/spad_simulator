@@ -7,7 +7,7 @@ import numpy as np
 try:
     from numba import njit
 except ImportError:
-    def njit(f, **kwargs):  # identity decorator fallback
+    def njit(f, **kwargs):  # type: ignore[no-redef]
         return f
 
 
