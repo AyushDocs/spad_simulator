@@ -6,16 +6,16 @@ ROOT = ..
 .PHONY: run run-iv run-ui run-quick clean clean-plots clean-pyc check typecheck help
 
 run:   ## Run the full SPAD simulation
-	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator
+	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator
 
 run-ui:  ## Launch the SPAD simulation GUI
-	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --ui
+	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --ui
 
 run-quick:  ## Run with minimal output (WARNING level only)
-	PYTHONPATH=$(ROOT) $(PYTHON) -c "import logging; from spad_simulator.src.utils._logging import set_log_level; set_log_level(logging.WARNING); from spad_simulator.src.main import main; main()"
+	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -c "import logging; from spad_simulator.src.utils._logging import set_log_level; set_log_level(logging.WARNING); from spad_simulator.src.main import main; main()"
 
 run-iv:  ## Run IV characteristic plot only (quick iteration)
-	PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --iv-only
+	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --iv-only
 
 check:   ## Check for import / syntax errors without running
 	PYTHONPATH=$(ROOT) $(PYTHON) -c "import spad_simulator; print('Package OK')"
