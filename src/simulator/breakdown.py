@@ -23,7 +23,7 @@ class MultiplicationCurrentRise(BreakdownCriterion):
            with dead space correction
         2. Compute multiplication factor M via McIntyre's formula
         3. Compute total current = J_dark * M * area
-        4. Breakdown when dI/dV exceeds threshold
+        4. Breakdown when current surges > 5× in one bias step
 
     Dead space reduces the effective ionization coefficients:
         alpha_eff = alpha / (1 + alpha * ld)
@@ -40,10 +40,10 @@ class MultiplicationCurrentRise(BreakdownCriterion):
         self.detector_area = detector_area
         self.V_step = V_step
         self.Eg = Eg
+        self._I_prev: float | None = None
 
     def _compute_multiplication(self, E: np.ndarray) -> float:
         x = self.grid.x
-        # Use effective alpha with dead space correction
         alpha = self.ion.effective_alpha_n(np.abs(E), Eg=self.Eg)
         beta = self.ion.effective_alpha_p(np.abs(E), Eg=self.Eg)
 
@@ -68,7 +68,14 @@ class MultiplicationCurrentRise(BreakdownCriterion):
         M = self._compute_multiplication(E)
         J_dark = self.dark_current_fn(E)
         I_total = float(np.trapezoid(J_dark, self.grid.x)) * self.detector_area * M
-        return False, {"V": V, "M": M, "I_total": I_total}
+
+        triggered = False
+        if self._I_prev is not None and self._I_prev > 0:
+            if I_total / self._I_prev > 5.0:
+                triggered = True
+        self._I_prev = I_total
+
+        return triggered, {"V": V, "M": M, "I_total": I_total}
 
 
 def find_breakdown(
@@ -96,7 +103,6 @@ def find_breakdown(
         Eg=_DEAD_SPACE_EG,
     )
 
-    M_prev = 1.0
     Vbr: float | None = None
     results: list[dict] = []
     V = V_start
@@ -108,14 +114,9 @@ def find_breakdown(
             triggered, info = crit.check(V, phi, E)
             results.append(info)
 
-            M = info["M"]
-            if M > 100.0 and M_prev < 100.0:
+            if triggered:
                 Vbr = V
                 break
-            if M > 1e4:
-                Vbr = V
-                break
-            M_prev = M
             V += V_step
 
         except Exception as e:
@@ -125,7 +126,7 @@ def find_breakdown(
             break
 
     if Vbr is not None:
-        log.info(f"Breakdown at V = {Vbr:.1f} V  (current rise criterion)")
+        log.info(f"Breakdown at V = {Vbr:.1f} V  (current rise: >5× jump in I_total)")
     else:
         log.warning("No breakdown detected in range")
 
