@@ -553,30 +553,19 @@ d_{l1} & d_1 & d_{u1} &        & \\
 </div>
 
 <h3 id="ch4-breakdown">4.2 Breakdown Voltage</h3>
-<p>The very first computation in <code>main()</code> after building the device is <code>find_breakdown(sim)</code> — finding $V_{BR}$. This is done by solving the steady-state multiplication BVP at increasing bias voltages until $M$ exceeds a threshold ($M > 100$).</p>
+<p>The very first computation in <code>main()</code> after building the device is <code>find_breakdown(sim)</code> — finding $V_{BR}$. The simulator sweeps the bias voltage upward, computing the electric field (via Poisson) and the resulting multiplied dark current at each step. Breakdown is identified when the total multiplied current shows a sharp divergence, which corresponds to $M > 100$ in the McIntyre integral.</p>
 
-<h4>Multiplication from the McIntyre Integral</h4>
-<p>For pure electron injection at the absorber edge ($x = W$), the mean avalanche gain is:</p>
-<div class="eq">
-$$M = \frac{1}{\,1 - \displaystyle\int_0^W \alpha(x)\exp\!\left[\int_x^W (\beta - \alpha)\,dx'\right]dx\,}$$</div>
-<p>It is convenient to define the <strong>net ionization gradient</strong> $\mu(x) = \alpha(x) - \beta(x)$. Then the inner integral simplifies to $-\int_x^W \mu\,dx'$, giving:</p>
-<div class="eq">
-$$M = \frac{1}{\,1 - \displaystyle\int_0^W \alpha(x)\exp\!\left[-\int_x^W \mu(x')\,dx'\right]dx\,}$$</div>
-<p>For hole injection from the left contact, the equivalent expression is:</p>
-<div class="eq" style="margin-top:.5rem;">
-$$M = \frac{1}{\,1 - \displaystyle\int_0^W \beta(x)\exp\!\left[\int_x^W \mu(x')\,dx'\right]dx\,}$$</div>
-<p>where $\alpha(x) = \alpha_{\text{eff}}(|E(x)|)$ and $\beta(x) = \beta_{\text{eff}}(|E(x)|)$ are the dead-space-corrected ionization coefficients, and $\mu(x)$ captures the asymmetry between electron and hole ionization at each point along the device.</p>
-
-<h4>Bias Sweep</h4>
+<h4>How it works</h4>
+<p>At each bias voltage $V$:</p>
 <ol>
-  <li>Start at $V = V_{\text{start}}$ (default 30 V)</li>
-  <li>Solve Poisson at current $V$ → get $\phi(x)$, $E(x)$</li>
+  <li>Solve Poisson at $V$ → get $\phi(x)$, $E(x)$</li>
   <li>Compute $\alpha_{\text{eff}}(E)$, $\beta_{\text{eff}}(E)$ via VODM with dead-space correction</li>
-  <li>Evaluate the McIntyre integral → $M(V)$</li>
-  <li>If $M > 100$, report $V_{BR} = V$ and stop</li>
+  <li>Compute the multiplication factor $M(V)$ via the McIntyre integral</li>
+  <li>Compute the total dark current: $I_{\text{total}} = \int J_{\text{dark}}(x)\,dx \times A \times M$</li>
+  <li>If $M > 100$, report $V_{BR} = V$ — the current has entered its sharp exponential rise</li>
   <li>Otherwise, increment $V$ by $V_{\text{step}}$ (default 0.1 V) and repeat</li>
 </ol>
-<p>This sweep is the <strong>outer loop</strong> that drives all subsequent studies — dark current, PDE, trigger probability, etc. — which are evaluated at bias voltages $V = V_{BR} + V_{\text{ex}}$.</p>
+<p>The key insight is that $I_{\text{total}} = I_{\text{primary}} \times M$: the McIntyre integral gives $M$, and $M \to \infty$ is physically identical to the current diverging. The $M > 100$ threshold was chosen because at this point the current has already begun its sharp rise (visible in the I-V characteristic), making further computation at higher biases both unnecessary and numerically unstable.</p>
 
 <div class="card green" style="font-size:.9rem;">
 <strong>Key point:</strong> The electric field from the Poisson solver is the foundation. Without an accurate $E(x)$, none of the downstream quantities (breakdown, gain, dark current, trigger probability) can be computed correctly.
