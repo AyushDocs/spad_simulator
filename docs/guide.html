@@ -118,6 +118,8 @@
   <a href="#ch3-why" class="sub">3.1 Why SPAD?</a>
   <a href="#ch3-models" class="sub">3.2 SPAD Architectures</a>
   <a href="#ch3-our" class="sub">3.3 Our SAGCM SPAD</a>
+  <a href="#ch3-grid" class="sub2">3.3.1 Multi-Node Grid</a>
+  <a href="#ch3-charge" class="sub2">3.3.2 Charge Sheet Design</a>
   <a href="#ch4">Ch 4: Simulation</a>
   <a href="#ch4-poisson" class="sub">4.1 Poisson &amp; Electric Field</a>
   <a href="#ch4-breakdown" class="sub">4.2 Breakdown Voltage</a>
@@ -455,22 +457,44 @@ $$\text{PDP}(\lambda) = \eta(\lambda) \cdot P_{\text{trigger}}$$
 
 <h3 id="ch3-our">3.3 Our SAGCM SPAD</h3>
 
-<p>Our device (<code>data/device_sagcm.xml</code>) has 7 layers:</p>
+<p>Our device (<code>data/device_sagcm.xml</code>) has 7 layers stacked from the p-contact (top, $x=0$) to the n-contact (bottom, $x=9.00\ \mu$m):</p>
 
 <table>
 <tr><th>#</th><th>Material</th><th>Thickness</th><th>Doping</th><th>Role</th></tr>
-<tr><td>0</td><td>InP</td><td>2.5 μm</td><td>p+ $2\times10^{18}$</td><td>Cap / p-contact</td></tr>
-<tr><td>1</td><td>InP</td><td>0.5 μm</td><td>i (intrinsic)</td><td><strong>Multiplication region</strong></td></tr>
-<tr><td>2</td><td>InP</td><td>0.2 μm</td><td>n+ $10^{17}$</td><td><strong>Charge sheet</strong> (field control)</td></tr>
-<tr><td>3</td><td>InGaAsP</td><td>0.12 μm</td><td>i</td><td><strong>Grading layer</strong></td></tr>
-<tr><td>4</td><td>InGaAs</td><td>1.5 μm</td><td>i</td><td><strong>Absorber</strong></td></tr>
-<tr><td>5</td><td>InP</td><td>0.5 μm</td><td>n+ $5\times10^{16}$</td><td>Buffer</td></tr>
-<tr><td>6</td><td>InP</td><td>2.0 μm</td><td>n+ $10^{18}$</td><td>Substrate / n-contact</td></tr>
+<tr><td>0</td><td>InP</td><td>2.77 μm</td><td>p+ $4\times10^{17}$</td><td>Cap / p-contact</td></tr>
+<tr><td>1</td><td>InP</td><td>0.59 μm</td><td>n- $1\times10^{15}$</td><td><strong>Multiplication region</strong></td></tr>
+<tr><td>2</td><td>InP</td><td>0.25 μm</td><td>n+ $1\times10^{17}$</td><td><strong>Charge sheet</strong> (field control)</td></tr>
+<tr><td>3</td><td>InGaAsP</td><td>0.06 μm</td><td>n $1\times10^{16}$</td><td><strong>Grading layer</strong></td></tr>
+<tr><td>4</td><td>InGaAs</td><td>2.83 μm</td><td>n- $1\times10^{15}$</td><td><strong>Absorber</strong></td></tr>
+<tr><td>5</td><td>InP</td><td>0.50 μm</td><td>n+ $6.6\times10^{16}$</td><td>Buffer</td></tr>
+<tr><td>6</td><td>InP</td><td>2.00 μm</td><td>n+ $3\times10^{18}$</td><td>Substrate / n-contact</td></tr>
 </table>
 
 <div class="card blue">
 <strong>Breakdown voltage:</strong> $V_{BR} \approx 60$ V (at 300 K, Van Overstraeten–de Man model). Typical operating excess bias: 2–5 V above $V_{BR}$.
 </div>
+
+<h4 id="ch3-grid">3.3.1 Multi-Node Discretization</h4>
+<p>The 7-layer stack is mapped onto a <strong>uniform 1D grid</strong> of 500 equal-spaced nodes spanning the full $9.00\ \mu$m. At each node, the simulator stores an array of material properties &mdash; bandgap $E_g$, permittivity $\varepsilon_r$, effective masses, mobility, saturation velocity, lifetimes &mdash; via the <code>MaterialGrid</code> class. Each layer contributes its material parameters to the subset of nodes that fall within its thickness range (node inclusion by a tolerance-safe mask: <code>|x - x<em>{start}| \le \epsilon</code>). The grid spacing is $\Delta x = L/(N-1) \approx 18$ nm, which resolves the charge sheet ($0.25\ \mu$m ≈ 14 nodes) and the ~0.1 $\mu$m ionization dead space.</p>
+
+<p>Doping is stored analogously: the <code>DopingProfile</code> accepts the layer list and computes $N_D(x)$ and $N_A(x)$ at every node, including a Gaussian tail option (<code>doping_m, doping_x0</code>) for diffused junctions. This produces the arrays needed by the Poisson solver ($\rho(x) = N_D^+ - N_A^- + p - n$) and by the drift-diffusion and tunneling modules (which use local doping for mobility and built-in potential).</p>
+
+<p>Importantly, the 1D axis runs from the <strong>p-contact at $x=0$</strong> (top surface, hole injection) to the <strong>n-contact at $x=L$</strong> (substrate, electron sink), so electrons drift rightward and holes drift leftward under reverse bias &mdash; consistent with the direction convention used throughout the trigger-probability and ionization integrals.</p>
+
+<h4 id="ch3-charge">3.3.2 Charge Layer Design</h4>
+<p>The n+ InP charge sheet is the defining innovation of SAGCM. It sits between the multiplication region and the grading layer, and its purpose is to <strong>decouple the field in the absorber from the field in the multiplier</strong>. The physics follows from Gauss's law in integral form:</p>
+<div class="eq">
+$$\oint \mathbf{E} \cdot d\mathbf{A} = \frac{Q_{\text{enc}}}{\varepsilon}$$</div>
+<p>In 1D, traversing a sheet of fixed charge $\sigma = q N_D t$ produces a field drop $\Delta E = q N_D t / \varepsilon_{\text{InP}}$. For our charge sheet ($N_D = 1\times10^{17}$ cm$^{-3}$, $t = 0.25\ \mu$m):</p>
+<div class="eq">
+$$\Delta E \approx \frac{q \times 10^{17} \times 0.25\times10^{-4}}{12.5\varepsilon_0} \approx 3.6\times10^5\ \text{V/cm}$$</div>
+<p>This creates the characteristic field profile: a <strong>high-field plateau</strong> ($\approx 4\text{–}5\times10^5$ V/cm) in the multiplication region, dropping abruptly across the charge sheet to a <strong>low-field tail</strong> ($< 10^5$ V/cm) in the absorber. The exact ratio is set by the doping-thickness product $N_D t$, which must be designed so that:</p>
+<ol>
+  <li><strong>Punch-through:</strong> The depletion region extends fully through the absorber at the operating bias. The charge sheet must not be so heavily doped that it blocks depletion.</li>
+  <li><strong>Absorber field:</strong> The residual field in the absorber stays below the tunneling threshold ($\lesssim 1.5\times10^5$ V/cm for InGaAs) to keep the dark current low.</li>
+  <li><strong>Multiplier field:</strong> The peak field in the multiplication region exceeds the ionization threshold ($\gtrsim 3\times10^5$ V/cm for InP) to achieve high gain.</li>
+</ol>
+<p>The sheet doping $N_D = 1\times10^{17}$ cm$^{-3}$ and thickness $0.25\ \mu$m give $N_D \cdot t \approx 2.5\times10^{12}$ cm$^{-2}$ &mdash; sufficient to drop the field while maintaining a fully depleted absorber at $V > V_{BR}$. Thinner or lighter sheets produce SACM-like profiles (higher absorber field, more tunneling), while thicker sheets risk incomplete punch-through.</p>
 
 <!-- ============================================================ -->
 <!-- CHAPTER 4                                                     -->
@@ -598,12 +622,22 @@ B(T) = B(T_{\text{ref}})\cdot\gamma(T)$$
 </div>
 <p>This ensures $dV_{BR}/dT > 0$: higher temperature → shorter mean free path → higher field needed for ionization.</p>
 
-<h4>Effective Ionization with Dead Space</h4>
-<p>A newly born carrier needs a distance $l_d = E_{th} / q|E|$ to gain threshold energy before it can ionize. The effective ionization coefficient accounts for this:</p>
+<h4>Dead Space (Ionization Dead Zone)</h4>
+<p>When a carrier is born — either photo-generated or as a daughter of a previous impact ionization — it starts with <strong>zero kinetic energy</strong>. To ionize, it must first be accelerated by the local electric field until its energy exceeds the ionization threshold $E_{th}$. The distance required is the <strong>dead space</strong>:</p>
 <div class="eq">
-$$\alpha_{\text{eff}} = \frac{\alpha}{1 + \alpha \cdot l_d}, \qquad
-\beta_{\text{eff}} = \frac{\beta}{1 + \beta \cdot l_d}$$</div>
-<p>These enter the trigger and multiplication integrals, suppressing ionization in the first few mean-free-paths after each impact.</p>
+$$l_d(x) = \frac{E_{th}}{q\,|E(x)|}$$</div>
+<p>where $E_{th} \approx 1.5\,E_g$ (about 2.0 eV for InP). Over this distance, the carrier cannot cause any ionization — it is effectively "dead" — creating a <strong>dead zone</strong> behind every ionization event. This is critical in thin multiplication regions ($\lesssim 1\ \mu$m) because the dead space can occupy a significant fraction of the total width, reducing gain and breaking the assumption of continuous ionization used in the local-field model.</p>
+
+<p>The code handles dead space at two levels:</p>
+<ol>
+  <li><strong>Effective coefficients</strong> (breakdown, multiplication solver): the local ionization rate is suppressed by a factor $1/(1 + \alpha l_d)$, giving $\alpha_{\text{eff}} = \alpha / (1 + \alpha l_d)$. This is a lumped correction — it captures the average effect but does not track individual carrier histories.</li>
+  <li><strong>Spatial shift in trigger probability</strong> (PDE, DCR): the dead space enters as an <strong>explicit spatial offset</strong> in the coupled McIntyre integrals. A secondary electron born at position $x$ can only contribute to the trigger feedback loop after drifting $l_e(x)$ downstream. The evaluator defers $P_{\text{tr}}$ by this amount:
+    $$P_e(x) = 1 - \exp\!\left(-\int_x^W \alpha(x')\, P_{\text{tr}}(x' + l_e(x'))\, dx'\right)$$
+    $$P_h(x) = 1 - \exp\!\left(-\int_0^x \beta(x')\, P_{\text{tr}}(x' - l_h(x'))\, dx'\right)$$
+    The shifted position is clipped to $[0, W]$; positions beyond a contact return zero (no contribution).
+  </li>
+</ol>
+<p>Physically, this means a carrier ionizing near the p-side creates a hole that needs $l_h$ before it can trigger more electrons — a delay that can push the trigger probability below unity even when $\alpha W \gg 1$ (the "dead-zone bottleneck"). At the high fields just below breakdown ($E \approx 5 \times 10^5$ V/cm in InP), $l_d \approx 0.04\ \mu$m — about 2–3 grid nodes, or 7% of the 0.59-$\mu$m multiplication region.</p>
 
 <h4>Okuto-Crowell (Alternative)</h4>
 <div class="eq">
