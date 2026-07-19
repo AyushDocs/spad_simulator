@@ -362,16 +362,14 @@ InP's intrinsic carrier concentration ($n_i \sim 10^7$ cm$^{-3}$) is <strong>thr
 $$\alpha(E) = \text{ionization probability per cm (electrons)}$$
 $$\beta(E) = \text{ionization probability per cm (holes)}$$
 </div>
-<p>The <strong>multiplication factor</strong> $M$ is the average number of electron-hole pairs produced by one injected carrier. It is computed from the McIntyre integral:</p>
+<p>The <strong>multiplication factor</strong> $M$ is the average number of electron-hole pairs produced by one injected carrier. It is computed from the McIntyre integral. Defining the <strong>net ionization gradient</strong> $\mu(x) = \alpha(x) - \beta(x)$:</p>
 <div class="eq">
-$$M = \frac{1}{1 - \displaystyle\int \alpha(x)\,\exp\!\left(\int_x^W [\beta(s) - \alpha(s)]\, ds\right) dx}$$
-</div>
-<p>where the inner integral runs from $x$ to $W$ (the multiplication-region edge) and the outer integral covers the full device. The denominator represents the positive feedback loop — when it approaches zero, the gain diverges and the device reaches <strong>breakdown</strong>.</p>
-
-<p>An equivalent form (used in the breakdown voltage search) swaps $\alpha$ and $\beta$:</p>
+$$M = \frac{1}{1 - \displaystyle\int \alpha(x)\,\exp\!\left(-\int_x^W \mu(s)\,ds\right) dx}
+\quad\text{(electron injection)}$$</div>
 <div class="eq">
-$$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int_x^W [\alpha(s) - \beta(s)]\, ds\right) dx}$$</div>
-<p>Both formulas give identical results by integration by parts.</p>
+$$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(+\int_x^W \mu(s)\,ds\right) dx}
+\quad\text{(hole injection)}$$</div>
+<p>Both forms give identical results by integration by parts. The denominator represents the positive feedback loop — when it approaches zero, the gain diverges and the device reaches <strong>breakdown</strong>.</p>
 
 <h3 id="ch2-noise">2.3 Excess Noise Factor</h3>
 <p>Avalanche multiplication is a <strong>statistical process</strong> — the gain fluctuates from event to event. The excess noise factor $F(M)$ quantifies this:</p>
@@ -561,7 +559,13 @@ d_{l1} & d_1 & d_{u1} &        & \\
 <p>For pure electron injection at the absorber edge ($x = W$), the mean avalanche gain is:</p>
 <div class="eq">
 $$M = \frac{1}{\,1 - \displaystyle\int_0^W \alpha(x)\exp\!\left[\int_x^W (\beta - \alpha)\,dx'\right]dx\,}$$</div>
-<p>where $\alpha(x) = \alpha_{\text{eff}}(|E(x)|)$ and $\beta(x) = \beta_{\text{eff}}(|E(x)|)$ are the dead-space-corrected ionization coefficients.</p>
+<p>It is convenient to define the <strong>net ionization gradient</strong> $\mu(x) = \alpha(x) - \beta(x)$. Then the inner integral simplifies to $-\int_x^W \mu\,dx'$, giving:</p>
+<div class="eq">
+$$M = \frac{1}{\,1 - \displaystyle\int_0^W \alpha(x)\exp\!\left[-\int_x^W \mu(x')\,dx'\right]dx\,}$$</div>
+<p>For hole injection from the left contact, the equivalent expression is:</p>
+<div class="eq" style="margin-top:.5rem;">
+$$M = \frac{1}{\,1 - \displaystyle\int_0^W \beta(x)\exp\!\left[\int_x^W \mu(x')\,dx'\right]dx\,}$$</div>
+<p>where $\alpha(x) = \alpha_{\text{eff}}(|E(x)|)$ and $\beta(x) = \beta_{\text{eff}}(|E(x)|)$ are the dead-space-corrected ionization coefficients, and $\mu(x)$ captures the asymmetry between electron and hole ionization at each point along the device.</p>
 
 <h4>Bias Sweep</h4>
 <ol>
