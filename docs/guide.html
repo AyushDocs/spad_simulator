@@ -8,93 +8,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
   onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
-<style>
-  :root { --bg: #0f1117; --card: #181b23; --border: #2a2e3a; --text: #e0e0e6;
-          --accent: #6c9cfc; --accent2: #a78bfa; --green: #6ee7b7; --red: #fca5a5;
-          --orange: #fbbf24; --code-bg: #1e2130; --sidebar-w: 260px; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background:var(--bg);
-         color:var(--text); line-height:1.7; }
-  nav { position:fixed; top:0; left:0; width:var(--sidebar-w); height:100vh;
-        background:var(--card); border-right:1px solid var(--border);
-        overflow-y:auto; padding:1.5rem 1rem; z-index:10; }
-  nav h2 { font-size:1rem; color:var(--accent); margin-bottom:1rem; letter-spacing:.05em; text-transform:uppercase; }
-  nav a { display:block; padding:.35rem .5rem; color:var(--text); text-decoration:none;
-          font-size:.85rem; border-radius:6px; margin-bottom:2px; transition: background .15s; }
-  nav a:hover, nav a.active { background:var(--border); color:var(--accent); }
-  nav a.sub { padding-left:1.2rem; font-size:.8rem; color:#888; }
-  nav a.sub2 { padding-left:2.0rem; font-size:.75rem; color:#999; }
-  nav a.sub2 { padding-left:2rem; font-size:.78rem; color:#666; }
-  main { margin-left:var(--sidebar-w); max-width:900px; padding:2rem 2.5rem 4rem; }
-  h1 { font-size:2rem; margin-bottom:.3rem; color:#fff; }
-  h1 span { color:var(--accent); }
-  .subtitle { color:#888; font-size:.95rem; margin-bottom:2.5rem; }
-  h2 { font-size:1.35rem; color:var(--accent); margin:2.5rem 0 1rem;
-       padding-bottom:.4rem; border-bottom:1px solid var(--border); }
-  h3 { font-size:1.05rem; color:var(--accent2); margin:1.5rem 0 .6rem; }
-  h4 { font-size:.95rem; color:var(--green); margin:1rem 0 .4rem; }
-  p, li { font-size:.92rem; }
-  ul, ol { padding-left:1.4rem; margin:.5rem 0 1rem; }
-  li { margin-bottom:.3rem; }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:10px;
-          padding:1.2rem 1.4rem; margin:1rem 0; }
-  .card.green { border-left:3px solid var(--green); }
-  .card.red   { border-left:3px solid var(--red); }
-  .card.blue  { border-left:3px solid var(--accent); }
-  .card.orange { border-left:3px solid var(--orange); }
-  pre { background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
-        padding:1rem; overflow-x:auto; margin:.8rem 0; font-size:.82rem; line-height:1.55; }
-  code { font-family:'JetBrains Mono','Fira Code',monospace; font-size:.85em; }
-  :not(pre)>code { background:var(--code-bg); padding:.15em .4em; border-radius:4px; }
-  .file { color:var(--accent2); font-weight:600; }
-  table { width:100%; border-collapse:collapse; margin:.8rem 0; font-size:.88rem; }
-  th { text-align:left; padding:.5rem .7rem; background:var(--code-bg); color:var(--accent);
-       border-bottom:1px solid var(--border); }
-  td { padding:.45rem .7rem; border-bottom:1px solid var(--border); }
-  .eq { background:var(--code-bg); border-left:3px solid var(--accent2);
-        padding:.8rem 1.2rem; margin:.8rem 0; border-radius:0 8px 8px 0; overflow-x:auto; }
-  .arch { font-family:monospace; font-size:.82rem; line-height:1.6; color:var(--green);
-          background:var(--code-bg); padding:1rem; border-radius:8px; white-space:pre; overflow-x:auto; }
-  img { max-width:100%; border-radius:8px; border:1px solid var(--border); margin:1rem 0; }
-  .fig { text-align:center; margin:1.5rem 0; }
-  .fig img { display:inline-block; max-width:80%; }
-  .fig p { font-size:.82rem; color:#888; margin-top:.4rem; }
-  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0; }
-  .logos { display:flex; justify-content:center; align-items:center; gap:1.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
-  .logos img { height:60px; width:auto; opacity:.85; }
-  .links-bar { display:flex; gap:1rem; flex-wrap:wrap; }
-  .links-bar a { color:var(--text); text-decoration:none; padding:.3rem .7rem;
-                 background:var(--code-bg); border:1px solid var(--border);
-                 border-radius:6px; font-size:.82rem; transition:border-color .15s; }
-  .links-bar a:hover { border-color:var(--accent); color:var(--accent); }
-  #menu-toggle { display:none; }
-  .menu-btn { display:none; position:fixed; top:1rem; left:1rem; z-index:20;
-              background:var(--card); border:1px solid var(--border); color:var(--text);
-              border-radius:8px; padding:.4rem .7rem; cursor:pointer; font-size:1.2rem;
-              line-height:1; }
-  .menu-btn:hover { border-color:var(--accent); }
-  .overlay { display:none; }
-
-  @media(max-width:900px) {
-    .menu-btn { display:block; }
-    nav { transform:translateX(-100%); transition:transform .25s ease;
-          z-index:30; }
-    #menu-toggle:checked ~ nav { transform:translateX(0); }
-    #menu-toggle:checked ~ .overlay { display:block; position:fixed; inset:0;
-                                      background:rgba(0,0,0,.5); z-index:20; }
-    main { margin-left:0; padding:1rem; }
-    .two-col { grid-template-columns:1fr; }
-    h1 { font-size:1.5rem; }
-    h2 { font-size:1.1rem; }
-    h3 { font-size:.95rem; }
-    h4 { font-size:.88rem; }
-    p, li { font-size:.85rem; }
-    .subtitle { font-size:.82rem; }
-    .fig img { max-width:100%; }
-    .links-bar a { font-size:.78rem; padding:.25rem .5rem; }
-    .logos img { height:40px; }
-  }
-</style>
+<link rel="stylesheet" href="guide.css">
 </head>
 <body>
 
@@ -131,14 +45,8 @@
   <a href="#ch4-transport" class="sub">4.7 Carrier Transport</a>
   <a href="#ch4-pic" class="sub">4.8 Self-Consistent PIC</a>
   <a href="#ch5">Ch 5: Results</a>
-  <a href="#ch5-config" class="sub">5.0 Config Files</a>
-  <a href="#ch5-fields" class="sub">5.1 Field Profile</a>
-  <a href="#ch5-atp" class="sub">5.2 ATP</a>
-  <a href="#ch5-iv" class="sub">5.3 I-V</a>
-  <a href="#ch5-dcr-pde" class="sub">5.4 DCR &amp; PDE</a>
-  <a href="#ch5-dcr-temp" class="sub">5.5 DCR vs Temp</a>
-  <a href="#ch5-pde-temp" class="sub">5.6 PDE vs Temp</a>
-  <a href="#ch5-mult" class="sub">5.7 M vs Vex</a>
+  <a href="#ch5-config" class="sub">Config Files</a>
+  <a href="#ch5" class="sub">Summary</a>
 </nav>
 
 <main>
@@ -346,7 +254,7 @@ InP has $n_i \sim 10^7$ cm$^{-3}$, which is <strong>1000 times lower</strong> th
 
 <div class="fig">
   <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
-  <p>Figure 2: I-V characteristic showing dark current (blue) and illuminated current (orange) vs reverse bias.</p>
+  <p>Figure 1: I-V characteristic showing dark current (blue) and illuminated current (orange) vs reverse bias.</p>
 </div>
 
 <ol>
@@ -495,7 +403,7 @@ $$\Delta E \approx \frac{q \times 10^{17} \times 0.25\times10^{-4}}{12.5\varepsi
 
 <div class="fig">
   <img src="../plots/spad/device_structure.png" alt="Device structure">
-  <p>Figure 4: Doping profile and layer structure of the 7-layer SAGCM SPAD. The abrupt n+ charge sheet ($N_D = 1\times10^{17}$ cm$^{-3}$) sits between the i-InP multiplication region (0.59 $\mu$m) and the InGaAsP grading / InGaAs absorber stack. The p+ cap is the top contact at $x=0$.</p>
+  <p>Figure 2: Doping profile and layer structure of the 7-layer SAGCM SPAD. The abrupt n+ charge sheet ($N_D = 1\times10^{17}$ cm$^{-3}$) sits between the i-InP multiplication region (0.59 $\mu$m) and the InGaAsP grading / InGaAs absorber stack. The p+ cap is the top contact at $x=0$.</p>
 </div>
 
 <!-- ============================================================ -->
@@ -580,6 +488,23 @@ d_{l1} & d_1 & d_{u1} &        & \\
 <strong>Program flow:</strong> The Poisson solver runs <strong>first</strong> — every later computation (breakdown, ionization, dark current, trigger probability, PDE) depends on the electric field profile $E(x)$ it produces. The field is the single quantity that connects all physics modules.
 </div>
 
+<div class="fig">
+  <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
+  <p>Figure 3: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) makes a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm). At each bias, the Poisson–Newton solver finds $\phi(x)$; the field is $E(x) = -d\phi/dx$ via finite differences on the non-uniform grid.</p>
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/band_diagram.png" alt="Band diagram">
+  <p>Figure 4: Conduction band $E_c(x)$ and valence band $E_v(x)$ at equilibrium ($V=0$). The p-n junction at the multiplication region / charge-sheet interface makes a steep band bend. The InGaAs absorber stays at nearly constant potential — carriers drift in the low leftover field toward the multiplier.</p>
+  <p style="font-size:.82rem; color:#888; margin-top:.4rem;">
+    <strong>How plotted:</strong> The Poisson solver first computes the electrostatic potential $\phi(x)$ at zero bias.
+    Energy bands are then $E_c(x) = E_g(x)/2 - q\phi(x)$ and $E_v(x) = -E_g(x)/2 - q\phi(x)$, using the mid-gap reference.
+    The Fermi level $E_F$ is calculated from the right-contact doping: if the contact is n-type,
+    $E_F = E_c - V_T\ln(N_c / |N_D|)$; if p-type, $E_F = E_v + V_T\ln(N_v / |N_A|)$.
+    Vertical dotted lines mark layer boundaries. The gray fill shows the bandgap $E_g$ across the device.
+  </p>
+</div>
+
 <h3 id="ch4-breakdown">4.2 Breakdown Voltage</h3>
 <p>The first thing the program does after building the device is <code>find_breakdown(sim)</code> — finding $V_{BR}$. The simulator sweeps the bias voltage upward, computing the electric field (via Poisson) and the resulting multiplied dark current at each step. Breakdown is found when the total current $I_{\text{total}} = J_{\text{dark}} \times M \times \text{area}$ jumps more than <strong>5× in a single bias step</strong> — the sharp rise that marks the start of Geiger mode.</p>
 
@@ -597,6 +522,11 @@ d_{l1} & d_1 & d_{u1} &        & \\
 
 <div class="card green" style="font-size:.9rem;">
 <strong>Key point:</strong> The electric field from the Poisson solver is the foundation. Without an accurate $E(x)$, none of the later results (breakdown, gain, dark current, trigger probability) can be computed correctly.
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
+  <p>Figure 5: Avalanche multiplication factor $M$ vs excess bias. $M$ blows up as $V_{ex} \to 0$. The >5× current-rise criterion spots the breakdown point.</p>
 </div>
 
 <h3 id="ch4-ionization">4.3 Impact Ionization</h3>
@@ -686,6 +616,11 @@ $$\frac{dM_p}{dx} = +\beta(x)\,(M_n + M_p), \quad M_p(0) = 1$$</div>
 $$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int [\alpha - \beta]\, dx'\right) dx}$$</div>
 <p>Breakdown is declared when the total multiplied current surges >5× in a single bias step — the same physical condition as $M \to \infty$ but detected directly from the current. The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
 
+<div class="fig">
+  <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
+  <p>Figure 6: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
+</div>
+
 <h3 id="ch4-dark">4.5 Dark Current Components</h3>
 <p>Dark current flows even when no light is shining. It sets the dark count rate (DCR). Three physical mechanisms add to it:</p>
 
@@ -722,10 +657,25 @@ $$\Gamma = \frac{E_B}{k_BT} \sqrt{\frac{\pi}{2}} \frac{F}{F_0} \exp\left(\frac{F
 F_0 = \frac{4\sqrt{2m^*}E_B^{3/2}}{3q\hbar}$$</div>
 <p>and the total TAT generation rate is $G_{\text{TAT}} = n_i/(2\tau) \cdot (\Gamma_e + \Gamma_h)$, integrated over the InP multiplication region only. The InGaAs absorber uses SRH generation alone (its low field makes tunneling negligible).</p>
 
+<div class="fig">
+  <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
+  <p>Figure 7: Dark count rate and photon detection probability vs excess bias. Both go up with $V_{ex}$ as the trigger probability saturates.</p>
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
+  <p>Figure 8: Dark count rate at $V_{ex}=3$ V vs temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
+</div>
+
 <h3 id="ch4-pdp">4.6 Photon Detection Probability</h3>
 <p>PDP combines absorption, dead-zone transmission, and trigger probability:</p>
 <div class="eq">
 $$\text{PDP}(\lambda) = (1-R) \cdot T_{\text{dead}}(\lambda) \int_{\text{absorber}} \alpha(\lambda)\, e^{-\alpha(x-x_0)} \cdot P_{\text{trigger}}(x)\, dx$$
+</div>
+
+<div class="fig">
+  <img src="../plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
+  <p>Figure 9: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V vs temperature. PDE drops at higher $T$ because the breakdown voltage rises, cutting the effective excess bias.</p>
 </div>
 
 <h3 id="ch4-transport">4.7 Carrier Transport</h3>
@@ -765,7 +715,7 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 <!-- ============================================================ -->
 <h2 id="ch5">Chapter 5: Simulation Results</h2>
 
-<h3 id="ch5-config">5.0 Configuration Files</h3>
+<h3 id="ch5-config">Configuration Files</h3>
 <p>The simulator uses three XML configuration files, also available on this site:</p>
 <ul>
   <li><a href="../data/device_sagcm.xml"><code>data/device_sagcm.xml</code></a> — Layer stack, doping, thickness, grid</li>
@@ -773,54 +723,17 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
   <li><a href="../data/plots_config.xml"><code>data/plots_config.xml</code></a> — Which diagnostic plots to generate (7 enabled by default)</li>
 </ul>
 
-<p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>.</p>
+<p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>. The figures appear throughout Chapter 4 next to the physics they illustrate.</p>
 
-<h3 id="ch5-fields">5.1 Electric Field and Band Profile</h3>
-<div class="fig">
-  <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
-  <p>Figure 5: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) makes a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm).</p>
-</div>
-
-<div class="fig">
-  <img src="../plots/spad/band_diagram.png" alt="Band diagram">
-  <p>Figure 6: Conduction band $E_c(x)$ and valence band $E_v(x)$ at breakdown ($V = V_{BR}$). The p-n junction at the multiplication region / charge-sheet interface makes a steep band bend. The InGaAs absorber stays at nearly constant potential — carriers drift in the low leftover field toward the multiplier.</p>
-</div>
-
-<h3 id="ch5-atp">5.2 Average Trigger Probability</h3>
-<div class="fig">
-  <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
-  <p>Figure 7: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
-</div>
-
-<h3 id="ch5-iv">5.3 Current-Voltage Characteristic</h3>
-<div class="fig">
-  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
-  <p>Figure 8: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the switch to Geiger mode.</p>
-</div>
-
-<h3 id="ch5-dcr-pde">5.4 DCR and PDE vs Excess Bias</h3>
-<div class="fig">
-  <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
-  <p>Figure 9: Dark count rate and photon detection probability vs excess bias. Both go up with $V_{ex}$ as the trigger probability saturates.</p>
-</div>
-
-<h3 id="ch5-dcr-temp">5.5 DCR vs Temperature</h3>
-<div class="fig">
-  <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
-  <p>Figure 10: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
-</div>
-
-<h3 id="ch5-pde-temp">5.6 PDE vs Temperature</h3>
-<div class="fig">
-  <img src="../plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
-  <p>Figure 11: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V as a function of temperature. PDE drops at higher $T$ because the breakdown voltage rises, cutting the effective excess bias.</p>
-</div>
-
-<h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
-<div class="fig">
-  <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
-  <p>Figure 12: Avalanche multiplication factor $M$ vs excess bias. $M$ blows up as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The >5× current-rise criterion spots the breakdown point.</p>
-</div>
+<h3 id="ch5-notebooks">Learning Notebooks</h3>
+<p>Five Jupyter notebooks in <code>notebooks/</code> walk through the simulator physics step by step, combining explanatory markdown with runnable code:</p>
+<ul>
+  <li><strong>01:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/01-AyushDocs-ElectricFieldSolver.ipynb">Electric Field Solver</a> — Poisson–Newton, Boltzmann statistics, band diagram</li>
+  <li><strong>02:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/02-AyushDocs-IVandBreakdown.ipynb">IV &amp; Breakdown</a> — McIntyre integral, 5× current-rise criterion, dark/light IV</li>
+  <li><strong>03:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/03-AyushDocs-IonizationCoefficients.ipynb">Ionization Coefficients</a> — VODM, Okuto-Crowell, dead-space, excess noise</li>
+  <li><strong>04:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/04-AyushDocs-DarkCurrent.ipynb">Dark Current</a> — SRH, BTBT, TAT, DCR vs temperature</li>
+  <li><strong>05:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/05-AyushDocs-TriggerAndPDE.ipynb">Trigger Probability &amp; PDE</a> — Coupled McIntyre ODEs, PDP spectrum</li>
+</ul>
 
 <div class="card green" style="margin-top:3rem;">
   <strong>Summary:</strong> This work builds a 1D SAGCM SPAD simulator that covers the full physics chain — from material properties (Varshni bandgap, Caughey–Thomas mobility) through Poisson electrostatics (Newton–Raphson on a tridiagonal system), impact ionization (Van Overstraeten–de Man with temperature-scaling and dead-space correction), avalanche statistics (coupled McIntyre ODEs for trigger probability + BVP solver for mean multiplication), dark current mechanisms (SRH, BTBT, TAT), photon detection probability, drift-diffusion transport, and a self-consistent PIC loop with circuit quenching. All material parameters have source citations. The SAGCM architecture gives a good balance between high PDP, low DCR, and manageable excess noise for single-photon detection at telecom wavelengths. Future work will extend this to <strong>3D</strong> to capture <strong>afterpulsing</strong> and <strong>timing jitter</strong> — effects beyond what commercial TCAD can handle.

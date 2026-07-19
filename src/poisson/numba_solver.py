@@ -7,8 +7,10 @@ import numpy as np
 try:
     from numba import njit
 except ImportError:
-    def njit(f, **kwargs):  # type: ignore[no-redef]
-        return f
+    def njit(f=None, **kwargs):  # type: ignore[no-redef]
+        if f is not None:
+            return f
+        return lambda g: g
 
 
 @njit(cache=True)

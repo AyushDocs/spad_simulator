@@ -268,6 +268,24 @@ All plots saved to `plots/spad/`. 7 diagnostic plots + `sim_results.xml`.
 </spad_simulation>
 ```
 
+## Learning Notebooks
+
+Five Jupyter notebooks in `notebooks/` walk through the physics step by step:
+
+| Notebook | Topic |
+|----------|-------|
+| `01-AyushDocs-ElectricFieldSolver` | Poisson solver, Newton–Raphson, Boltzmann stats, band diagram |
+| `02-AyushDocs-IVandBreakdown` | McIntyre integral, breakdown detection, dark/light IV curves |
+| `03-AyushDocs-IonizationCoefficients` | VODM vs Okuto-Crowell models, dead-space, temperature scaling |
+| `04-AyushDocs-DarkCurrent` | SRH, BTBT, TAT generation, DCR vs temperature |
+| `05-AyushDocs-TriggerAndPDE` | Coupled McIntyre ODEs, trigger probability, PDP spectrum |
+
+Run with the venv kernel (`spad-sim`), or execute headless:
+```bash
+cd notebooks/
+jupyter nbconvert --to notebook --execute 01-AyushDocs-ElectricFieldSolver.ipynb --output /dev/null
+```
+
 ## License
 
 MIT
