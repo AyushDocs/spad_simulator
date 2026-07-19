@@ -45,7 +45,7 @@ jobs:
           cp data/device_sagcm.xml data/materials.xml data/plots_config.xml deploy/data/
           cp plots/spad/*.png deploy/plots/spad/
           cp docs/index.html docs/_config.yml deploy/
-          cp docs/guide.html docs/iitd.png docs/qmd.jpeg deploy/
+          cp docs/guide.html docs/iitd.png docs/qmd.jpeg docs/pn.png docs/pin.png deploy/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
