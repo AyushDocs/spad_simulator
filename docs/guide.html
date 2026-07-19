@@ -233,6 +233,17 @@ $$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}
 <strong>Key insight:</strong> The InGaAs/InP system lets us <em>absorb</em> at telecom wavelengths in InGaAs while <em>multiplying</em> in InP. This separation is the foundation of SACM SPADs.
 </div>
 
+<div class="card red">
+<strong>Why III-V and not silicon?</strong> Silicon's bandgap ($E_g = 1.12$ eV) cuts off at $\lambda_c \approx 1100$ nm — it cannot detect 1310/1550 nm light at all. A narrower-bandgap material is mandatory for telecom wavelengths. Among III-V options, the InGaAs/InP system is ideal because of the ni contrast:
+<table>
+<tr><th>Material</th><th>$E_g$ (300 K)</th><th>$n_i$ (300 K)</th><th>$\lambda_c$</th><th>Role</th></tr>
+<tr><td>Si</td><td>1.12 eV</td><td>$\sim 1 \times 10^{10}$ cm$^{-3}$</td><td>1100 nm</td><td>—</td></tr>
+<tr><td><strong>InGaAs</strong></td><td>0.75 eV</td><td>$\sim 6 \times 10^{11}$ cm$^{-3}$</td><td>1650 nm</td><td>Absorber</td></tr>
+<tr><td><strong>InP</strong></td><td>1.35 eV</td><td>$\sim 1 \times 10^{7}$ cm$^{-3}$</td><td>920 nm</td><td>Multiplier</td></tr>
+</table>
+InP's intrinsic carrier concentration ($n_i \sim 10^7$ cm$^{-3}$) is <strong>three orders of magnitude lower</strong> than Si ($10^{10}$ cm$^{-3}$), which translates into vastly lower SRH dark current in the multiplication region. The SAGCM structure exploits this contrast — absorption in InGaAs, multiplication in low-ni InP — enabling single-photon sensitivity at telecom wavelengths with dark count rates orders of magnitude below what a Si-based detector at these wavelengths could achieve.
+</div>
+
 <!-- ============================================================ -->
 <!-- CHAPTER 2                                                     -->
 <!-- ============================================================ -->
