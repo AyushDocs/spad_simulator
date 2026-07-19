@@ -9,6 +9,9 @@ build/
 .pytest_cache/
 plots/
 *.png
+!docs/iitd.png
+!docs/pn.png
+!docs/pin.png
 *.jpg
 *.pdf
 .DS_Store
