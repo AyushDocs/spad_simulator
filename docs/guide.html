@@ -117,13 +117,14 @@
   <a href="#ch3-models" class="sub">3.2 SPAD Architectures</a>
   <a href="#ch3-our" class="sub">3.3 Our SAGCM SPAD</a>
   <a href="#ch4">Ch 4: Simulation</a>
-  <a href="#ch4-poisson" class="sub">4.1 Poisson Solver</a>
-  <a href="#ch4-ionization" class="sub">4.2 Ionization</a>
-  <a href="#ch4-trigger" class="sub">4.3 Trigger Probability</a>
-  <a href="#ch4-dark" class="sub">4.4 Dark Current</a>
-  <a href="#ch4-pdp" class="sub">4.5 PDP</a>
-  <a href="#ch4-transport" class="sub">4.6 Transport</a>
-  <a href="#ch4-pic" class="sub">4.7 Self-Consistent PIC</a>
+  <a href="#ch4-poisson" class="sub">4.1 Poisson &amp; Electric Field</a>
+  <a href="#ch4-breakdown" class="sub">4.2 Breakdown Voltage</a>
+  <a href="#ch4-ionization" class="sub">4.3 Impact Ionization</a>
+  <a href="#ch4-trigger" class="sub">4.4 Trigger Probability</a>
+  <a href="#ch4-dark" class="sub">4.5 Dark Current</a>
+  <a href="#ch4-pdp" class="sub">4.6 Photon Detection Probability</a>
+  <a href="#ch4-transport" class="sub">4.7 Carrier Transport</a>
+  <a href="#ch4-pic" class="sub">4.8 Self-Consistent PIC</a>
   <a href="#ch5">Ch 5: Results</a>
   <a href="#ch5-config" class="sub">5.0 Config Files</a>
   <a href="#ch5-fields" class="sub">5.1 Field Profile</a>
@@ -457,7 +458,37 @@ d_{l1} & d_1 & d_{u1} &        & \\
   <li>The previous bias-step solution serves as the guess for the next step (voltage ramp).</li>
 </ul>
 
-<h3 id="ch4-ionization">4.2 Impact Ionization</h3>
+<hr style="border-color:var(--border); margin:1.5rem 0;">
+
+<div class="card blue" style="font-size:.9rem;">
+<strong>Program flow:</strong> The Poisson solver is invoked <strong>first</strong> — every subsequent computation (breakdown, ionization, dark current, trigger probability, PDE) depends on the electric field profile $E(x)$ it produces. The field is the single unifying quantity that connects all physics modules.
+</div>
+
+<h3 id="ch4-breakdown">4.2 Breakdown Voltage</h3>
+<p>The very first computation in <code>main()</code> after building the device is <code>find_breakdown(sim)</code> — finding $V_{BR}$. This is done by solving the steady-state multiplication BVP at increasing bias voltages until $M$ exceeds a threshold ($M > 100$).</p>
+
+<h4>Multiplication from the McIntyre Integral</h4>
+<p>For pure electron injection at the absorber edge ($x = W$), the mean avalanche gain is:</p>
+<div class="eq">
+$$M = \frac{1}{\,1 - \displaystyle\int_0^W \alpha(x)\exp\!\left[\int_x^W (\beta - \alpha)\,dx'\right]dx\,}$$</div>
+<p>where $\alpha(x) = \alpha_{\text{eff}}(|E(x)|)$ and $\beta(x) = \beta_{\text{eff}}(|E(x)|)$ are the dead-space-corrected ionization coefficients.</p>
+
+<h4>Bias Sweep</h4>
+<ol>
+  <li>Start at $V = V_{\text{start}}$ (default 30 V)</li>
+  <li>Solve Poisson at current $V$ → get $\phi(x)$, $E(x)$</li>
+  <li>Compute $\alpha_{\text{eff}}(E)$, $\beta_{\text{eff}}(E)$ via VODM with dead-space correction</li>
+  <li>Evaluate the McIntyre integral → $M(V)$</li>
+  <li>If $M > 100$, report $V_{BR} = V$ and stop</li>
+  <li>Otherwise, increment $V$ by $V_{\text{step}}$ (default 0.1 V) and repeat</li>
+</ol>
+<p>This sweep is the <strong>outer loop</strong> that drives all subsequent studies — dark current, PDE, trigger probability, etc. — which are evaluated at bias voltages $V = V_{BR} + V_{\text{ex}}$.</p>
+
+<div class="card green" style="font-size:.9rem;">
+<strong>Key point:</strong> The electric field from the Poisson solver is the foundation. Without an accurate $E(x)$, none of the downstream quantities (breakdown, gain, dark current, trigger probability) can be computed correctly.
+</div>
+
+<h3 id="ch4-ionization">4.3 Impact Ionization</h3>
 <p>Two classes of model are available. The <strong>Van Overstraeten–de Man</strong> model is the default for InP based on user-provided parameters fitted to experimental data. The <strong>Okuto-Crowell</strong> model is available as an alternative (commented out in materials XML).</p>
 
 <h4>Van Overstraeten–de Man (Default)</h4>
@@ -495,7 +526,7 @@ $$\alpha(E,T) = \frac{qE}{E_{th}} \exp\!\left\{A - \sqrt{A^2 + \left(\frac{E_{th
 </div>
 <p>Temperature enters via $\lambda(T) = \lambda_0 \tanh(\hbar\omega / 2k_BT)$. Available by uncommenting the OC blocks in <code>data/materials.xml</code>.</p>
 
-<h3 id="ch4-trigger">4.3 Trigger Probability (McIntyre–Oldham–Hayat)</h3>
+<h3 id="ch4-trigger">4.4 Trigger Probability (McIntyre–Oldham–Hayat)</h3>
 <p>Given $\alpha(x)$ and $\beta(x)$, the <strong>trigger probability</strong> is the chance that a single carrier initiates a self-sustaining avalanche. The simulator solves the coupled McIntyre ODEs (Oldham–Hayat formulation):</p>
 
 <div class="eq">
@@ -534,7 +565,7 @@ $$\frac{dM_p}{dx} = +\beta(x)\,(M_n + M_p), \quad M_p(0) = 1$$</div>
 $$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int [\alpha - \beta]\, dx'\right) dx}$$</div>
 <p>Breakdown is declared at the first bias where $M$ exceeds a threshold ($M > 100$, equivalent to the gain at which a single carrier produces a detectable current pulse). The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
 
-<h3 id="ch4-dark">4.4 Dark Current Components</h3>
+<h3 id="ch4-dark">4.5 Dark Current Components</h3>
 <p>Dark current flows even without illumination and determines the dark count rate (DCR). Three physical mechanisms contribute:</p>
 
 <table>
@@ -551,13 +582,13 @@ $$\text{DCR} = A_{\text{det}} \int \big[G_{\text{SRH}}(x) + G_{\text{BTBT}}(x) +
 
 <p>The temperature dependence enters through $n_i(T)$ (via Varshni $E_g(T) = E_{g,0} - \alpha T^2/(T+\beta)$) and through the field-dependent tunneling terms. At 300 K, the simulation yields DCR $\approx 4,\!340$ cps at $V_{ex} = 3$ V, with BTBT as the dominant component.</p>
 
-<h3 id="ch4-pdp">4.5 Photon Detection Probability</h3>
+<h3 id="ch4-pdp">4.6 Photon Detection Probability</h3>
 <p>PDP combines absorption, dead-zone transmission, and trigger probability:</p>
 <div class="eq">
 $$\text{PDP}(\lambda) = (1-R) \cdot T_{\text{dead}}(\lambda) \int_{\text{absorber}} \alpha(\lambda)\, e^{-\alpha(x-x_0)} \cdot P_{\text{trigger}}(x)\, dx$$
 </div>
 
-<h3 id="ch4-transport">4.6 Carrier Transport</h3>
+<h3 id="ch4-transport">4.7 Carrier Transport</h3>
 <p>Drift-diffusion with field-dependent mobility (Caughey–Thomas) and velocity saturation:</p>
 <div class="eq">
 $$\mu(N,T) = \left[\mu_{\min} + \frac{\mu_{\max} - \mu_{\min}}{1 + (N/N_{\text{ref}})^\gamma}\right] \cdot \left(\frac{T}{300}\right)^{-\alpha_T}, \qquad
@@ -567,7 +598,7 @@ v_d = \frac{\mu E}{1 + |E|/E_{\text{sat}}}$$</div>
 $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\right)^2\right)$$</div>
 <p>Carrier position is updated via a stochastic Wiener process: $x_{\text{new}} = x + v_d\,dt + \sqrt{2D\,dt}\cdot\xi$ where $\xi \sim \mathcal{N}(0,1)$.</p>
 
-<h3 id="ch4-pic">4.7 Self-Consistent PIC Loop</h3>
+<h3 id="ch4-pic">4.8 Self-Consistent PIC Loop</h3>
 <p>The particle-in-cell (PIC) loop couples carrier dynamics, the Poisson field, and the external quench circuit to simulate a complete avalanche event from seed to quench:</p>
 
 <h4>Components</h4>
