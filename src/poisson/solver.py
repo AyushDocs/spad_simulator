@@ -222,13 +222,14 @@ class PoissonSolver(BaseModel):
             )
 
             if norm < self.tol:
-                log.debug("Poisson converged  V=%.2f  %d iters", Vbias, it)
+                log.info("Poisson converged  V=%.2f  %d iters  residual=%.2e",
+                         Vbias, it, norm)
                 return phi, {"converged": True, "iterations": it, "residual_norm": norm}
 
             if not np.isfinite(norm):
                 raise PhysicsError(
-                    f"Non-finite Poisson residual at iteration {it}")
+                    f"Non-finite Poisson residual ({norm:.2e}) at iteration {it}, V={Vbias:.2f}")
 
         raise ConvergenceError(
             f"Poisson did not converge at V={Vbias:.2f} V "
-            f"(residual {norm:.2e})")
+            f"(residual {norm:.2e}, {self.max_iter} iterations)")

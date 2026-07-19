@@ -50,34 +50,54 @@ log = get_logger()
 def main() -> None:
     iv_only = "--iv-only" in sys.argv
     set_log_level(logging.INFO)
+    log.info("=" * 60)
+    log.info("SPAD Simulator — starting")
+    log.info("=" * 60)
     cfg = DataIngestionConfig.from_defaults()
     svc = DataIngestionService(cfg)
     plot_cfg = svc.load_plot_config()
     sim = svc.build_simulator()
+    log.info("Device built  L=%.1f um  N=%d", sim.device.L * 1e4, sim.grid.no_of_nodes)
 
     plot_device_structure(sim, plot_cfg=plot_cfg)
+    log.info("─" * 50)
+    log.info("Finding breakdown voltage …")
     Vbr = find_breakdown(sim)
+    log.info("Breakdown voltage: Vbr = %.2f V", Vbr)
 
     if iv_only:
+        log.info("IV-only mode")
         run_iv_characteristic(sim, Vbr, plot_cfg=plot_cfg)
         run_comprehensive_iv(sim, Vbr, plot_cfg=plot_cfg)
+        log.info("Done.")
         return
 
+    # -- Block 1: Fields, band diagram, depletion ---------------------------------
+    log.info("─" * 50)
+    log.info("Block 1/6 — Fields, band diagram, depletion")
     run_field_sweep(sim, Vbr, plot_cfg=plot_cfg)
     run_band_diagram(sim, Vbr, plot_cfg=plot_cfg)
     run_depletion_vs_bias(sim, Vbr, plot_cfg=plot_cfg)
+
+    # -- Block 2: Dark current, IV -------------------------------------------------
+    log.info("Block 2/6 — Dark current, IV characteristic")
     run_dark_current_sweep(sim, Vbr, plot_cfg=plot_cfg)
     run_dark_current_component_sweep(sim, Vbr, plot_cfg=plot_cfg)
     run_dcr_pde_vs_vex(sim, Vbr, plot_cfg=plot_cfg)
     run_iv_characteristic(sim, Vbr, plot_cfg=plot_cfg)
     run_trap_density_iv(sim, Vbr, plot_cfg=plot_cfg)
     run_punch_breakdown_sweep(sim, Vbr, plot_cfg=plot_cfg)
+
+    # -- Block 3: PDE, trigger -----------------------------------------------------
+    log.info("Block 3/6 — PDE spectrum, trigger probability")
     run_pde_spectrum(sim, Vbr, plot_cfg=plot_cfg)
     run_comprehensive_iv(sim, Vbr, plot_cfg=plot_cfg)
     run_trigger_profiles(sim, Vbr, plot_cfg=plot_cfg)
     run_trigger_vs_vex(sim, Vbr, plot_cfg=plot_cfg)
     run_trigger_back_calculate(sim, Vbr, plot_cfg=plot_cfg)
 
+    # -- Block 4: Avalanche dynamics, metrics, artifact ----------------------------
+    log.info("Block 4/6 — Avalanche dynamics, metrics, artifact")
     afterpulsing = run_afterpulsing(sim, Vbr, plot_cfg=plot_cfg)
     excess_noise = run_excess_noise(sim, Vbr, plot_cfg=plot_cfg)
     jitter = run_jitter(sim, Vbr)
@@ -90,6 +110,8 @@ def main() -> None:
     writer = ArtifactWriter(cfg.output_dir)
     writer.write_xml(artifact)
 
+    # -- Block 5: Temperature sweeps -----------------------------------------------
+    log.info("Block 5/6 — Temperature sweeps")
     dcr_temp = run_dcr_vs_temp(svc, Vbr, plot_cfg=plot_cfg)
     pde_temp = run_pde_vs_temp(svc, Vbr, plot_cfg=plot_cfg)
 
@@ -111,7 +133,8 @@ def main() -> None:
     run_avalanche_current_pulse(sim, Vbr, plot_cfg=plot_cfg)
     run_quenching_waveform(sim, Vbr, plot_cfg=plot_cfg)
 
-    # -- Current decomposition I-V sweep ----------------------------------------
+    # -- Block 6: Parameter sweeps, optimization -----------------------------------
+    log.info("Block 6/6 — Parameter sweeps, optimization")
     try:
         _iv_dec = run_iv_sweep(sim, Vbr, decompose=True, plot=True,
                                plot_cfg=plot_cfg)
@@ -120,7 +143,6 @@ def main() -> None:
     except Exception as e:
         log.warning("I-V sweep+decomposition failed: %s", e)
 
-    # -- Parameter sweeps (paper-style) -----------------------------------------
     for _sweep_fn, _name in [
         (sweep_absorption_thickness, "absorption thickness"),
         (sweep_multiplication_thickness, "multiplication thickness"),
@@ -128,11 +150,12 @@ def main() -> None:
         (sweep_p_layer_doping, "p-layer doping"),
     ]:
         try:
+            log.info("  Sweep: %s", _name)
             _res = _sweep_fn(sim, Vbr, plot_cfg=plot_cfg)
             if len(_res.get("Vbr", [])) > 0:
-                log.info("Sweep %s done (%d pts)", _name, len(_res["Vbr"]))
+                log.info("  Sweep %s done (%d pts)", _name, len(_res["Vbr"]))
         except Exception as e:
-            log.warning("Sweep %s failed: %s", _name, e)
+            log.warning("  Sweep %s failed: %s", _name, e)
 
     bv_temp = run_breakdown_vs_temp(svc, Vbr, plot_cfg=plot_cfg)
     dc_comp_temp = run_dark_current_components_vs_temp(svc, Vbr, plot_cfg=plot_cfg)
@@ -140,23 +163,25 @@ def main() -> None:
     if bv_temp or dc_comp_temp:
         writer.write_xml(artifact)
 
-    # -- Device optimization -------------------------------------------------------
     original_layers_before_opt = list(sim.device.layers)
     try:
+        log.info("  Device optimization …")
         opt = run_optimize_device(sim, Vbr, BV_target=Vbr, plot_cfg=plot_cfg)
         if opt:
-            log.info("Optimization: best J = %.4e", opt["best_Vbr"])
+            log.info("  Optimization: best J = %.4e", opt["best_Vbr"])
     except Exception as e:
-        log.warning("Optimization failed: %s", e)
+        log.warning("  Optimization failed: %s", e)
 
-    # -- DCR vs PDE for multiplication width sweep -------------------------------
     try:
-        # Restore original working device before sweep (since optimizer might break punch-through)
         sim.set_layers(original_layers_before_opt)
         Vbr_restored, _ = sim.find_breakdown(force=True)
         run_dcr_vs_pde(sim, Vbr_restored, plot_cfg=plot_cfg)
     except Exception as e:
         log.warning("DCR vs PDE study failed: %s", e)
+
+    log.info("=" * 60)
+    log.info("All studies complete.")
+    log.info("=" * 60)
 
 
 if __name__ == "__main__":

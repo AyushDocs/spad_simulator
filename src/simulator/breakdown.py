@@ -106,6 +106,8 @@ def find_breakdown(
     Vbr: float | None = None
     results: list[dict] = []
     V = V_start
+    log.info("Breakdown sweep: V_start=%.1f V_max=%.1f V_step=%.2f",
+             V_start, V_max, V_step)
 
     while V <= V_max:
         try:
@@ -113,20 +115,25 @@ def find_breakdown(
             E = grid.gradient(phi)
             triggered, info = crit.check(V, phi, E)
             results.append(info)
+            log.debug("  V=%.2f  M=%.1f  I_total=%.2e  triggered=%s",
+                      V, info["M"], info["I_total"], triggered)
 
             if triggered:
                 Vbr = V
+                log.info("Breakdown detected at V = %.2f V  (I_total=%.2e, M=%.1f)",
+                         Vbr, info["I_total"], info["M"])
                 break
             V += V_step
 
         except Exception as e:
+            log.warning("  V=%.2f failed: %s", V, e)
             results.append({"V": V, "converged": False, "error": str(e)})
             if Vbr is None:
                 Vbr = V
             break
 
     if Vbr is not None:
-        log.info(f"Breakdown at V = {Vbr:.1f} V  (current rise: >5× jump in I_total)")
+        log.info("Breakdown at V = %.2f V  (current rise: >5x jump in I_total)", Vbr)
     else:
         log.warning("No breakdown detected in range")
 
