@@ -92,8 +92,8 @@ def run_pde_vs_temp(svc: DataIngestionService, Vbr: float,
 
     for T in temps:
         try:
-            sim_T = svc.build_simulator(T)
-            _, E_T, Pe_T, Ph_T, xl_T, xr_T = sim_T.get_fields(Vbr + Vex)
+            sim_T, Vbr_T = svc.build_simulator_at_temp(T)
+            _, E_T, Pe_T, Ph_T, xl_T, xr_T = sim_T.get_fields(Vbr_T + Vex)
             pde_vals = compute_pde_spectrum(
                 grid_x=sim_T.grid.x,
                 dx=sim_T.grid.dx,
@@ -108,10 +108,17 @@ def run_pde_vs_temp(svc: DataIngestionService, Vbr: float,
             )
             for i, wl in enumerate(wavelengths):
                 pde_dict[wl].append(float(pde_vals[i]))
+            log.info(f"  T={T}K  Vbr={Vbr_T:.1f}V  PDE(1550nm)={pde_vals[wavelengths.index(1550)]*100:.2f}%")
         except Exception as e:
             log.info(f"  T={T}K failed: {e}")
             for wl in wavelengths:
                 pde_dict[wl].append(0.0)
+
+    pde_arr_dict = {wl: np.array(vals) for wl, vals in pde_dict.items()}
+    mask = np.all(np.isfinite(list(pde_arr_dict.values())), axis=0)
+    if np.any(mask):
+        get_plotter("pde_vs_temp", plot_dir=PLOT_DIR).plot(
+            temps[mask], {wl: vals[mask] for wl, vals in pde_arr_dict.items()})
 
     return {"temperatures_K": temps.tolist(), "pde": pde_dict, "Vex": Vex}
 
