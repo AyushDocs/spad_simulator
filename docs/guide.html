@@ -496,6 +496,11 @@ $$\Delta E \approx \frac{q \times 10^{17} \times 0.25\times10^{-4}}{12.5\varepsi
 </ol>
 <p>The sheet doping $N_D = 1\times10^{17}$ cm$^{-3}$ and thickness $0.25\ \mu$m give $N_D \cdot t \approx 2.5\times10^{12}$ cm$^{-2}$ &mdash; sufficient to drop the field while maintaining a fully depleted absorber at $V > V_{BR}$. Thinner or lighter sheets produce SACM-like profiles (higher absorber field, more tunneling), while thicker sheets risk incomplete punch-through.</p>
 
+<div class="fig">
+  <img src="../plots/spad/device_structure.png" alt="Device structure">
+  <p>Figure 4: Doping profile and layer structure of the 7-layer SAGCM SPAD. The abrupt n+ charge sheet ($N_D = 1\times10^{17}$ cm$^{-3}$) sits between the i-InP multiplication region (0.59 $\mu$m) and the InGaAsP grading / InGaAs absorber stack. The p+ cap defines the top contact at $x=0$.</p>
+</div>
+
 <!-- ============================================================ -->
 <!-- CHAPTER 4                                                     -->
 <!-- ============================================================ -->
@@ -773,46 +778,51 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 
 <p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>.</p>
 
-<h3 id="ch5-fields">5.1 Electric Field Profile</h3>
+<h3 id="ch5-fields">5.1 Electric Field and Band Profile</h3>
 <div class="fig">
   <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
   <p>Figure 5: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) creates a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm).</p>
 </div>
 
+<div class="fig">
+  <img src="../plots/spad/band_diagram.png" alt="Band diagram">
+  <p>Figure 6: Conduction band $E_c(x)$ and valence band $E_v(x)$ at breakdown ($V = V_{BR}$). The p-n junction at the multiplication region / charge-sheet interface produces a steep band bend. The InGaAs absorber remains at a nearly constant potential — carriers drift in the low residual field toward the multiplier.</p>
+</div>
+
 <h3 id="ch5-atp">5.2 Average Trigger Probability</h3>
 <div class="fig">
   <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
-  <p>Figure 6: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
+  <p>Figure 7: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
 </div>
 
 <h3 id="ch5-iv">5.3 Current-Voltage Characteristic</h3>
 <div class="fig">
   <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
-  <p>Figure 7: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the transition to Geiger mode.</p>
+  <p>Figure 8: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the transition to Geiger mode.</p>
 </div>
 
 <h3 id="ch5-dcr-pde">5.4 DCR and PDE vs Excess Bias</h3>
 <div class="fig">
   <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
-  <p>Figure 8: Dark count rate and photon detection probability vs excess bias. Both increase with $V_{ex}$ as the trigger probability saturates.</p>
+  <p>Figure 9: Dark count rate and photon detection probability vs excess bias. Both increase with $V_{ex}$ as the trigger probability saturates.</p>
 </div>
 
 <h3 id="ch5-dcr-temp">5.5 DCR vs Temperature</h3>
 <div class="fig">
   <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
-  <p>Figure 9: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
+  <p>Figure 10: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
 </div>
 
 <h3 id="ch5-pde-temp">5.6 PDE vs Temperature</h3>
 <div class="fig">
   <img src="../plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
-  <p>Figure 10: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V as a function of temperature. PDE decreases at higher $T$ because the breakdown voltage rises, reducing the effective excess bias.</p>
+  <p>Figure 11: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V as a function of temperature. PDE decreases at higher $T$ because the breakdown voltage rises, reducing the effective excess bias.</p>
 </div>
 
 <h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
 <div class="fig">
   <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
-  <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The >5× current-rise criterion identifies the breakdown point.</p>
+  <p>Figure 12: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The >5× current-rise criterion identifies the breakdown point.</p>
 </div>
 
 <div class="card green" style="margin-top:3rem;">
