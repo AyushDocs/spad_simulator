@@ -59,10 +59,44 @@
   .fig img { display:inline-block; max-width:80%; }
   .fig p { font-size:.82rem; color:#888; margin-top:.4rem; }
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0; }
-  @media(max-width:900px) { nav{display:none;} main{margin-left:0;} .two-col{grid-template-columns:1fr;} }
+  .links-bar { display:flex; gap:1rem; flex-wrap:wrap; }
+  .links-bar a { color:var(--text); text-decoration:none; padding:.3rem .7rem;
+                 background:var(--code-bg); border:1px solid var(--border);
+                 border-radius:6px; font-size:.82rem; transition:border-color .15s; }
+  .links-bar a:hover { border-color:var(--accent); color:var(--accent); }
+  #menu-toggle { display:none; }
+  .menu-btn { display:none; position:fixed; top:1rem; left:1rem; z-index:20;
+              background:var(--card); border:1px solid var(--border); color:var(--text);
+              border-radius:8px; padding:.4rem .7rem; cursor:pointer; font-size:1.2rem;
+              line-height:1; }
+  .menu-btn:hover { border-color:var(--accent); }
+  .overlay { display:none; }
+
+  @media(max-width:900px) {
+    .menu-btn { display:block; }
+    nav { transform:translateX(-100%); transition:transform .25s ease;
+          z-index:30; }
+    #menu-toggle:checked ~ nav { transform:translateX(0); }
+    #menu-toggle:checked ~ .overlay { display:block; position:fixed; inset:0;
+                                      background:rgba(0,0,0,.5); z-index:20; }
+    main { margin-left:0; padding:1rem; }
+    .two-col { grid-template-columns:1fr; }
+    h1 { font-size:1.5rem; }
+    h2 { font-size:1.1rem; }
+    h3 { font-size:.95rem; }
+    h4 { font-size:.88rem; }
+    p, li { font-size:.85rem; }
+    .subtitle { font-size:.82rem; }
+    .fig img { max-width:100%; }
+    .links-bar a { font-size:.78rem; padding:.25rem .5rem; }
+  }
 </style>
 </head>
 <body>
+
+<input type="checkbox" id="menu-toggle">
+<label for="menu-toggle" class="menu-btn">☰</label>
+<label for="menu-toggle" class="overlay"></label>
 
 <nav>
   <h2>Contents</h2>
@@ -94,7 +128,8 @@
   <a href="#ch5-iv" class="sub">5.3 I-V</a>
   <a href="#ch5-dcr-pde" class="sub">5.4 DCR &amp; PDE</a>
   <a href="#ch5-dcr-temp" class="sub">5.5 DCR vs Temp</a>
-  <a href="#ch5-mult" class="sub">5.6 M vs Vex</a>
+  <a href="#ch5-pde-temp" class="sub">5.6 PDE vs Temp</a>
+  <a href="#ch5-mult" class="sub">5.7 M vs Vex</a>
 </nav>
 
 <main>
@@ -104,6 +139,13 @@
   <strong>PI:</strong> Prof. Rajendra Singh &ensp;
   <strong>Guide:</strong> Dr. Pawan Kumar &ensp;
   <strong>Supervisor:</strong> Dr. Smita Srivastava</p>
+
+<div class="links-bar" style="margin-bottom:1rem;">
+  <span><a href="https://github.com/AyushDocs/spad_simulator" target="_blank">🔗 GitHub Repository</a></span>
+  <span><a href="data/device_sagcm.xml" target="_blank">📄 device_sagcm.xml</a></span>
+  <span><a href="data/materials.xml" target="_blank">📄 materials.xml</a></span>
+  <span><a href="data/plots_config.xml" target="_blank">📄 plots_config.xml</a></span>
+</div>
 
 <div class="card" style="font-size:.9rem; line-height:1.8;">
   <p style="margin-bottom:.5rem;">
@@ -573,10 +615,16 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
   <p>Figure 9: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
 </div>
 
-<h3 id="ch5-mult">5.6 Multiplication vs Excess Bias</h3>
+<h3 id="ch5-pde-temp">5.6 PDE vs Temperature</h3>
+<div class="fig">
+  <img src="plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
+  <p>Figure 10: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V as a function of temperature. PDE decreases at higher $T$ because the breakdown voltage rises, reducing the effective excess bias.</p>
+</div>
+
+<h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
 <div class="fig">
   <img src="plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
-  <p>Figure 10: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
+  <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
 </div>
 
 <div class="card green" style="margin-top:3rem;">
