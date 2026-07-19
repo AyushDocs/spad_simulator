@@ -23,6 +23,7 @@
           font-size:.85rem; border-radius:6px; margin-bottom:2px; transition: background .15s; }
   nav a:hover, nav a.active { background:var(--border); color:var(--accent); }
   nav a.sub { padding-left:1.2rem; font-size:.8rem; color:#888; }
+  nav a.sub2 { padding-left:2.0rem; font-size:.75rem; color:#999; }
   nav a.sub2 { padding-left:2rem; font-size:.78rem; color:#666; }
   main { margin-left:var(--sidebar-w); max-width:900px; padding:2rem 2.5rem 4rem; }
   h1 { font-size:2rem; margin-bottom:.3rem; color:#fff; }
@@ -123,6 +124,7 @@
   <a href="#ch4-ionization" class="sub">4.3 Impact Ionization</a>
   <a href="#ch4-trigger" class="sub">4.4 Trigger Probability</a>
   <a href="#ch4-dark" class="sub">4.5 Dark Current</a>
+  <a href="#ch4-trap" class="sub2">4.5.1 Trap Parameters</a>
   <a href="#ch4-pdp" class="sub">4.6 Photon Detection Probability</a>
   <a href="#ch4-transport" class="sub">4.7 Carrier Transport</a>
   <a href="#ch4-pic" class="sub">4.8 Self-Consistent PIC</a>
@@ -664,6 +666,25 @@ $$\text{DCR} = A_{\text{det}} \int \big[G_{\text{SRH}}(x) + G_{\text{BTBT}}(x) +
 <p>where $P_{\text{trigger}} = P_e + P_h - P_e P_h$ is the combined trigger probability. Carriers generated in the dead zone (where $P_{\text{trigger}} \approx 0$) do not contribute.</p>
 
 <p>The temperature dependence enters through $n_i(T)$ (via Varshni $E_g(T) = E_{g,0} - \alpha T^2/(T+\beta)$) and through the field-dependent tunneling terms. At 300 K, the simulation yields DCR $\approx 4,\!340$ cps at $V_{ex} = 3$ V, with BTBT as the dominant component.</p>
+
+<h4 id="ch4-trap">4.5.1 Trap Parameters (Multiplication Region)</h4>
+<p>Traps reside in the InP multiplication region and enter both SRH and TAT current calculations. The trap distribution is described by two parameters:</p>
+
+<table>
+<tr><th>Parameter</th><th>Symbol</th><th>InP Value</th><th>InGaAs Value</th><th>Description</th></tr>
+<tr><td><strong>SRH trap energy</strong></td><td>$E_{\text{trap}}$</td><td>$E_c - 0.34$ eV</td><td>$E_c - 0.18$ eV</td><td>Kizilkan 2023 Table I; mid-gap-like in InP (Eg/4 below Ec)</td></tr>
+<tr><td><strong>SRH lifetime</strong></td><td>$\tau_n = \tau_p$</td><td>$1.6\ \mu$s</td><td>$1.0\ \mu$s</td><td>Carrier lifetime for thermal generation</td></tr>
+<tr><td><strong>TAT barrier fraction</strong></td><td>$a$</td><td>0.75</td><td>0.75</td><td>Trap level relative to Ev: $E_T = a\cdot E_g$</td></tr>
+<tr><td><strong>Electron barrier</strong></td><td>$E_B^e$</td><td>$(1-a)E_g = 0.34$ eV</td><td>$(1-a)E_g$</td><td>$E_c - E_T$ barrier for electron emission</td></tr>
+<tr><td><strong>Hole barrier</strong></td><td>$E_B^h$</td><td>$a\cdot E_g = 1.01$ eV</td><td>$a\cdot E_g$</td><td>$E_T - E_v$ barrier for hole emission</td></tr>
+<tr><td><strong>TAT trap density</strong></td><td>$N_T$</td><td>$1\times 10^{15}$ cm$^{-3}$</td><td>$1\times 10^{15}$ cm$^{-3}$</td><td>Jiao Xu 2016 Section 3.1</td></tr>
+</table>
+
+<p>The TAT model (Hurkx phonon-assisted tunneling) uses barrier height $E_B = (1-a)E_g$ for electrons and $E_B = a E_g$ for holes. A value $a = 0.75$ places the trap deep in the upper half of the bandgap — close to mid-gap for the InP multiplier — giving balanced electron/hole enhancement. The Hurkx enhancement factor for each carrier is:</p>
+<div class="eq">
+$$\Gamma = \frac{E_B}{k_BT} \sqrt{\frac{\pi}{2}} \frac{F}{F_0} \exp\left(\frac{F^2}{2F_0^2}\right) \operatorname{erfc}\!\left(-\frac{F}{\sqrt{2}F_0}\right), \quad
+F_0 = \frac{4\sqrt{2m^*}E_B^{3/2}}{3q\hbar}$$</div>
+<p>and the total TAT generation rate is $G_{\text{TAT}} = n_i/(2\tau) \cdot (\Gamma_e + \Gamma_h)$, which is integrated over the InP multiplication region only. The InGaAs absorber uses SRH generation alone (its low field makes tunneling negligible).</p>
 
 <h3 id="ch4-pdp">4.6 Photon Detection Probability</h3>
 <p>PDP combines absorption, dead-zone transmission, and trigger probability:</p>
