@@ -151,9 +151,9 @@
 
 <div class="links-bar" style="margin-bottom:1rem;">
   <span><a href="https://github.com/AyushDocs/spad_simulator" target="_blank">🔗 GitHub Repository</a></span>
-  <span><a href="data/device_sagcm.xml" target="_blank">📄 device_sagcm.xml</a></span>
-  <span><a href="data/materials.xml" target="_blank">📄 materials.xml</a></span>
-  <span><a href="data/plots_config.xml" target="_blank">📄 plots_config.xml</a></span>
+  <span><a href="../data/device_sagcm.xml" target="_blank">📄 device_sagcm.xml</a></span>
+  <span><a href="../data/materials.xml" target="_blank">📄 materials.xml</a></span>
+  <span><a href="../data/plots_config.xml" target="_blank">📄 plots_config.xml</a></span>
 </div>
 
 <div class="card" style="font-size:.9rem; line-height:1.8;">
@@ -254,7 +254,7 @@ InP's intrinsic carrier concentration ($n_i \sim 10^7$ cm$^{-3}$) is <strong>thr
 <p>An APD is a p-n junction operated in <strong>reverse bias</strong>. The current has several regimes:</p>
 
 <div class="fig">
-  <img src="plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
   <p>Figure 2: I-V characteristic showing dark current (blue) and illuminated current (orange) vs reverse bias.</p>
 </div>
 
@@ -628,52 +628,52 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 <h3 id="ch5-config">5.0 Configuration Files</h3>
 <p>The simulator is driven by three XML configuration files, also available from this site:</p>
 <ul>
-  <li><a href="data/device_sagcm.xml"><code>data/device_sagcm.xml</code></a> — Layer stack, doping, thickness, grid</li>
-  <li><a href="data/materials.xml"><code>data/materials.xml</code></a> — Material parameters (bandgap, mobility, DOS, lifetime, Auger, etc.) with source citations</li>
-  <li><a href="data/plots_config.xml"><code>data/plots_config.xml</code></a> — Which diagnostic plots to generate (7 enabled by default)</li>
+  <li><a href="../data/device_sagcm.xml"><code>data/device_sagcm.xml</code></a> — Layer stack, doping, thickness, grid</li>
+  <li><a href="../data/materials.xml"><code>data/materials.xml</code></a> — Material parameters (bandgap, mobility, DOS, lifetime, Auger, etc.) with source citations</li>
+  <li><a href="../data/plots_config.xml"><code>data/plots_config.xml</code></a> — Which diagnostic plots to generate (7 enabled by default)</li>
 </ul>
 
 <p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>.</p>
 
 <h3 id="ch5-fields">5.1 Electric Field Profile</h3>
 <div class="fig">
-  <img src="plots/spad/electric_field_profile.png" alt="Electric field">
+  <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
   <p>Figure 5: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) creates a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm).</p>
 </div>
 
 <h3 id="ch5-atp">5.2 Average Trigger Probability</h3>
 <div class="fig">
-  <img src="plots/spad/atp_vs_position.png" alt="ATP vs position">
+  <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
   <p>Figure 6: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
 </div>
 
 <h3 id="ch5-iv">5.3 Current-Voltage Characteristic</h3>
 <div class="fig">
-  <img src="plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
   <p>Figure 7: Dark and illuminated I-V curves. The sharp current rise at $V_{BR}$ marks the transition to Geiger mode.</p>
 </div>
 
 <h3 id="ch5-dcr-pde">5.4 DCR and PDE vs Excess Bias</h3>
 <div class="fig">
-  <img src="plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
+  <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
   <p>Figure 8: Dark count rate and photon detection probability vs excess bias. Both increase with $V_{ex}$ as the trigger probability saturates.</p>
 </div>
 
 <h3 id="ch5-dcr-temp">5.5 DCR vs Temperature</h3>
 <div class="fig">
-  <img src="plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
+  <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
   <p>Figure 9: Dark count rate at $V_{ex}=3$ V as a function of temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
 </div>
 
 <h3 id="ch5-pde-temp">5.6 PDE vs Temperature</h3>
 <div class="fig">
-  <img src="plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
+  <img src="../plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
   <p>Figure 10: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V as a function of temperature. PDE decreases at higher $T$ because the breakdown voltage rises, reducing the effective excess bias.</p>
 </div>
 
 <h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
 <div class="fig">
-  <img src="plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
+  <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
   <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
 </div>
 

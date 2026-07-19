@@ -39,16 +39,18 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Copy artifacts into docs
+      - name: Copy artifacts into deploy directory
         run: |
-          mkdir -p docs/data docs/plots/spad
-          cp data/device_sagcm.xml data/materials.xml data/plots_config.xml docs/data/
-          cp plots/spad/*.png docs/plots/spad/
+          mkdir -p deploy/data deploy/plots/spad
+          cp data/device_sagcm.xml data/materials.xml data/plots_config.xml deploy/data/
+          cp plots/spad/*.png deploy/plots/spad/
+          cp docs/index.html docs/_config.yml deploy/
+          cp docs/guide.html docs/iitd.png docs/qmd.jpeg deploy/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/
+          path: deploy/
 
   deploy:
     needs: build
