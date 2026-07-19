@@ -553,7 +553,7 @@ d_{l1} & d_1 & d_{u1} &        & \\
 </div>
 
 <h3 id="ch4-breakdown">4.2 Breakdown Voltage</h3>
-<p>The very first computation in <code>main()</code> after building the device is <code>find_breakdown(sim)</code> — finding $V_{BR}$. The simulator sweeps the bias voltage upward, computing the electric field (via Poisson) and the resulting multiplied dark current at each step. Breakdown is identified when the total multiplied current shows a sharp divergence, which corresponds to $M > 100$ in the McIntyre integral.</p>
+<p>The very first computation in <code>main()</code> after building the device is <code>find_breakdown(sim)</code> — finding $V_{BR}$. The simulator sweeps the bias voltage upward, computing the electric field (via Poisson) and the resulting multiplied dark current at each step. Breakdown is identified when the total current $I_{\text{total}} = J_{\text{dark}} \times M \times \text{area}$ surges more than <strong>5× in a single bias step</strong> — the characteristic sharp rise marking the onset of Geiger mode.</p>
 
 <h4>How it works</h4>
 <p>At each bias voltage $V$:</p>
@@ -562,10 +562,10 @@ d_{l1} & d_1 & d_{u1} &        & \\
   <li>Compute $\alpha_{\text{eff}}(E)$, $\beta_{\text{eff}}(E)$ via VODM with dead-space correction</li>
   <li>Compute the multiplication factor $M(V)$ via the McIntyre integral</li>
   <li>Compute the total dark current: $I_{\text{total}} = \int J_{\text{dark}}(x)\,dx \times A \times M$</li>
-  <li>If $M > 100$, report $V_{BR} = V$ — the current has entered its sharp exponential rise</li>
+  <li>If $I_{\text{total}}$ jumps >5× compared to the previous bias step, report $V_{BR} = V$ — the current has entered its sharp exponential rise</li>
   <li>Otherwise, increment $V$ by $V_{\text{step}}$ (default 0.1 V) and repeat</li>
 </ol>
-<p>The key insight is that $I_{\text{total}} = I_{\text{primary}} \times M$: the McIntyre integral gives $M$, and $M \to \infty$ is physically identical to the current diverging. The $M > 100$ threshold was chosen because at this point the current has already begun its sharp rise (visible in the I-V characteristic), making further computation at higher biases both unnecessary and numerically unstable.</p>
+<p>The key insight is that $I_{\text{total}} = I_{\text{primary}} \times M$: the McIntyre integral gives $M$, and $M \to \infty$ is physically identical to the current diverging. The <strong>5× current-rise threshold</strong> was chosen because at this point the current has already begun its sharp rise (visible in the I-V characteristic), making further computation at higher biases both unnecessary and numerically unstable.</p>
 
 <div class="card green" style="font-size:.9rem;">
 <strong>Key point:</strong> The electric field from the Poisson solver is the foundation. Without an accurate $E(x)$, none of the downstream quantities (breakdown, gain, dark current, trigger probability) can be computed correctly.
@@ -646,7 +646,7 @@ $$\frac{dM_p}{dx} = +\beta(x)\,(M_n + M_p), \quad M_p(0) = 1$$</div>
 <p>The trigger solver itself only computes probabilities — it does <em>not</em> detect breakdown. The breakdown voltage is found by sweeping bias and evaluating the McIntyre integral for $M$:</p>
 <div class="eq">
 $$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int [\alpha - \beta]\, dx'\right) dx}$$</div>
-<p>Breakdown is declared at the first bias where $M$ exceeds a threshold ($M > 100$, equivalent to the gain at which a single carrier produces a detectable current pulse). The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
+<p>Breakdown is declared when the total multiplied current surges >5× in a single bias step — the same physical condition as $M \to \infty$ but detected directly from the current. The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
 
 <h3 id="ch4-dark">4.5 Dark Current Components</h3>
 <p>Dark current flows even without illumination and determines the dark count rate (DCR). Three physical mechanisms contribute:</p>
@@ -757,7 +757,7 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 <h3 id="ch5-mult">5.7 Multiplication vs Excess Bias</h3>
 <div class="fig">
   <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
-  <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The $M > 100$ threshold defines the breakdown criterion.</p>
+  <p>Figure 11: Avalanche multiplication factor $M$ vs excess bias. $M$ diverges as $V_{ex} \to 0$ (i.e., $V \to V_{BR}$). The >5× current-rise criterion identifies the breakdown point.</p>
 </div>
 
 <div class="card green" style="margin-top:3rem;">
