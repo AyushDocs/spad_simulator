@@ -107,6 +107,7 @@
   <a href="#ch1-si" class="sub">1.1 Silicon</a>
   <a href="#ch1-iii-v" class="sub">1.2 III-V Materials</a>
   <a href="#ch1-ingaas" class="sub">1.3 InGaAs &amp; InP</a>
+  <a href="#ch1-evolution" class="sub">1.4 PN → PIN → APD → SPAD</a>
   <a href="#ch2">Ch 2: APD Theory</a>
   <a href="#ch2-iv" class="sub">2.1 I-V Characteristic</a>
   <a href="#ch2-multiplication" class="sub">2.2 Multiplication</a>
@@ -243,6 +244,95 @@ $$E_g = 1.35 \text{ eV} \quad \Rightarrow \quad \lambda_c \approx 920 \text{ nm}
 <tr><td><strong>InP</strong></td><td>1.35 eV</td><td>$\sim 1 \times 10^{7}$ cm$^{-3}$</td><td>920 nm</td><td>Multiplier</td></tr>
 </table>
 InP's intrinsic carrier concentration ($n_i \sim 10^7$ cm$^{-3}$) is <strong>three orders of magnitude lower</strong> than Si ($10^{10}$ cm$^{-3}$), which translates into vastly lower SRH dark current in the multiplication region. The SAGCM structure exploits this contrast — absorption in InGaAs, multiplication in low-ni InP — enabling single-photon sensitivity at telecom wavelengths with dark count rates orders of magnitude below what a Si-based detector at these wavelengths could achieve.
+</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 1.5                                                  -->
+<!-- ============================================================ -->
+<h2 id="ch1-evolution">1.4 From PN Junction to SPAD — Photodetector Evolution</h2>
+
+<p>The journey from a simple PN photodiode to a single-photon avalanche diode is a linear chain of improvements, each solving a limitation of its predecessor. The key milestones are shown below, followed by a detailed comparison.</p>
+
+<div class="card blue" style="text-align:center; font-size:.85rem; padding:.8rem;">
+<strong>PN</strong> → &ensp;<strong>PIN</strong> → &ensp;<strong>APD</strong> → &ensp;<strong>SPAD</strong>
+</div>
+
+<h3>PN Photodiode</h3>
+
+<div class="fig" style="float:right; max-width:35%; margin-left:1rem;">
+  <img src="pn.png" alt="PN photodiode">
+</div>
+
+<p>A <strong>PN photodiode</strong> is a simple p-n junction operated under reverse bias. When a photon with energy $h\nu > E_g$ is absorbed in or near the depletion region, it generates an electron-hole pair. The built-in and applied electric field sweeps the carriers apart, producing a measurable photocurrent.</p>
+
+<p>The <strong>cut-off wavelength</strong> is determined by the semiconductor bandgap: $\lambda_c = 1240 / E_g(\text{eV})$ nm. Photons with $\lambda > \lambda_c$ pass through unabsorbed.</p>
+
+<table>
+<tr><th>Aspect</th><th>Detail</th></tr>
+<tr><td>Operation</td><td>Reverse-biased p-n junction; photocurrent $\propto$ optical power</td></tr>
+<tr><td>Gain</td><td>None (each photon → at most one e-h pair)</td></tr>
+<tr><td>Speed</td><td>Limited by slow diffusion of carriers generated in neutral regions (not depleted)</td></tr>
+<tr><td>Efficiency</td><td>Low to moderate — only the thin depletion region contributes efficiently</td></tr>
+<tr><td>Advantages</td><td>Simple fabrication, cheap, well-understood</td></tr>
+<tr><td>Disadvantages</td><td>Low responsivity, slow response, poor SNR at low light levels</td></tr>
+</table>
+
+<h3>PIN Photodiode</h3>
+
+<div class="fig" style="float:right; max-width:35%; margin-left:1rem;">
+  <img src="pin.png" alt="PIN photodiode">
+</div>
+
+<p>To overcome the PN diode's thin depletion region, a <strong>PIN photodiode</strong> inserts a thick <strong>intrinsic (i) layer</strong> between the p and n regions. Under reverse bias, the entire i-layer is depleted, creating a wide absorption volume.</p>
+
+<table>
+<tr><th>Aspect</th><th>Detail</th></tr>
+<tr><td>Operation</td><td>Reverse-biased p-i-n; photo-carriers generated in the i-layer are swept by the drift field</td></tr>
+<tr><td>Gain</td><td>None</td></tr>
+<tr><td>Speed</td><td>Fast — drift-dominated (no diffusion tail); RC-limited</td></tr>
+<tr><td>Efficiency</td><td>High — the thick i-layer absorbs most incoming light above $E_g$</td></tr>
+<tr><td>Advantages</td><td>Higher responsivity than PN, faster response, lower dark current per unit bandwidth</td></tr>
+<tr><td>Disadvantages</td><td>No internal gain → need a low-noise transimpedance amplifier; still cannot detect single photons</td></tr>
+</table>
+
+<div class="card orange">
+<strong>Why move from PN to PIN?</strong> The PN diode's thin depletion region means most photo-carriers are generated in neutral material and must diffuse slowly to the junction, causing a slow response tail and poor collection efficiency. The PIN's thick intrinsic layer ensures that virtually all absorption occurs inside the depletion region, giving drift-limited (fast) transport and near-unity internal quantum efficiency.
+</div>
+
+<h3>APD — Avalanche Photodiode</h3>
+
+<p>An <strong>avalanche photodiode</strong> applies sufficient reverse bias that photo-generated carriers gain enough energy between scattering events to <strong>impact-ionize</strong>, creating secondary e-h pairs. This provides <strong>internal gain</strong> ($M = 10$–$100$) without an external amplifier.</p>
+
+<table>
+<tr><th>Aspect</th><th>Detail</th></tr>
+<tr><td>Operation</td><td>Reverse-biased near (but below) $V_{BR}$; carriers impact-ionize in the high-field multiplication region</td></tr>
+<tr><td>Gain</td><td>$M = 10$–$100$ (linear multiplication)</td></tr>
+<tr><td>Speed</td><td>Fast — avalanche builds in ps</td></tr>
+<tr><td>Excess Noise</td><td>$F(M) = k_{\text{eff}} M + (1 - k_{\text{eff}})(2 - 1/M)$ — lower $k_{\text{eff}}$ = less noise</td></tr>
+<tr><td>Advantages</td><td>Internal gain improves SNR; well-suited for receivers with moderate sensitivity requirements</td></tr>
+<tr><td>Disadvantages</td><td>Excess noise from stochastic multiplication; gain is temperature- and bias-sensitive; cannot distinguish single photons from noise</td></tr>
+</table>
+
+<div class="card orange">
+<strong>Why move from PIN to APD?</strong> At very low light levels, the PIN's photocurrent is buried in the amplifier noise — no amount of front-end design can recover a single photon's worth of charge ($\sim 0.16$ fC at 1550 nm). The APD's internal gain amplifies the signal before the amplifier, improving the SNR by $M / F(M)$. However, at the single-photon level, even $M = 100$ leaves the signal buried in amplifier noise — true single-photon sensitivity requires <strong>Geiger mode</strong>.
+</div>
+
+<h3>SPAD — Single-Photon Avalanche Diode</h3>
+
+<p>A <strong>SPAD</strong> is an APD biased <strong>above</strong> $V_{BR}$ (Geiger mode). A single photo-generated carrier triggers a self-sustaining avalanche that grows to a macroscopic current (mA-scale), detectable with simple digital electronics. The avalanche is stopped by a <strong>quenching circuit</strong> that temporarily lowers the bias below $V_{BR}$.</p>
+
+<table>
+<tr><th>Aspect</th><th>Detail</th></tr>
+<tr><td>Operation</td><td>Biased above $V_{BR}$; one carrier → infinite gain (Geiger mode)</td></tr>
+<tr><td>Gain</td><td>Effectively infinite (self-sustaining)</td></tr>
+<tr><td>Output</td><td>Digital pulse (avalanche or no avalanche)</td></tr>
+<tr><td>Sensitivity</td><td><strong>Single photon</strong></td></tr>
+<tr><td>Advantages</td><td>Single-photon sensitivity; digital CMOS-compatible output; sub-ns timing jitter possible</td></tr>
+<tr><td>Disadvantages</td><td>Dead time after each avalanche (quench + recharge); afterpulsing from trapped carriers; DCR from thermal/tunnel generation</td></tr>
+</table>
+
+<div class="card green">
+<strong>Why move from APD to SPAD?</strong> Even the best APD cannot detect individual photons — the amplified charge ($\sim 10^4$ electrons for $M=100$) is still too small for reliable discrimination against amplifier noise. In Geiger mode, the gain is effectively infinite: a single carrier produces a macroscopic current pulse ($\mu$A–mA), making photon-counting possible. The trade-off is the need for quenching, the presence of dark counts, and afterpulsing at high count rates.
 </div>
 
 <!-- ============================================================ -->
