@@ -17,6 +17,9 @@ run-quick:  ## Run with minimal output (WARNING level only)
 run-iv:  ## Run IV characteristic plot only (quick iteration)
 	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --iv-only
 
+notebooks:  ## Set up venv kernel for learning notebooks
+	$(PYTHON) -m ipykernel install --user --name="spad-sim" --display-name="SPAD Sim" 2>/dev/null || true
+
 check:   ## Check for import / syntax errors without running
 	PYTHONPATH=$(ROOT) $(PYTHON) -c "import spad_simulator; print('Package OK')"
 

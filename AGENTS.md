@@ -74,4 +74,5 @@ tests/            pytest tests (mirrors src/ module structure)
 
 - `make run` needs `ROOT=..` in Makefile; running `python -m spad_simulator` without PYTHONPATH will fail
 - `plots/` is gitignored — do not commit generated plots
+- `notebooks/` contains 5 learning notebooks (Jupyter); `make notebooks` registers the venv kernel
 - mypy baseline is lenient; many type errors are intentionally suppressed
