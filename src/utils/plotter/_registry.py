@@ -17,7 +17,7 @@ def _register_builtins() -> None:
                           BandDiagramPlotter)
     from .current import (DarkCurrentPlotter, DarkCurrentComponentsPlotter,
                           DCRPlotter, IVCharacteristicPlotter, ComprehensiveIVPlotter,
-                          TrapDensityIVPlotter)
+                          GenerationRateProfilePlotter, TrapDensityIVPlotter)
     from .pde import (PDEPlotter, PDEVsExcessVoltagePlotter,
                       AbsorptionProfilePlotter, PDEVsAreaPlotter, PDE3DPlotter)
     from .avalanche import (TriggerProbabilityPlotter, TriggerVsVexPlotter,
@@ -52,6 +52,7 @@ def _register_builtins() -> None:
         "peak_field_vs_bias": PeakFieldVsBiasPlotter,
         "dark_current": DarkCurrentPlotter,
         "dark_current_components": DarkCurrentComponentsPlotter,
+        "generation_rate_profile": GenerationRateProfilePlotter,
         "dcr": DCRPlotter,
         "iv_characteristic": IVCharacteristicPlotter,
         "comprehensive_iv": ComprehensiveIVPlotter,

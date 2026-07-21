@@ -17,6 +17,7 @@
   <!-- dark_current.py -->
   <plot name="dark_current_sweep" enabled="false"/>
   <plot name="dark_current_component_sweep" enabled="false"/>
+  <plot name="generation_rate_profile" enabled="true"/>
   <plot name="dcr_pde_vs_vex" enabled="true"/>
   <plot name="dcr_vs_temp" enabled="true"/>
   <plot name="dark_current_components_vs_temp" enabled="false"/>

@@ -20,7 +20,8 @@ from .studies.dark_current import (run_dark_current_sweep,
                                    run_dcr_vs_temp,
                                    run_dcr_pde_vs_vex,
                                    collect_dark_current_metrics,
-                                   run_dark_current_components_vs_temp)
+                                   run_dark_current_components_vs_temp,
+                                   run_generation_rate_profile)
 from .studies.iv import run_iv_characteristic, run_comprehensive_iv
 from .studies.pde import (run_pde_spectrum, run_pde_vs_vex, run_pde_vs_temp,
                           run_pde_vs_area,
@@ -123,6 +124,7 @@ def main() -> None:
 
     run_ionization_vs_field(sim, Vbr, plot_cfg=plot_cfg)
     run_multiplication_vs_vex(sim, Vbr, plot_cfg=plot_cfg)
+    run_generation_rate_profile(sim, Vbr, plot_cfg=plot_cfg)
     run_absorption_profile(sim, Vbr, plot_cfg=plot_cfg)
     run_pde_vs_area(sim, Vbr, plot_cfg=plot_cfg)
     run_pde_3d(sim, Vbr)

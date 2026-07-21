@@ -164,6 +164,32 @@ class ComprehensiveIVPlotter(BasePlotter):
         self._save("comprehensive_iv.png", plt)
 
 
+class GenerationRateProfilePlotter(BasePlotter):
+    @property
+    def name(self) -> str:
+        return "generation_rate_profile"
+
+    def plot(self, x_um: np.ndarray, G_srh: np.ndarray,
+             G_btbt: np.ndarray, G_tat: np.ndarray,
+             Vex: float | None = None) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        eps = 1e-10
+        ax.semilogy(x_um, G_srh + eps, label="SRH", lw=2)
+        ax.semilogy(x_um, G_btbt + eps, label="BTBT", lw=2)
+        ax.semilogy(x_um, G_tat + eps, label="TAT", lw=2)
+        ax.set_xlabel("Depth (µm)")
+        ax.set_ylabel("Generation Rate G (cm⁻³·s⁻¹)")
+        title = "Generation Rate vs Depth"
+        if Vex is not None:
+            title += f" (Vex = {Vex:.0f} V)"
+        ax.set_title(title, fontsize=12, pad=12)
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("generation_rate_profile.png", plt)
+
+
 class TrapDensityIVPlotter(BasePlotter):
     """2×2 subplot: each subplot shows 5 current components vs reverse
     voltage for a given trap density N_T."""

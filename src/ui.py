@@ -48,6 +48,8 @@ STUDIES: list[dict] = [
      "fn": lambda sim, Vbr: dc_st.run_dark_current_sweep(sim, Vbr), "needs_vbr": True},
     {"key": "dc_components",      "group": "I-V", "label": "Dark current components vs Vex",
      "fn": lambda sim, Vbr: dc_st.run_dark_current_component_sweep(sim, Vbr), "needs_vbr": True},
+    {"key": "gen_rate_profile",   "group": "I-V", "label": "Generation rate vs depth",
+     "fn": lambda sim, Vbr: dc_st.run_generation_rate_profile(sim, Vbr), "needs_vbr": True},
     {"key": "iv_char",            "group": "I-V", "label": "I-V characteristic",
      "fn": lambda sim, Vbr: iv_st.run_iv_characteristic(sim, Vbr), "needs_vbr": True},
     {"key": "comprehensive_iv",   "group": "I-V", "label": "Comprehensive I-V",

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from scipy.constants import e as Q_e
+
 from ..simulator import SPADSimulator
 from ..utils.ingestion import DataIngestionService
 from ..utils._logging import get_logger
@@ -232,3 +234,33 @@ def run_dcr_pde_vs_vex(sim: SPADSimulator, Vbr: float,
                  f"{np.nanmax(pde_arr[valid])*100:.4f}%")
         get_plotter("dcr_pde_vs_vex", plot_dir=PLOT_DIR).plot(
             vex_pts[valid], dcr_arr[valid], pde_arr[valid], wavelength_nm=1550)
+
+
+def run_generation_rate_profile(sim: SPADSimulator, Vbr: float,
+                                plot_cfg: PlotConfig | None = None) -> None:
+    """Plot SRH, BTBT, and TAT generation rates vs device depth at a fixed bias."""
+    if plot_cfg and not plot_cfg.is_enabled("generation_rate_profile"):
+        return
+    Vex = 3.0
+    Vb = Vbr + Vex
+    x = sim.grid.x
+    x_um = x * 1e4
+
+    try:
+        _, E, _, _, _, _ = sim.get_fields(float(Vb))
+        F = np.abs(E)
+        comps = sim.current.components
+        J_srh = comps[0].compute(x, F)
+        J_btbt = comps[1].compute(x, F)
+        J_tat = comps[2].compute(x, F)
+
+        G_srh = np.abs(J_srh) / Q_e
+        G_btbt = np.abs(J_btbt) / Q_e
+        G_tat = np.abs(J_tat) / Q_e
+
+        get_plotter("generation_rate_profile", plot_dir=PLOT_DIR).plot(
+            x_um, G_srh, G_btbt, G_tat, Vex=Vex)
+        log.info(f"  Generation rate profile at Vex={Vex}V: "
+                 f"SRH max={G_srh.max():.2e}  BTBT max={G_btbt.max():.2e}  TAT max={G_tat.max():.2e} cm⁻³·s⁻¹")
+    except Exception as e:
+        log.info(f"  Generation rate profile failed: {e}")
