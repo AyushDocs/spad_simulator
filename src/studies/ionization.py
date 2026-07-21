@@ -83,22 +83,21 @@ def run_multiplication_vs_vex(sim: SPADSimulator, Vbr: float,
         return
     # Sweep below breakdown: M diverges as V → Vbr⁻
     delta_range = np.linspace(0.2, 8, 30)
-    Vex_arr = -delta_range  # negative excess voltage = below breakdown
+    V_arr = Vbr - delta_range  # bias voltage (below breakdown)
     M_vals = []
 
-    for delta in delta_range:
-        Vb = Vbr - delta
+    for Vb in V_arr:
         try:
             _, E, _, _, _, _ = sim.get_fields(float(Vb))
             M = sim._compute_multiplication(E)
             M_vals.append(M)
         except Exception as e:
-            log.info(f"  Vbr-{delta:.1f}V failed: {e}")
+            log.info(f"  V={Vb:.1f}V failed: {e}")
             M_vals.append(np.nan)
 
     M_arr = np.array(M_vals)
     mask = np.isfinite(M_arr) & (M_arr > 0)
     if np.any(mask):
         get_plotter("multiplication_vs_vex", plot_dir=PLOT_DIR).plot(
-            Vex_arr[mask], M_arr[mask], Vbr=Vbr)
+            V_arr[mask], M_arr[mask], Vbr=Vbr)
         log.info(f"  M: {np.nanmin(M_arr[mask]):.1f} - {np.nanmax(M_arr[mask]):.1f}")

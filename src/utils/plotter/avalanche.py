@@ -288,15 +288,15 @@ class MultiplicationVsExcessBiasPlotter(BasePlotter):
     def name(self) -> str:
         return "multiplication_vs_vex"
 
-    def plot(self, Vex_arr: np.ndarray, M_arr: np.ndarray,
+    def plot(self, V_arr: np.ndarray, M_arr: np.ndarray,
              Vbr: float | None = None) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(8, 5))
         mask = np.isfinite(M_arr) & (M_arr > 0)
-        ax.semilogy(Vex_arr[mask], M_arr[mask], "o-", lw=2, color="#1f77b4")
+        ax.semilogy(V_arr[mask], M_arr[mask], "o-", lw=2, color="#1f77b4")
         if Vbr is not None:
-            ax.axvline(x=0, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
-        ax.set_xlabel("V - Vbr (V)")
+            ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax.set_xlabel("Bias Voltage V (V)")
         ax.set_ylabel("Multiplication Factor M")
         ax.set_title("Avalanche Multiplication vs Bias (below breakdown)", fontsize=12, pad=12)
         ax.legend(fontsize=8)
