@@ -22,7 +22,7 @@
   <plot name="dark_current_components_vs_temp" enabled="false"/>
 
   <!-- pde.py -->
-  <plot name="pde_spectrum" enabled="false"/>
+  <plot name="pde_spectrum" enabled="true"/>
   <plot name="pde_vs_vex" enabled="false"/>
   <plot name="pde_vs_temp" enabled="true"/>
   <plot name="absorption_profile" enabled="false"/>
