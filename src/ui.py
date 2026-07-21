@@ -62,6 +62,8 @@ STUDIES: list[dict] = [
      "fn": lambda sim, Vbr: pde_st.run_pde_vs_vex(sim, Vbr), "needs_vbr": True},
     {"key": "absorption",     "group": "PDE", "label": "Absorption profile",
      "fn": lambda sim, Vbr: pde_st.run_absorption_profile(sim, Vbr), "needs_vbr": True},
+    {"key": "pde_vs_area",   "group": "PDE", "label": "PDE vs area",
+     "fn": lambda sim, Vbr: pde_st.run_pde_vs_area(sim, Vbr), "needs_vbr": True},
     {"key": "pde_3d",         "group": "PDE", "label": "PDE 3D surface",
      "fn": lambda sim, Vbr: pde_st.run_pde_3d(sim, Vbr), "needs_vbr": True},
 

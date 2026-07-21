@@ -88,6 +88,34 @@ class AbsorptionProfilePlotter(BasePlotter):
         self._save("absorption_profile.png", plt)
 
 
+class PDEVsAreaPlotter(BasePlotter):
+    @property
+    def name(self) -> str:
+        return "pde_vs_area"
+
+    def plot(self, area_cm2: np.ndarray, pde: np.ndarray,
+             wavelengths_nm: list[int] | None = None) -> None:
+        plt = self._import()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.set_title("PDE vs Detector Area", fontsize=12, pad=12)
+        if wavelengths_nm is not None and pde.ndim > 1:
+            colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(wavelengths_nm)))
+            for i, (wl, c) in enumerate(zip(wavelengths_nm, colors)):
+                ax.plot(area_cm2 * 1e8, pde[i] * 100, "o-", lw=2, color=c,
+                        label=f"{wl} nm")
+        else:
+            ax.plot(area_cm2 * 1e8, np.atleast_1d(pde) * 100, "o-", lw=2)
+        default_area = 4.91e-6
+        ax.axvline(x=default_area * 1e8, color="k", ls=":", alpha=0.5,
+                   label=f"Default = {default_area:.2e} cm²")
+        ax.set_xlabel("Detector Area (×10⁻⁸ cm²)")
+        ax.set_ylabel("PDE (%)")
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        self._save("pde_vs_area.png", plt)
+
+
 class PDE3DPlotter(BasePlotter):
     """3D surface plot: wavelength × excess voltage × PDE."""
 

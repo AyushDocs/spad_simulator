@@ -18,7 +18,7 @@ class SimulationArtifact:
     # Device info
     Vbr_V: float = 0.0
     T_K: float = 300.0
-    detector_area_cm2: float = 1e-6
+    detector_area_cm2: float = 4.91e-6
     grid_N: int = 0
     grid_dx_cm: float = 0.0
     total_thickness_cm: float = 0.0

@@ -19,7 +19,7 @@ def _register_builtins() -> None:
                           DCRPlotter, IVCharacteristicPlotter, ComprehensiveIVPlotter,
                           TrapDensityIVPlotter)
     from .pde import (PDEPlotter, PDEVsExcessVoltagePlotter,
-                      AbsorptionProfilePlotter, PDE3DPlotter)
+                      AbsorptionProfilePlotter, PDEVsAreaPlotter, PDE3DPlotter)
     from .avalanche import (TriggerProbabilityPlotter, TriggerVsVexPlotter,
                             AfterpulsingPlotter,
                             ExcessNoisePlotter, IonizationCoefficientsVsFieldPlotter,
@@ -58,6 +58,7 @@ def _register_builtins() -> None:
         "pde": PDEPlotter,
         "pde_vs_vex": PDEVsExcessVoltagePlotter,
         "absorption_profile": AbsorptionProfilePlotter,
+        "pde_vs_area": PDEVsAreaPlotter,
         "pde_3d": PDE3DPlotter,
         "trigger_probability": TriggerProbabilityPlotter,
         "trigger_vs_vex": TriggerVsVexPlotter,

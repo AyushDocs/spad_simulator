@@ -125,7 +125,7 @@ class DCRvsPDEPlotter(BasePlotter):
         return "dcr_vs_pde"
 
     def plot(self, curves: dict[str, dict], Vex: float = 3.0,
-             detector_area_cm2: float = 1e-6) -> None:
+             detector_area_cm2: float = 4.91e-6) -> None:
         plt = self._import()
         fig, ax = plt.subplots(figsize=(9, 6))
 

@@ -99,7 +99,7 @@ def find_breakdown(
 
     crit = MultiplicationCurrentRise(
         ionization, grid, dark_current_fn,
-        detector_area=1e-6, V_step=V_step,
+        detector_area=4.91e-6, V_step=V_step,
         Eg=_DEAD_SPACE_EG,
     )
 

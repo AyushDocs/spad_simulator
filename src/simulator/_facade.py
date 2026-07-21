@@ -34,7 +34,7 @@ class SPADSimulator:
     def __init__(
         self,
         device: Device,
-        detector_area: float = 1e-6,
+        detector_area: float = 4.91e-6,
         transport_material: str = "InP",
         cache_maxlen: int = 200,
     ) -> None:

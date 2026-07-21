@@ -30,7 +30,7 @@ class DataIngestionConfig:
 
     # Simulation parameters
     optical_power_W: float = 1e-6
-    detector_area_cm2: float = 1e-8
+    detector_area_cm2: float = 4.91e-6
     target_wavelengths_nm: List[int] = field(default_factory=lambda: [905, 1310, 1550])
     excess_voltages_V: List[float] = field(default_factory=lambda: [1, 3, 5, 8])
     temperature_K: float = 300.0

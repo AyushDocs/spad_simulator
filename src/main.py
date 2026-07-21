@@ -23,6 +23,7 @@ from .studies.dark_current import (run_dark_current_sweep,
                                    run_dark_current_components_vs_temp)
 from .studies.iv import run_iv_characteristic, run_comprehensive_iv
 from .studies.pde import (run_pde_spectrum, run_pde_vs_vex, run_pde_vs_temp,
+                          run_pde_vs_area,
                           collect_pde_max_metrics,
                           run_absorption_profile, run_pde_3d)
 from .studies.avalanche import (run_afterpulsing, run_excess_noise, run_jitter,
@@ -123,6 +124,7 @@ def main() -> None:
     run_ionization_vs_field(sim, Vbr, plot_cfg=plot_cfg)
     run_multiplication_vs_vex(sim, Vbr, plot_cfg=plot_cfg)
     run_absorption_profile(sim, Vbr, plot_cfg=plot_cfg)
+    run_pde_vs_area(sim, Vbr, plot_cfg=plot_cfg)
     run_pde_3d(sim, Vbr)
     run_peak_field_vs_bias(sim, Vbr, plot_cfg=plot_cfg)
     run_efield_vs_absorption_width(sim, Vbr, plot_cfg=plot_cfg)

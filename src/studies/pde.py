@@ -177,6 +177,46 @@ def run_absorption_profile(sim: SPADSimulator, Vbr: float,
         x_um, G_dict, material_name="InGaAs")
 
 
+def run_pde_vs_area(sim: SPADSimulator, Vbr: float,
+                    plot_cfg: PlotConfig | None = None) -> None:
+    """Sweep detector area and compute PDE at fixed excess bias."""
+    if plot_cfg and not plot_cfg.is_enabled("pde_vs_area"):
+        return
+    wavelengths_nm = [905, 1310, 1550]
+    area_vals = np.array([0.5, 1, 2, 4.91, 10, 20, 50]) * 1e-6
+    pde_vals = {wl: [] for wl in wavelengths_nm}
+    Vex = 3.0
+
+    for A in area_vals:
+        sim.detector_area = A
+        try:
+            _, E, Pe, Ph, _, xr = sim.get_fields(Vbr + Vex)
+            pde_arr = compute_pde_spectrum(
+                grid_x=sim.grid.x,
+                dx=sim.grid.dx,
+                layers=sim.device.layers,
+                pde_model=sim.pde_model,
+                wavelengths=np.array([wl * 1e-9 for wl in wavelengths_nm]),
+                Vex=Vex,
+                xr=xr,
+                Pe=Pe,
+                Ph=Ph,
+                material_name="InGaAs",
+            )
+            for i, wl in enumerate(wavelengths_nm):
+                pde_vals[wl].append(float(pde_arr[i]))
+            log.info(f"  A={A:.2e} cm²: PDE(1550nm)={pde_arr[wavelengths_nm.index(1550)]*100:.2f}%")
+        except Exception as e:
+            log.info(f"  A={A:.2e} cm² failed: {e}")
+            for wl in wavelengths_nm:
+                pde_vals[wl].append(0.0)
+
+    sim.detector_area = 4.91e-6
+    pde_arr = np.array([pde_vals[wl] for wl in wavelengths_nm])
+    get_plotter("pde_vs_area", plot_dir=PLOT_DIR).plot(
+        area_vals, pde_arr, wavelengths_nm=wavelengths_nm)
+
+
 def run_pde_3d(sim: SPADSimulator, Vbr: float) -> None:
     """3D PDE surface."""
     log.info("  PDE 3D: skipped (requires full PDE model)")
