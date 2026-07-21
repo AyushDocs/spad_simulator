@@ -3,10 +3,11 @@ PYTHON = .venv/bin/python
 # the root __init__.py at spad_simulator/__init__.py
 ROOT = ..
 
-.PHONY: run run-iv run-ui run-quick clean clean-plots clean-pyc check typecheck help
+.PHONY: run run-iv run-ui run-quick clean clean-plots clean-pyc check typecheck help deploy-plots
 
 run:   ## Run the full SPAD simulation
 	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator
+	$(MAKE) deploy-plots
 
 run-ui:  ## Launch the SPAD simulation GUI
 	PYTHONWARNINGS=ignore PYTHONPATH=$(ROOT) $(PYTHON) -m spad_simulator --ui
@@ -24,7 +25,7 @@ check:   ## Check for import / syntax errors without running
 	PYTHONPATH=$(ROOT) $(PYTHON) -c "import spad_simulator; print('Package OK')"
 
 clean-plots:  ## Remove all generated plots
-	rm -rf plots/
+	rm -rf plots/ docs/plots/
 
 clean-pyc:  ## Remove Python cache files
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
@@ -34,6 +35,10 @@ clean: clean-plots clean-pyc  ## Remove plots and cache files
 
 typecheck:  ## Run mypy type checking
 	PYTHONPATH=$(ROOT) $(PYTHON) -m mypy spad_simulator/ --ignore-missing-imports 2>/dev/null || echo "mypy not installed; skipping"
+
+deploy-plots:  ## Copy plots to docs/ for GitHub Pages
+	mkdir -p docs/plots/spad
+	cp -n plots/spad/*.png docs/plots/spad/ 2>/dev/null || true
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \

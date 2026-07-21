@@ -12,6 +12,9 @@ plots/
 !docs/iitd.png
 !docs/pn.png
 !docs/pin.png
+!docs/plots/
+!docs/plots/spad/
+!docs/plots/spad/*.png
 *.jpg
 *.pdf
 .DS_Store

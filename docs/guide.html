@@ -407,7 +407,10 @@ $$\Delta E \approx \frac{q \times 10^{17} \times 0.25\times10^{-4}}{12.5\varepsi
 <p>The sheet doping $N_D = 1\times10^{17}$ cm$^{-3}$ and thickness $0.25\ \mu$m give $N_D \cdot t \approx 2.5\times10^{12}$ cm$^{-2}$ — enough to drop the field while keeping a fully depleted absorber at $V > V_{BR}$. Thinner or lighter sheets make SACM-like profiles (higher absorber field, more tunneling). Thicker sheets risk incomplete punch-through.</p>
 
 <div class="fig">
-  <img src="plots/spad/device_structure.png" alt="Device structure">
+  <img src="plots/spad/device_structure.png" alt="Device structure" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+  <div style="display:none;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem;margin:1rem 0;font-size:.85rem;color:#888;">
+    <em>Figure 2:</em> Doping profile and layer structure. Generated at runtime by <code>make run</code>.
+  </div>
   <p>Figure 2: Doping profile and layer structure of the 7-layer SAGCM SPAD. The abrupt n+ charge sheet ($N_D = 1\times10^{17}$ cm$^{-3}$) sits between the i-InP multiplication region (0.59 $\mu$m) and the InGaAsP grading / InGaAs absorber stack. The p+ cap is the top contact at $x=0$.</p>
 </div>
 
@@ -499,7 +502,10 @@ d_{l1} & d_1 & d_{u1} &        & \\
 </div>
 
 <div class="fig">
-  <img src="plots/spad/band_diagram.png" alt="Band diagram">
+  <img src="plots/spad/band_diagram.png" alt="Band diagram" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+  <div style="display:none;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem;margin:1rem 0;font-size:.85rem;color:#888;">
+    <em>Figure 4:</em> Band diagram at equilibrium. Generated at runtime by <code>make run</code>.
+  </div>
   <p>Figure 4: Conduction band $E_c(x)$ and valence band $E_v(x)$ at equilibrium ($V=0$). The p-n junction at the multiplication region / charge-sheet interface makes a steep band bend. The InGaAs absorber stays at nearly constant potential — carriers drift in the low leftover field toward the multiplier.</p>
   <p style="font-size:.82rem; color:#888; margin-top:.4rem;">
     <strong>How plotted:</strong> The Poisson solver first computes the electrostatic potential $\phi(x)$ at zero bias.
