@@ -53,10 +53,10 @@ class ElectricFieldPlotter(BasePlotter):
                 else V_list
             )
             for i, (E_i, Vex) in enumerate(zip(E, Vex_list)):
-                ax.plot(x_um, -E_i / 1e4, label=f"Vex = {Vex:.0f} V",
+                ax.plot(x_um, -E_i / 1e5, label=f"Vex = {Vex:.0f} V",
                         color=plt.cm.viridis(i / len(E)))
         else:
-            ax.plot(x_um, -np.atleast_1d(E) / 1e4)
+            ax.plot(x_um, -np.atleast_1d(E) / 1e5)
 
         if layer_bounds_um is not None and layer_names is not None:
             region_colors = {
@@ -69,7 +69,6 @@ class ElectricFieldPlotter(BasePlotter):
                 "n+ Substrate\nn-Contact": "#17becf",
             }
             all_bounds = [x_um[0]] + list(layer_bounds_um) + [x_um[-1]]
-            # Stagger labels across 3 vertical rows to avoid overlap
             y_rows = [0.92, 0.82, 0.72]
             for i, name in enumerate(layer_names):
                 x0 = all_bounds[i]
@@ -85,8 +84,9 @@ class ElectricFieldPlotter(BasePlotter):
                         bbox=dict(boxstyle="round,pad=0.15", fc="white",
                                   alpha=0.75, ec=color, lw=1.2))
 
+        ax.set_xlim(2, 5)
         ax.set_xlabel("Depth (µm)")
-        ax.set_ylabel("Electric Field (V/µm)")
+        ax.set_ylabel("Electric Field (×10⁵ V/cm)")
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
