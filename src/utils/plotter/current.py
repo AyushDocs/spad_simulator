@@ -111,19 +111,17 @@ class IVCharacteristicPlotter(BasePlotter):
         plt = self._import()
         fig, ax = plt.subplots(figsize=(8, 5))
 
-        eps = 1e-20
-        logI_dark = np.log10(np.abs(I_dark) + eps)
-        ax.plot(Vbias, logI_dark, "b-", label="Dark", lw=2)
+        ax.plot(Vbias, np.abs(I_dark), "b-", label="Dark", lw=2)
         if I_light is not None:
             label = "Illuminated"
             if optical_power is not None:
                 label += f" ({optical_power*1e6:.0f} µW)"
-            logI_light = np.log10(np.abs(I_light) + eps)
-            ax.plot(Vbias, logI_light, color="tab:orange", ls="-", label=label, lw=2.5, alpha=0.9)
+            ax.plot(Vbias, np.abs(I_light), color="tab:orange", ls="-", label=label, lw=2.5, alpha=0.9)
         if Vbr is not None:
             ax.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
+        ax.set_yscale("log")
         ax.set_xlabel("Bias (V)")
-        ax.set_ylabel("log₁₀ I (A)")
+        ax.set_ylabel("I (A)")
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         ax.set_title("I-V Characteristic", fontsize=11, pad=10)
@@ -142,11 +140,11 @@ class ComprehensiveIVPlotter(BasePlotter):
         plt = self._import()
         fig, (ax_log, ax_lin) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
-        eps = 1e-20
-        ax_log.plot(Vbias, np.log10(np.abs(I_dark) + eps), "b-", label="Dark", lw=2)
+        ax_log.plot(Vbias, np.abs(I_dark), "b-", label="Dark", lw=2)
         if Vbr is not None:
             ax_log.axvline(x=Vbr, color="k", ls=":", alpha=0.5, label=f"Vbr = {Vbr:.1f} V")
-        ax_log.set_ylabel("log₁₀ I (A)")
+        ax_log.set_yscale("log")
+        ax_log.set_ylabel("I (A)")
         ax_log.legend(fontsize=8)
         ax_log.grid(True, alpha=0.3)
         ax_log.set_title("Comprehensive I-V — Log Scale", fontsize=11, pad=10)
