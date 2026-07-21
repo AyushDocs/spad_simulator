@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Summer Internship Report — 1D SAGCM SPAD Simulator</title>
+<script>if(location.hostname==='ayushdocs.github.io'){var b=document.createElement('base');b.href='/spad_simulator/guide.html';document.head.appendChild(b)}</script>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -16,6 +17,7 @@
 <input type="checkbox" id="menu-toggle">
 <label for="menu-toggle" class="menu-btn">☰</label>
 <label for="menu-toggle" class="overlay"></label>
+<button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
 
 <nav>
   <h2>Contents</h2>
@@ -47,8 +49,10 @@
   <a href="#ch4-pic" class="sub">4.8 Self-Consistent PIC</a>
   <a href="#ch5">Ch 5: Results</a>
   <a href="#ch5-config" class="sub">Config Files</a>
+  <a href="#ch5-notebooks" class="sub">Notebooks</a>
   <a href="#ch5" class="sub">Summary</a>
 </nav>
+<button class="theme-btn-desktop" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
 
 <main>
 
@@ -65,9 +69,9 @@
 
 <div class="links-bar" style="margin-bottom:1rem;">
   <span><a href="https://github.com/AyushDocs/spad_simulator" target="_blank">🔗 GitHub Repository</a></span>
-  <span><a href="../data/device_sagcm.xml" target="_blank">📄 device_sagcm.xml</a></span>
-  <span><a href="../data/materials.xml" target="_blank">📄 materials.xml</a></span>
-  <span><a href="../data/plots_config.xml" target="_blank">📄 plots_config.xml</a></span>
+  <span><a href="data/device_sagcm.xml" target="_blank">📄 device_sagcm.xml</a></span>
+  <span><a href="data/materials.xml" target="_blank">📄 materials.xml</a></span>
+  <span><a href="data/plots_config.xml" target="_blank">📄 plots_config.xml</a></span>
 </div>
 
 <div class="card" style="font-size:.9rem; line-height:1.8;">
@@ -254,7 +258,7 @@ InP has $n_i \sim 10^7$ cm$^{-3}$, which is <strong>1000 times lower</strong> th
 <p>An APD is a p-n junction run in <strong>reverse bias</strong>. The current goes through several stages as voltage increases:</p>
 
 <div class="fig">
-  <img src="../plots/spad/iv_characteristic.png" alt="I-V characteristic">
+  <img src="plots/spad/iv_characteristic.png" alt="I-V characteristic">
   <p>Figure 1: I-V characteristic showing dark current (blue) and illuminated current (orange) vs reverse bias.</p>
 </div>
 
@@ -403,7 +407,7 @@ $$\Delta E \approx \frac{q \times 10^{17} \times 0.25\times10^{-4}}{12.5\varepsi
 <p>The sheet doping $N_D = 1\times10^{17}$ cm$^{-3}$ and thickness $0.25\ \mu$m give $N_D \cdot t \approx 2.5\times10^{12}$ cm$^{-2}$ — enough to drop the field while keeping a fully depleted absorber at $V > V_{BR}$. Thinner or lighter sheets make SACM-like profiles (higher absorber field, more tunneling). Thicker sheets risk incomplete punch-through.</p>
 
 <div class="fig">
-  <img src="../plots/spad/device_structure.png" alt="Device structure">
+  <img src="plots/spad/device_structure.png" alt="Device structure">
   <p>Figure 2: Doping profile and layer structure of the 7-layer SAGCM SPAD. The abrupt n+ charge sheet ($N_D = 1\times10^{17}$ cm$^{-3}$) sits between the i-InP multiplication region (0.59 $\mu$m) and the InGaAsP grading / InGaAs absorber stack. The p+ cap is the top contact at $x=0$.</p>
 </div>
 
@@ -490,12 +494,12 @@ d_{l1} & d_1 & d_{u1} &        & \\
 </div>
 
 <div class="fig">
-  <img src="../plots/spad/electric_field_profile.png" alt="Electric field">
+  <img src="plots/spad/electric_field_profile.png" alt="Electric field">
   <p>Figure 3: Electric field $|E(x)|$ at different reverse biases. The charge sheet (n+ InP) makes a sharp field drop, keeping the absorber field low ($< 10^5$ V/cm) while the multiplication region sees high field ($> 4\times10^5$ V/cm). At each bias, the Poisson–Newton solver finds $\phi(x)$; the field is $E(x) = -d\phi/dx$ via finite differences on the non-uniform grid.</p>
 </div>
 
 <div class="fig">
-  <img src="../plots/spad/band_diagram.png" alt="Band diagram">
+  <img src="plots/spad/band_diagram.png" alt="Band diagram">
   <p>Figure 4: Conduction band $E_c(x)$ and valence band $E_v(x)$ at equilibrium ($V=0$). The p-n junction at the multiplication region / charge-sheet interface makes a steep band bend. The InGaAs absorber stays at nearly constant potential — carriers drift in the low leftover field toward the multiplier.</p>
   <p style="font-size:.82rem; color:#888; margin-top:.4rem;">
     <strong>How plotted:</strong> The Poisson solver first computes the electrostatic potential $\phi(x)$ at zero bias.
@@ -526,7 +530,7 @@ d_{l1} & d_1 & d_{u1} &        & \\
 </div>
 
 <div class="fig">
-  <img src="../plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
+  <img src="plots/spad/multiplication_vs_vex.png" alt="Multiplication vs Vex">
   <p>Figure 5: Avalanche multiplication factor $M$ vs excess bias. $M$ blows up as $V_{ex} \to 0$. The >5× current-rise criterion spots the breakdown point.</p>
 </div>
 
@@ -618,7 +622,7 @@ $$M = \frac{1}{1 - \displaystyle\int \beta(x)\,\exp\!\left(\int [\alpha - \beta]
 <p>Breakdown is declared when the total multiplied current surges >5× in a single bias step — the same physical condition as $M \to \infty$ but detected directly from the current. The integral uses dead-space-corrected effective coefficients $\alpha_{\text{eff}} = \alpha / (1 + \alpha \cdot l_{\text{dead}})$.</p>
 
 <div class="fig">
-  <img src="../plots/spad/atp_vs_position.png" alt="ATP vs position">
+  <img src="plots/spad/atp_vs_position.png" alt="ATP vs position">
   <p>Figure 6: Average trigger probability $P_{\text{tr}}(x) = P_e + P_h - P_e P_h$ across the device at different excess biases. The high-field multiplication region dominates.</p>
 </div>
 
@@ -659,12 +663,12 @@ F_0 = \frac{4\sqrt{2m^*}E_B^{3/2}}{3q\hbar}$$</div>
 <p>and the total TAT generation rate is $G_{\text{TAT}} = n_i/(2\tau) \cdot (\Gamma_e + \Gamma_h)$, integrated over the InP multiplication region only. The InGaAs absorber uses SRH generation alone (its low field makes tunneling negligible).</p>
 
 <div class="fig">
-  <img src="../plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
+  <img src="plots/spad/dcr_pde_vs_vex.png" alt="DCR and PDE vs Vex">
   <p>Figure 7: Dark count rate and photon detection probability vs excess bias. Both go up with $V_{ex}$ as the trigger probability saturates.</p>
 </div>
 
 <div class="fig">
-  <img src="../plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
+  <img src="plots/spad/dcr_vs_temperature.png" alt="DCR vs temperature">
   <p>Figure 8: Dark count rate at $V_{ex}=3$ V vs temperature. The exponential rise follows $n_i(T) \propto \exp(-E_g/2k_BT)$.</p>
 </div>
 
@@ -675,7 +679,7 @@ $$\text{PDP}(\lambda) = (1-R) \cdot T_{\text{dead}}(\lambda) \int_{\text{absorbe
 </div>
 
 <div class="fig">
-  <img src="../plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
+  <img src="plots/spad/pde_vs_temperature.png" alt="PDE vs temperature">
   <p>Figure 9: Photon detection efficiency at fixed bias $V_{bias}=V_{br}+3$ V vs temperature. PDE drops at higher $T$ because the breakdown voltage rises, cutting the effective excess bias.</p>
 </div>
 
@@ -719,27 +723,74 @@ $$D_0 = \mu V_T, \qquad D = D_0 \left(1 + 2\left(\frac{|E|}{v_{\text{sat}}}\righ
 <h3 id="ch5-config">Configuration Files</h3>
 <p>The simulator uses three XML configuration files, also available on this site:</p>
 <ul>
-  <li><a href="../data/device_sagcm.xml"><code>data/device_sagcm.xml</code></a> — Layer stack, doping, thickness, grid</li>
-  <li><a href="../data/materials.xml"><code>data/materials.xml</code></a> — Material parameters (bandgap, mobility, DOS, lifetime, Auger, etc.) with source citations</li>
-  <li><a href="../data/plots_config.xml"><code>data/plots_config.xml</code></a> — Which diagnostic plots to generate (7 enabled by default)</li>
+  <li><a href="data/device_sagcm.xml"><code>data/device_sagcm.xml</code></a> — Layer stack, doping, thickness, grid</li>
+  <li><a href="data/materials.xml"><code>data/materials.xml</code></a> — Material parameters (bandgap, mobility, DOS, lifetime, Auger, etc.) with source citations</li>
+  <li><a href="data/plots_config.xml"><code>data/plots_config.xml</code></a> — Which diagnostic plots to generate (7 enabled by default)</li>
 </ul>
 
 <p>All plots are generated at runtime by <code>make run</code> and saved to <code>plots/spad/</code>. The figures appear throughout Chapter 4 next to the physics they illustrate.</p>
 
 <h3 id="ch5-notebooks">Learning Notebooks</h3>
-<p>Five Jupyter notebooks in <code>notebooks/</code> walk through the simulator physics step by step, combining explanatory markdown with runnable code:</p>
-<ul>
-  <li><strong>01:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/01-AyushDocs-ElectricFieldSolver.ipynb">Electric Field Solver</a> — Poisson–Newton, Boltzmann statistics, band diagram</li>
-  <li><strong>02:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/02-AyushDocs-IVandBreakdown.ipynb">IV &amp; Breakdown</a> — McIntyre integral, 5× current-rise criterion, dark/light IV</li>
-  <li><strong>03:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/03-AyushDocs-IonizationCoefficients.ipynb">Ionization Coefficients</a> — VODM, Okuto-Crowell, dead-space, excess noise</li>
-  <li><strong>04:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/04-AyushDocs-DarkCurrent.ipynb">Dark Current</a> — SRH, BTBT, TAT, DCR vs temperature</li>
-  <li><strong>05:</strong> <a href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/05-AyushDocs-TriggerAndPDE.ipynb">Trigger Probability &amp; PDE</a> — Coupled McIntyre ODEs, PDP spectrum</li>
-</ul>
+<p>Six Jupyter notebooks in <code>notebooks/</code> walk through the simulator physics step by step, combining explanatory markdown with runnable code:</p>
 
-<div class="card green" style="margin-top:3rem;">
-  <strong>Summary:</strong> This work builds a 1D SAGCM SPAD simulator that covers the full physics chain — from material properties (Varshni bandgap, Caughey–Thomas mobility) through Poisson electrostatics (Newton–Raphson on a tridiagonal system), impact ionization (Van Overstraeten–de Man with temperature-scaling and dead-space correction), avalanche statistics (coupled McIntyre ODEs for trigger probability + BVP solver for mean multiplication), dark current mechanisms (SRH, BTBT, TAT), photon detection probability, drift-diffusion transport, and a self-consistent PIC loop with circuit quenching. All material parameters have source citations. The SAGCM architecture gives a good balance between high PDP, low DCR, and manageable excess noise for single-photon detection at telecom wavelengths. Future work will extend this to <strong>3D</strong> to capture <strong>afterpulsing</strong> and <strong>timing jitter</strong> — effects beyond what commercial TCAD can handle.
+<div class="notebook-grid">
+  <a class="notebook-card" href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/01-AyushDocs-ElectricFieldSolver.ipynb">
+    <div class="num">Notebook 01</div>
+    <h4>Electric Field Solver</h4>
+    <p>Poisson–Newton, Boltzmann statistics, tridiagonal Jacobian, band diagram</p>
+  </a>
+  <a class="notebook-card" href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/02-AyushDocs-IVandBreakdown.ipynb">
+    <div class="num">Notebook 02</div>
+    <h4>IV &amp; Breakdown</h4>
+    <p>McIntyre integral, 5× current-rise criterion, dark/light IV curves</p>
+  </a>
+  <a class="notebook-card" href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/03-AyushDocs-IonizationCoefficients.ipynb">
+    <div class="num">Notebook 03</div>
+    <h4>Ionization Coefficients</h4>
+    <p>VODM, Okuto-Crowell, dead-space, temperature scaling, excess noise</p>
+  </a>
+  <a class="notebook-card" href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/04-AyushDocs-DarkCurrent.ipynb">
+    <div class="num">Notebook 04</div>
+    <h4>Dark Current</h4>
+    <p>SRH, BTBT, TAT (Hurkx), DCR vs temperature, trap parameters</p>
+  </a>
+  <a class="notebook-card" href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/05-AyushDocs-TriggerAndPDE.ipynb">
+    <div class="num">Notebook 05</div>
+    <h4>Trigger Probability &amp; PDE</h4>
+    <p>Coupled McIntyre ODEs, trigger probability vs bias, PDP spectrum</p>
+  </a>
+  <a class="notebook-card" href="https://github.com/ayushdocs/spad_simulator/blob/main/notebooks/06-AyushDocs-ThreeRegionModel.ipynb">
+    <div class="num">Notebook 06</div>
+    <h4>Three-Region Model</h4>
+    <p>Closed-form constant-field approximation, analytic McIntyre integral</p>
+  </a>
 </div>
 
+  <div class="card green" style="margin-top:3rem;">
+    <strong>Summary:</strong> This work builds a 1D SAGCM SPAD simulator that covers the full physics chain — from material properties (Varshni bandgap, Caughey–Thomas mobility) through Poisson electrostatics (Newton–Raphson on a tridiagonal system), impact ionization (Van Overstraeten–de Man with temperature-scaling and dead-space correction), avalanche statistics (coupled McIntyre ODEs for trigger probability + BVP solver for mean multiplication), dark current mechanisms (SRH, BTBT, TAT), photon detection probability, drift-diffusion transport, and a self-consistent PIC loop with circuit quenching. All material parameters have source citations. The SAGCM architecture gives a good balance between high PDP, low DCR, and manageable excess noise for single-photon detection at telecom wavelengths. Future work will extend this to <strong>3D</strong> to capture <strong>afterpulsing</strong> and <strong>timing jitter</strong> — effects beyond what commercial TCAD can handle.
+  </div>
 </main>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.querySelector('.theme-btn');
+  const btnD = document.querySelector('.theme-btn-desktop');
+  const isDark = html.getAttribute('data-theme') === 'light';
+  html.setAttribute('data-theme', isDark ? '' : 'light');
+  const label = isDark ? '🌙' : '☀️';
+  if (btn) btn.textContent = label;
+  if (btnD) btnD.textContent = label;
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+(function initTheme() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  const html = document.documentElement;
+  if (saved === 'light') {
+    html.setAttribute('data-theme', 'light');
+    document.querySelectorAll('.theme-btn, .theme-btn-desktop').forEach(b => b.textContent = '☀️');
+  }
+})();
+</script>
 </body>
 </html>

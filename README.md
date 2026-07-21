@@ -270,21 +270,25 @@ All plots saved to `plots/spad/`. 7 diagnostic plots + `sim_results.xml`.
 
 ## Learning Notebooks
 
-Five Jupyter notebooks in `notebooks/` walk through the physics step by step:
+Six Jupyter notebooks in `notebooks/` walk through the physics step by step, with **interactive widgets** (sliders) for real-time parameter exploration:
 
-| Notebook | Topic |
-|----------|-------|
-| `01-AyushDocs-ElectricFieldSolver` | Poisson solver, Newton–Raphson, Boltzmann stats, band diagram |
-| `02-AyushDocs-IVandBreakdown` | McIntyre integral, breakdown detection, dark/light IV curves |
-| `03-AyushDocs-IonizationCoefficients` | VODM vs Okuto-Crowell models, dead-space, temperature scaling |
-| `04-AyushDocs-DarkCurrent` | SRH, BTBT, TAT generation, DCR vs temperature |
-| `05-AyushDocs-TriggerAndPDE` | Coupled McIntyre ODEs, trigger probability, PDP spectrum |
+| Notebook | Topic | Interactive |
+|----------|-------|-------------|
+| `01-AyushDocs-ElectricFieldSolver` | Poisson solver, Newton–Raphson, Boltzmann stats, band diagram | Bias slider for E-field & potential |
+| `02-AyushDocs-IVandBreakdown` | McIntyre integral, breakdown detection, dark/light IV curves | Temperature slider for IV curve |
+| `03-AyushDocs-IonizationCoefficients` | VODM vs Okuto-Crowell models, dead-space, temperature scaling | Field & temperature sliders |
+| `04-AyushDocs-DarkCurrent` | SRH, BTBT, TAT generation, DCR vs temperature | Bias & temperature sliders |
+| `05-AyushDocs-TriggerAndPDE` | Coupled McIntyre ODEs, trigger probability, PDP spectrum | Excess bias slider |
+| `06-AyushDocs-ThreeRegionModel` | Constant-field closed-form, analytic McIntyre integral | Width & field sliders |
+
+> **Note:** Interactive widgets require `ipywidgets` and `ipympl` (included with `pip install -e ".[dev]"`). Open each notebook in Jupyter Lab/Notebook and run all cells; sliders appear before the Summary section.
 
 Run with the venv kernel (`spad-sim`), or execute headless:
 ```bash
 cd notebooks/
 jupyter nbconvert --to notebook --execute 01-AyushDocs-ElectricFieldSolver.ipynb --output /dev/null
 ```
+> Headless execution will skip the interactive widget cells (no frontend to display them).
 
 ## License
 
