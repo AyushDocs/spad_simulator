@@ -36,9 +36,10 @@ clean: clean-plots clean-pyc  ## Remove plots and cache files
 typecheck:  ## Run mypy type checking
 	PYTHONPATH=$(ROOT) $(PYTHON) -m mypy spad_simulator/ --ignore-missing-imports 2>/dev/null || echo "mypy not installed; skipping"
 
-deploy-plots:  ## Copy plots to docs/ for GitHub Pages
-	mkdir -p docs/plots/spad
+deploy-plots:  ## Copy plots + data to docs/ for GitHub Pages
+	mkdir -p docs/plots/spad docs/data
 	cp -n plots/spad/*.png docs/plots/spad/ 2>/dev/null || true
+	cp -n data/*.xml docs/data/ 2>/dev/null || true
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
