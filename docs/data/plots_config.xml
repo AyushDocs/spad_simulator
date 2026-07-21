@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plot configuration — set enabled="true" to generate a plot. -->
+<plots version="1.0">
+  <!-- fields.py -->
+  <plot name="device_structure" enabled="false"/>
+  <plot name="potential_profile" enabled="false"/>
+  <plot name="electric_field" enabled="true"/>
+  <plot name="band_diagram" enabled="false"/>
+  <plot name="depletion_vs_bias" enabled="false"/>
+  <plot name="trigger_profiles" enabled="true"/>
+  <plot name="trigger_vs_vex" enabled="false"/>
+  <plot name="atp" enabled="true"/>
+  <plot name="peak_field_vs_bias" enabled="false"/>
+  <plot name="avalanche_probability_map" enabled="false"/>
+  <plot name="breakdown_vs_temp" enabled="false"/>
+
+  <!-- dark_current.py -->
+  <plot name="dark_current_sweep" enabled="false"/>
+  <plot name="dark_current_component_sweep" enabled="false"/>
+  <plot name="dcr_pde_vs_vex" enabled="true"/>
+  <plot name="dcr_vs_temp" enabled="true"/>
+  <plot name="dark_current_components_vs_temp" enabled="false"/>
+
+  <!-- pde.py -->
+  <plot name="pde_spectrum" enabled="false"/>
+  <plot name="pde_vs_vex" enabled="false"/>
+  <plot name="pde_vs_temp" enabled="true"/>
+  <plot name="absorption_profile" enabled="false"/>
+  <plot name="pde_3d" enabled="false"/>
+
+  <!-- iv.py -->
+  <plot name="iv_characteristic" enabled="true"/>
+  <plot name="comprehensive_iv" enabled="false"/>
+
+  <!-- avalanche.py -->
+  <plot name="afterpulsing" enabled="false"/>
+  <plot name="excess_noise" enabled="false"/>
+  <plot name="jitter" enabled="false"/>
+  <plot name="dead_space_distribution" enabled="false"/>
+  <plot name="breakdown_prob_vs_vex" enabled="false"/>
+  <plot name="avalanche_current_pulse" enabled="false"/>
+  <plot name="quenching_waveform" enabled="false"/>
+
+  <!-- ionization.py -->
+  <plot name="ionization_vs_field" enabled="false"/>
+  <plot name="multiplication_vs_vex" enabled="true"/>
+
+  <!-- param_sweep.py -->
+  <plot name="iv_sweep" enabled="false"/>
+  <plot name="sweep_absorption_thickness" enabled="false"/>
+  <plot name="sweep_multiplication_thickness" enabled="false"/>
+  <plot name="sweep_charge_density" enabled="false"/>
+  <plot name="sweep_p_layer_doping" enabled="false"/>
+
+  <!-- field_sweep.py -->
+  <plot name="efield_vs_absorption_width" enabled="false"/>
+  <plot name="efield_vs_multiplication_width" enabled="false"/>
+
+  <!-- punch_breakdown.py -->
+  <plot name="punch_breakdown_sweep" enabled="false"/>
+
+  <!-- trap_density.py -->
+  <plot name="trap_density_iv" enabled="false"/>
+
+  <!-- trigger_back_calculate.py -->
+  <plot name="trigger_back_calculate" enabled="false"/>
+
+  <!-- dcr_vs_pde.py -->
+  <plot name="dcr_vs_pde" enabled="false"/>
+
+  <!-- optimization.py -->
+  <plot name="optimization" enabled="false"/>
+</plots>
