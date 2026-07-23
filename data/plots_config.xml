@@ -24,7 +24,7 @@
 
   <!-- pde.py -->
   <plot name="pde_spectrum" enabled="true"/>
-  <plot name="pde_vs_vex" enabled="false"/>
+  <plot name="pde_vs_vex" enabled="true"/>
   <plot name="pde_vs_temp" enabled="true"/>
   <plot name="absorption_profile" enabled="false"/>
   <plot name="pde_vs_area" enabled="true"/>

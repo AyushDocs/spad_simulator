@@ -58,6 +58,10 @@ class ElectricFieldPlotter(BasePlotter):
         else:
             ax.plot(x_um, -np.atleast_1d(E) / 1e5)
 
+        ax.set_xlim(2, 5)
+        ax.relim()
+        ax.autoscale_view()
+
         if layer_bounds_um is not None and layer_names is not None:
             region_colors = {
                 "p+ Contact": "#9467bd",
@@ -73,18 +77,19 @@ class ElectricFieldPlotter(BasePlotter):
             for i, name in enumerate(layer_names):
                 x0 = all_bounds[i]
                 x1 = all_bounds[i + 1]
+                if x1 < 2 or x0 > 5:
+                    continue
                 color = region_colors.get(name, "#aaaaaa")
                 ax.axvspan(x0, x1, alpha=0.15, color=color, zorder=0)
                 ax.axvline(x=x1, color="gray", ls=":", alpha=0.4, lw=0.8)
-                mid = (x0 + x1) / 2.0
+                mid = max(2, min(5, (x0 + x1) / 2.0))
+                y_rows = [0.92, 0.82, 0.72]
                 y_frac = y_rows[i % len(y_rows)]
                 y_pos = (ax.get_ylim()[1] - ax.get_ylim()[0]) * y_frac + ax.get_ylim()[0]
                 ax.text(mid, y_pos, name,
                         ha="center", va="top", fontsize=7, fontweight="bold",
                         bbox=dict(boxstyle="round,pad=0.15", fc="white",
                                   alpha=0.75, ec=color, lw=1.2))
-
-        ax.set_xlim(2, 5)
         ax.set_xlabel("Depth (µm)")
         ax.set_ylabel("Electric Field (×10⁵ V/cm)")
         ax.legend(fontsize=8)
